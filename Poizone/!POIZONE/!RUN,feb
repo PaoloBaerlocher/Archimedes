@@ -1,0 +1,21 @@
+| POIZONE , (c) 1991 ETERNA
+| by P Baerlocher,M Andreoli,F Hautecloque
+
+dir <Obey$Dir>
+rmClear
+rmLoad MemAlloc
+
+fontSize 0K
+spriteSize 0K
+screenSize 160K
+rmaSize 0K
+rmaFree 16K
+ramfsSize 0K
+
+rmClear
+
+wimpSlot -min 664K -max 664K
+
+rmLoad LZWDmod
+rmLoad TRKmod
+starter
