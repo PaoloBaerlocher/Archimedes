@@ -1,0 +1,543 @@
+REM >Master.FNscape27
+________________________________________________________________________
+
+DEFFNmain_scape
+[OPT PASS
+
+.enter_zarchscape
+
+ BL mouse_flush
+ BL mouse_infinite_box  ; init mouse
+ BL mouse_pos_quarter
+  MOV R0,#640:FNstr(0,14, oldXval)
+  MOV R0,#256:FNstr(0,14, oldYval)
+
+ BL ClearPartTable      ; init zarchscape
+ BL activate_SoftWait
+
+ FNcheck_checksum(bind_exit_zarchscape)
+
+.mainloop_zarchscape
+
+ LDR R0,destroyed_counter
+ SUBS R0,R0,#1
+ STRPL R0,destroyed_counter
+ BGT fixed_view
+ BEQ bind_destroyed_FL
+
+ FNldr(0,damage_on_FL)
+ CMP R0,#100
+  MOVPL R0,#48
+  STRPL R0,destroyed_counter
+  BPL fixed_view
+
+ LDR R1,flyingObjects+04:MOV R1,R1,LSR#20
+                         SUB R1,R1,#32*13.5  ; AbsX
+ LDR R2,flyingObjects+08:MOV R2,R2,LSR#20
+                         SUB R2,R2,#32*6     ; AbsY
+
+ MOV R3,R1,LSR#5:AND R3,R3,#127:STRB R3,PosX:AND R1,R1,#31:STRB R1,FinX
+ MOV R3,R2,LSR#5:AND R3,R3,#127:STRB R3,PosY:AND R2,R2,#31:STRB R2,FinY
+
+ LDR R0,flyingObjects+12
+
+ CMP R0,#0:BMI bind_exit_planet  ; out of Z range?
+
+ MOV R0,R0,LSR#20    ; high
+ SUB R1,R0,#512
+ ADD R1,R1,#190
+  CMP R1,#010:MOVMI R3,#376:BMI end_calc_elevation
+  CMP R1,#640:MOVPL R3,#1000
+              ADDMI R3,R0,#-(-378-(-512-(10-190)))
+
+.end_calc_elevation
+ RSB R3,R3,#0
+ STR R3,Elevation
+
+ LDR R14,flyingObjects+12
+ MOV R14,R14,LSR#20
+ STR R14,Alt
+
+.fixed_view
+ BL Ufo_initRotatedList
+ BL createScape2D_all
+ BL calcRealPos
+
+ BL animBases
+ BL CalcPartStrips
+
+ BL SetScreen
+
+ BL wait_mintime_sync
+
+ LDR R14,Elevation
+ ADD R14,R14,#376
+ ADD R14,R14,R14,LSL#1  ; x3
+ MOV R0,#83
+ SUB R0,R0,R14,ASR#3    ; -0.38*(!Elevation+378)
+ SUB R0,R0,R14,ASR#9    ;
+  BL ERASE
+
+ BL DrawWholeLandscape
+ BL reinit_SoftWait
+
+ FNldr(14,damage_on_FL)
+ CMP R14,#100
+ BLPL DamagedHorizon
+ LDRMIB R1,flyingObjects+16      ; gamma
+ LDRMIB R0,flyingObjects+17      ; nutation
+ BLMI put_gyros
+ BL put_twin_meters              ; update panel
+ FNldr(14,damage_on_FL)
+ CMP R14,#90:BLPL DamagedRadar
+             BLMI ViewRadar
+ BL put_weapon_instances
+ BL put_window_professors
+
+ BL Bullets_controller
+ BL Ufo_processor
+
+ LDR R14,enterbase_counter
+ SUBS R14,R14,#1
+ STRPL R14,enterbase_counter
+ BEQ bind_exit_zarchscape
+
+B mainloop_zarchscape
+
+\\\\\\\\\\\\\
+\ variables \
+\\\\\\\\\\\\\
+
+.destroyed_counter EQUD 0
+.enterbase_counter EQUD 0
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNscape
+
+IF PASS=PASSone DIM tabDat(15):tabDat()=0,0,0,1,1,2,2,3,4,5,6,7,7,8,8,9
+
+[OPT PASS
+
+FNsoftWaitRoutine
+
+FNPutGyrosRoutine
+
+FNparticles
+
+FNanimBase
+
+FNctrlBullets
+
+FNobjects
+
+FNPutRadarRoutine
+
+.Coords
+.PosX EQUD 64
+.PosY EQUD 64
+.FinX EQUD 0
+.FinY EQUD 0
+.Alt  EQUD 0
+.RealPos EQUD (32*?PosX+?FinX)<<16  +  (32*?PosY+?FinY)
+.Elevation EQUD -10
+
+.calcRealPos
+ ADR R0,Coords
+ LDMIA R0,{R0,R1,R2,R3} ; load PosX,PosY,FinX,FinY
+ ADD R2,R2,R0,LSL#5
+ ADD R3,R3,R1,LSL#5
+ ORR R0,R3,R2,LSL#16:STR R0,RealPos
+MOV PC,R14
+
+FNmain_scape
+
+FNctrlAlienShips
+
+FNboom
+
+FNcrashes
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.DrawWholeLandscape
+FNin
+ FNunderCode(00)
+ FNunderCode(01):FNoverCode(00)
+ FNunderCode(02):FNoverCode(01)
+ FNunderCode(03):FNoverCode(02)
+ FNunderCode(04):FNoverCode(03)
+ FNunderCode(05):FNoverCode(04)
+ FNunderCode(06):FNoverCode(05)
+ FNunderCode(07):FNoverCode(06)
+ FNunderCode(08):FNoverCode(07)
+ FNunderCode(09):FNoverCode(08)
+ FNunderCode(10):FNoverCode(09)
+ FNunderCode(11):FNoverCode(10)
+ FNunderCode(12):BL drawSection:FNoverCode(11)
+ MOV R0,#12:BL PutObjectsRow
+ ;FNoverCode(12)   ; uhuh
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.rnd_wave EQUD -TIME
+
+.createScape2D_all
+FNin
+
+FNadr(0,myScape)
+LDR R3,rnd_wave
+FNadr(7,table3D)
+
+FNldr(12,Elevation):FNldr(14,PosY):MOV R14,R14,LSL#25
+                    FNldr(11,FinX):RSB R11,R11,#32
+]
+kind%=-1     :REM first line=nice cut
+[OPT PASS
+FNsubRout1
+]
+kind%=0      :REM 'standard' lines
+[OPT PASS
+MOV R10,#12      ;12 lignes 'standard'
+.loopPoints2
+ FNsubRout1
+SUBS R10,R10,#1:BNE loopPoints2
+]
+kind%=+1
+[OPT PASS
+FNsubRout1   :REM last line=nice cut
+
+STR R3,rnd_wave
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.drawStrip                 ;input R0=stripNumber(0..12)
+FNin
+
+FNldr(12,FinY):MOV R12,R12,LSR#4:RSB R12,R12,#1:ADD R12,R12,R0,LSL#1:STR R12,stockTmp
+
+ADR R12,tabCutSquare3D+8:ADD R12,R12,R0,LSL#3
+LDMIA R12,{R13,R14}        ;load right address and lessSquares
+
+ STR R14,remem
+
+ RSB R14,R14,#13 ;the number of squares to calculate
+
+ .loopStrip1                  ; FROM LEFT TO MIDDLE
+ LDMIA R13,{R1,R2,R3,R4}
+ SUB R8,R13,#32*8
+ LDMIA R8,{R5,R6,R7,R8}
+
+ LDRB R12,[R13,#32*14*8] ;load color
+
+ ADR R9,stockTmp+4:STMIA R9,{R13,R14}
+
+ FNputSquare(0)
+
+ ADR R14,stockTmp:LDMIA R14,{R0,R13,R14}
+
+ADD R13,R13,#8 ;next one
+
+SUBS R14,R14,#1:BNE loopStrip1
+
+LDR R14,remem
+RSB R14,R14,#14
+ADD R13,R13,R14,LSL#3:SUB R13,R13,#8   ; move pointer to the right
+
+ .loopStrip2                  ; FROM RIGHT TO MIDDLE
+ LDMIA R13,{R1,R2,R3,R4}
+ SUB R8,R13,#32*8
+ LDMIA R8,{R5,R6,R7,R8}
+
+ LDRB R12,[R13,#32*14*8] ;load color
+
+ ADR R9,stockTmp+4:STMIA R9,{R13,R14}
+
+ FNputSquare(1)
+
+ ADR R14,stockTmp:LDMIA R14,{R0,R13,R14}
+
+SUB R13,R13,#8 ;previous one
+
+SUBS R14,R14,#1:BNE loopStrip2
+
+FNout
+
+.remem EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.calcBackSection     ; return R13
+ADR R0,buffer2D+4
+MOV R13,#0   ;init max value
+MOV R2,#27
+.lcalcBS
+LDR R3,[R0],#8
+CMP R3,R13:MOVGT R13,R3
+SUBS R2,R2,#1:BNE lcalcBS
+MOV PC,R14
+
+.drawSection
+FNin
+
+ LDR R13,tabCutSquare3D+(13<<3)  ; load right address and lessSquares
+
+ MOV R14,#8:ADD R13,R13,#16      ; recenter  (8 square to draw)
+
+ .loopStrip3
+ LDMIA R13,{R1,R2,R3,R4}
+
+ CMP R2,#208:CMPPL R4,#208
+
+ ADR R9,stockTmp+4:STMIA R9,{R13,R14}
+ BLMI PutSection
+ ADR R14,stockTmp+4:LDMIA R14,{R13,R14}
+
+ADD R13,R13,#8 ;next one
+
+SUBS R14,R14,#1:BNE loopStrip3
+
+FNout
+
+FNbin
+
+.stockTmp EQUD 0:EQUD 0:EQUD 0   ;(R0,R13,R14)=(Zcolor,pointer,counter)
+
+.tabCutSquare3D      ; considere seulement les carres' visibles
+]
+FOR z%=0TO 14
+lessSquares=tabDat(z%)
+[OPT PASS
+EQUD buffer2D+32*8*z%+8*lessSquares:EQUD lessSquares
+]
+NEXT
+[OPT PASS
+
+.buffer2D
+ FNram(32*14*8)   ; 8 bytes=(x,y) per square
+ FNram(32*14*8)   ; 4 bytes=(col) per square + half useless interlaced
+
+]
+=0
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+DEFFNerase_sky
+[OPT PASS
+
+.ERASE         ;input R0=horizon line
+CMP R0,#0:MOVLE PC,R14 ;out of screen
+
+FNin
+
+LDR R1,BASESCR
+
+SUBS R12,R0,#128:MOVLE R14,R0:BLE noBlackSky ; faut-il rajouter le ciel tout noir?
+.blackSky
+RSBS R14,R0,#208+128:BMI quitErase
+CMP R14,#128:MOVGT R14,#128
+
+MOV R2,#0:MOV R3,#0:MOV R4,#0:MOV R5,#0:MOV R6,#0:MOV R7,#0:MOV R8,#0:MOV R9,#0:MOV R10,#0:MOV R11,#0
+.nxtBlackLine
+STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}   ;erase 1 line
+SUBS R12,R12,#1:BNE nxtBlackLine
+
+.noBlackSky
+LDR R13,curr_sky
+SUB R13,R13,R12,LSL#2 ; find the right start
+
+.loopSky
+LDR R2,[R13],#4
+CMP R2,R3:MOVNE R3,R2:MOVNE R4,R2:MOVNE R5,R2:MOVNE R6,R2:MOVNE R7,R2:MOVNE R8,R2:MOVNE R9,R2:MOVNE R10,R2:MOVNE R11,R2
+
+STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}:STMIA R1!,{R2-R11}   ;erase 1 line
+
+SUBS R14,R14,#1:BNE loopSky
+
+BL calcBackSection   ;return in R13 the lowest line ( back section )
+CMP R13,#207:MOVGT R13,#207   ;out of range!
+LDR R14,BASESCR:ADD R14,R14,R13,LSL#8:ADD R14,R14,R13,LSL#6
+CMP R1,R14:BGT quitErase
+
+MOV R2,#0:MOV R3,R2:MOV R4,R2:MOV R5,R2:MOV R6,R2:MOV R7,R2:MOV R8,R2:MOV R9,R2:MOV R10,R2:MOV R11,R2:MOV R12,R2:MOV R13,R2
+
+.contBlack
+STMIA R1!,{R2-R13}:STMIA R1!,{R2-R13}:STMIA R1!,{R2-R13}
+STMIA R1!,{R2-R13}:STMIA R1!,{R2-R13}:STMIA R1!,{R2-R13}
+STMIA R1!,{R2-R9}       ; erase 1 line
+CMP R1,R14:BLE contBlack
+
+.quitErase
+FNout
+
+.curr_sky EQUD theSkyRed
+
+FNbin
+]
+=0
+
+DEFFNputSquare(K%)                :REM K% : only to have differents labels
+IF PASS=PASSone AND K%=0 THEN DIM TextureSquare(1):DIM endPutSquare(1)
+
+REM * 000 - 063 : normal colours
+REM * 064 - 127 : texture
+
+[OPT PASS
+
+CMP R12,#64:BPL TextureSquare(K%)
+
+FNadr(9,MegaShades)
+ADD R9,R9,R12,LSL#5:ADD R9,R9,R12,LSL#6   ;the right color
+CMP R0,#23
+ LDRMI R12,[R9,R0,LSL#2]
+ LDRPL R12,[R9,#23<<2]
+BL PutQuadra
+B endPutSquare(K%)
+
+.TextureSquare(K%)
+
+FNadr(10,light_textures)
+ADDGT R10,R10,#&C00  ; other texture
+CMP R0,#24
+MOV R0,R0,LSR#1:ADD R10,R10,R0,LSL#8
+
+MOVMI R11,#16
+FNsetflag("PL")      ; nice cut of the texture for the last strip
+FNldr(11,FinY)
+ANDPL R11,R11,#&FF:MOVPL R11,R11,LSR#1:ADDPL R11,R11,#1
+SUBPL R10,R10,#256   ; take right texture if out of [0..23] range
+BL PutTexture
+
+.endPutSquare(K%)
+]
+=0
+
+DEFFNsubRout1        :REM nice cut du landscape si devant ou derriere
+
+IF kind%=0 THEN
+[OPT PASS
+ LDR R8,[R7],#32*4   ;next class of Z     > R8=perspective factor(*256)
+
+ ADR R4,tabCutSquare3D+8*13:SUB R4,R4,R10,LSL#3
+]
+ENDIF
+
+IF kind%=-1 THEN
+[OPT PASS
+ LDR R8,[R7],#32*4
+ FNldr(2,FinY):SUB R7,R7,R2,LSL#2
+
+ ADR R4,tabCutSquare3D
+]
+ENDIF
+
+IF kind%=+1 THEN
+[OPT PASS
+ FNldr(8,table3D+4*32*12)
+
+ ADR R4,tabCutSquare3D+8*13
+]
+ENDIF
+
+[OPT PASS
+
+ LDMIA R4,{R4,R5}              ;read the tabCutSquare3D + f(kind%)
+ FNldr(13,PosX):ADD R13,R13,R5 ;move to the right
+ MOV R5,R5,LSL#1:RSB R5,R5,#31 ;the number of squares to calculate
+
+ SUB R1,R11,R5,LSL#4:MUL R1,R8,R1   ;start of x
+
+ .loopStrippy
+  AND R13,R13,#127                          ; x always inside array
+  ADD R6,R13,R14,LSR#25-7
+  ADD R9,R6,#128*128:LDRB R9,[R0,R9]:STR R9,[R4,#32*14*8]
+                                            ; load and save colour
+]
+
+ IF kind%=0 THEN
+[OPT PASS
+  LDRB R6,[R0,R6]                   ;read high
+
+]
+ENDIF
+ IF kind%=-1 THEN
+[OPT PASS
+  CMP R14,#127<<25
+  ADDNE R9,R0,R6:LDRNEB R9,[R9,#128]:LDREQB R9,[R0,R13] ; read high in nxt line
+  LDRB R6,[R0,R6]                   ;read high
+  SUB R9,R9,R6:MUL R9,R2,R9:ADD R6,R6,R9,ASR#5  ;interpol
+ ]
+ENDIF
+
+IF kind%=+1 THEN
+[OPT PASS
+  CMP R14,#0
+  ADDNE R9,R0,R6:ADDEQ R9,R0,R13:ADDEQ R9,R9,#128*128:LDRB R9,[R9,#-128]
+                                    ;read high into previous line
+  LDRB R6,[R0,R6]                   ;read high
+  SUB R6,R6,R9:MUL R6,R2,R6:ADD R6,R6,R9,LSL#5  ;interpol (*32 !!!)
+ ]
+ENDIF
+
+[OPT PASS
+  ADD R6,R6,R6,ASR#1 ;multiply high by 1.5
+
+  CMP R6,#128*1.5 ;test if underwater (for water effect,14 lines forwards)
+]
+
+ IF kind%=+1 THEN
+ [OPT PASS
+   ADD R6,R12,R6,ASR#5 ; add elevation and / 32 (for great precision)
+ ]
+ ELSE
+ [OPT PASS
+   ADD R6,R12,R6       ; add elevation
+ ]
+ ENDIF
+
+[OPT PASS
+  ADD R3,R3,#1<<29:SUBMI R6,R6,R3,LSR#31 ;water effect
+
+  MUL R9,R8,R6:MOV R9,R9,ASR#14:RSB R9,R9,#10         ; middle of window Y
+
+  ADD R1,R1,R8,LSL#5:MOV R6,R1,ASR#14:ADD R6,R6,#160  ; middle of window X
+
+  STMIA R4!,{R6,R9}              ; save (x,y) 2D
+  ADD R13,R13,#1                 ; next square right (x+=1)
+ SUBS R5,R5,#1:BNE loopStrippy
+ ADD R14,R14,#1<<25              ; next line (y+=1)
+]
+=0
+
+DEFFNunderCode(nb%)
+[OPT PASS
+ MOV R0,#nb%:BL drawStrip:MOV R0,#nb%:BL PutShadowsRow
+]
+=0
+
+DEFFNoverCode(nb%)
+[OPT PASS
+ MOV R0,#nb%:BL Ufo_shadows:MOV R0,#nb%:BL PutObjectsRow
+ MOV R0,#nb%:BL Ufo_draw   :MOV R0,#nb%:BL PutParticles
+]
+=0
+________________________________________________________________________
+
+DEFFNtable_3Dscape
+IF PASS=PASSone THEN
+ P%+=448*4:O%+=448*4
+  ELSE
+[OPT PASS
+.table3D
+]
+const3D=200
+FOR z%=0TO 447
+!O%=17000*const3D/(const3D+(320-z%)):P%+=4:O%+=4
+NEXT
+ENDIF
+=0

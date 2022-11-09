@@ -1,0 +1,52 @@
+REM >MASTER.FNbase
+END
+
+DEFFNanimBase
+eod=65536
+
+REM En principe il y a UNE seule base animee avec de la texture
+
+[OPT PASS
+
+.baseCounter EQUD 0  ; for animation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.animBases
+
+ LDR R2,baseCounter
+ ADD R2,R2,#8<<26       ;this is the speed of the change
+ STR R2,baseCounter
+
+ADR R3,texAnimationDefinition
+FNadr(4,myScape+128*128)   ; pointer to colours in land
+
+MOV R5,#7-1          ; bases de 7x7
+.ltexBaseY
+ ADD R8,R4,R5,LSL#7
+MOV R6,#7-1
+.ltexBaseX
+ LDRB R7,[R3],#1
+ ADDS R7,R2,R7,LSL#26   ; test bit 31
+ MOVPL R7,#64
+ MOVMI R7,#65
+
+ STRB R7,[R8,R6]        ; finally put texture value
+
+SUBS R6,R6,#1:BPL ltexBaseX
+SUBS R5,R5,#1:BPL ltexBaseY
+MOV PC,R14
+
+.texAnimationDefinition
+DCB 00:DCB 00:DCB 00:DCB 00:DCB 00:DCB 00:DCB 00
+DCB 00:DCB 16:DCB 16:DCB 16:DCB 16:DCB 16:DCB 00
+DCB 00:DCB 16:DCB 32:DCB 32:DCB 32:DCB 16:DCB 00
+DCB 00:DCB 16:DCB 32:DCB 48:DCB 32:DCB 16:DCB 00
+DCB 00:DCB 16:DCB 32:DCB 32:DCB 32:DCB 16:DCB 00
+DCB 00:DCB 16:DCB 16:DCB 16:DCB 16:DCB 16:DCB 00
+DCB 00:DCB 00:DCB 00:DCB 00:DCB 00:DCB 00:DCB 00
+ALIGN
+
+]
+=0
+

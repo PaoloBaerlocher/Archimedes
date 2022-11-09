@@ -1,0 +1,434 @@
+REM >MASTER.SPR_alde.FNanims
+END
+_________________________________________________________________________
+
+DEFFNfullStars
+[OPT PASS
+.F_threeD
+]
+FOR z%=0 TO 159
+[OPT PASS : EQUD 2.5*256*10/(10+z%) : ]
+NEXT
+[OPT PASS
+
+.F_starSpeed EQUD 2
+.F_starAbs   EQUD 0
+
+.fullStars
+FNwait
+
+LDR R0,F_starSpeed:LDR R9,F_starAbs
+SUBS R9,R9,R0:ADDMI R9,R9,#160:STR R9,F_starAbs
+
+ADR R0,fullstarData
+FNadr(2,F_threeD)
+ADR R7,F_starcol
+MOV R8,#0               ; erased star col
+FNldr(11,BASESCR)       ; je dessine les stars sur l'ecran visible
+
+MOV R1,#320
+.fullstLoop
+
+LDMIA R0!,{R4,R5,R10}
+
+BIC R3,R10,#&FF000000
+CMP R3,#80*1024
+LDRCCB R6,[R11,R3]
+CMPCC R6,R10,LSR#24
+STREQB R8,[R11,R3]    ; and erase star
+
+SUBS R3,R9,R1,LSR#1:ADDMI R3,R3,#160 ; move star
+
+LDR R6,[R2,R3,LSL#2]    ;load perspective
+MUL R5,R6,R5:ADD R5,R5,#152<<8:CMP R5,#256<<8:STRCS R11,[R0,#-4]:BCS noS3
+MUL R4,R6,R4:ADD R4,R4,#160<<8:CMP R4,#320<<8:STRCS R11,[R0,#-4]:BCS noS3
+MOV R5,R5,ASR#8                             ;;;
+                                             ; store a big value (R11)
+ADD R4,R11,R4,ASR#8                          ; to say   "no star to erase"
+ADD R4,R4,R5,LSL#8                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+LDRB R6,[R4,R5,LSL#6]!     ; plot star
+
+CMP R6,#0:LDREQB R6,[R7,R3,ASR#4]:STREQB R6,[R4],-R11
+          ORREQ R4,R4,R6,LSL#24        ; save star colour
+STREQ R4,[R0,#-4]:STRNE R11,[R0,#-4]   ; save star position for next frame
+
+.noS3
+SUBS R1,R1,#1:BNE fullstLoop
+
+MOV PC,R14
+
+.F_starcol
+EQUB 255:EQUB 254:EQUB 253:EQUB 252
+EQUB 211:EQUB 210:EQUB 209:EQUB 208
+EQUB 47:EQUB 46:EQUB 45:EQUB 44
+
+.fullstarData
+]
+FOR star%=0TO 319
+REPEAT
+xs=RND(400)-RND(400):ys=RND(400)-RND(400)
+UNTIL xs*xs+ys*ys>200*200
+[OPT PASS
+ EQUD xs
+ EQUD ys
+ EQUD -1
+]
+NEXT
+
+=0
+_________________________________________________________________________
+
+DEFFNalde_animations
+[OPT PASS
+
+.happyend_animation
+FNin
+
+ BL SetScreen
+ BL ViewScreen
+ BL SwapScreens
+
+ MOV R0,#&FF
+ ADR R1,happy_file
+ FNldr(2,BASESCR)
+ MOV R3,#0
+ SWI "OS_File"           ; load animation
+
+ FNldr(3,BASESCR)
+ BL SwapScreens
+ MOV R0,R3
+ FNldr(1,BASESCR)
+ ADD R2,R0,#40*1024
+ SWI "LZWD_Decompress"   ; decrunch animation
+
+ ADR R0,happyend_message
+ MOV R2,#244
+ MOV R3,#41
+ BL  send_text
+
+.happy_wait_declick
+ SWI "OS_Mouse"
+ CMP R2,#0:BNE happy_wait_declick
+
+.happy_wait_click
+ SWI "OS_Mouse"
+ CMP R2,#0:BEQ happy_wait_click
+
+FNout
+
+.happyend_message FNtext("THANKS COMMANDER!",25)
+.sadend_message   FNtext("GAME OVER",25)
+
+.begin_animation
+ FNadr(0,alde_title)
+ FNldr(3,scr_num)      ; destination screen,using other screen as buffer
+ FNldr(2,StartScr)
+ ADD R1,R2,R3
+ RSB R3,R3,#80*1024
+ ADD R2,R2,R3
+ SWI "LZWD_Decompress"
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.sun_animation_ask_word
+FNin
+.loop_sun_animation_ask_word
+ MOV R0,#0:BL test_starter:CMP R2,#0:FNexitNE
+ MOV R0,#1:BL test_starter:CMP R2,#0:FNexitNE
+ MOV R0,#2:BL test_starter:CMP R2,#0:BEQ loop_sun_animation_ask_word
+FNout
+
+.sun_animation
+FNin
+
+.loop_sun_animation
+ MOV R0,#0:BL draw_sun
+           BL star_pause
+           SWI "OS_Mouse":CMP R2,#0:FNexitNE
+ MOV R0,#1:BL draw_sun
+           BL star_pause
+           SWI "OS_Mouse":CMP R2,#0:FNexitNE
+ MOV R0,#2:BL draw_sun
+           BL star_pause
+           SWI "OS_Mouse":CMP R2,#0:BEQ loop_sun_animation
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.sadend_animation
+FNin
+
+BL SetScreen
+BL ViewScreen
+BL SwapScreens
+
+MOV R0,#&FF
+ADR R1,evil_file
+FNldr(2,BASESCR)
+MOV R3,#0
+SWI "OS_File"           ; load animation
+
+FNldr(0,BASESCR)
+LDR R1,evil_addr
+ADD R2,R0,#40*1024
+SWI "LZWD_Decompress"   ; decrunch animation
+
+BL SwapScreens
+BL clear_wholescr
+
+LDR R12,evil_addr
+FNadd(12,&267A8-96*256)
+MOV R1,#106:MOV R2,#96:MOV R3,#32:BL draw_bande  ; draw hands without sun
+
+LDR R12,evil_addr
+MOV R1,#48:MOV R2,#56:MOV R3,#(320-112)/2:BL draw_bande     ; draw mask
+
+MOV R0,#1:BL draw_sun:BL star_pause
+MOV R0,#2:BL draw_sun:BL star_pause
+MOV R0,#0:BL draw_sun:BL star_pause
+MOV R0,#1:BL draw_sun:BL star_pause
+MOV R0,#2:BL draw_sun:BL star_pause
+MOV R0,#0:BL draw_sun:BL star_pause
+
+MOV R13,#9    ; # of  animation frames
+.loop_theend_anim
+  MOV R1,#106
+  ADR R2,Y_len_datas+9:LDRB R2,[R2,-R13]
+  ADR R3,X_len_datas+9:LDRB R3,[R3,-R13]
+  BL draw_bande
+
+  CMP R13,#7:MOVEQ R1,#0:MOVEQ R2,#8:SWIEQ "Sou_MakeSample" ;BOOM!
+
+ BL star_pause
+SUBS R13,R13,#1:BNE loop_theend_anim
+
+ BL star_pause
+
+ ADR R0,sadend_message
+ MOV R2,#244
+ MOV R3,#41
+ BL  send_text
+
+ BL mouse_flush
+
+.wait_sad_click
+ BL star_pause
+ FNmouse
+ CMP R2,#0:BEQ wait_sad_click
+
+ BL SwapScreens
+
+FNout
+
+.happy_file FNstring("<Alde$Dir>.happyend")
+.evil_file  FNstring("<Alde$Dir>.animation")
+.evil_addr  EQUD evil_data    ; too far
+
+.Y_len_datas
+ EQUB 92
+ EQUB 102
+ EQUB 102
+ EQUB 102
+ EQUB 102
+ EQUB 102
+ EQUB 97
+ EQUB 97
+ EQUB 96
+ALIGN
+
+.X_len_datas
+ EQUB (320-168)/2
+ EQUB (320-136)/2
+ EQUB (320-112)/2
+ EQUB (320-120)/2
+ EQUB (320-128)/2
+ EQUB (320-192)/2
+ EQUB (320-216)/2
+ EQUB (320-208)/2
+ EQUB (320-256)/2
+ALIGN
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.test_starter     ; input R0=sun phase=[0..2]
+FNin
+
+  BL draw_sun
+  BL star_pause
+
+  FNadr(0,prot_ask_str)
+  MOV R2,#212
+  MOV R3,#47
+  BL CentredString
+
+  FNadr(0,prot_pos_str)
+  MOV R2,#224
+  BL CentredString
+
+ ADR R4,transformers
+ LDMIA R4,{R0-R3}
+ FNldr(5,store_code_addr)
+ EOR R0,R0,R4
+ EOR R1,R1,R4
+ EOR R2,R2,R4
+ EOR R3,R3,R4
+ STMIA R5,{R0-R3}
+ EOR R1,R1,R4     ; conneries
+ EOR R2,R2,R4
+
+.store_code
+ BL draw_bande    ; conneries
+ BL draw_sun
+ BL wimper
+ BL test_starter
+
+ STMIA R5,{R4-R7}
+
+ CMP R2,#&00:BNE quit_starter
+ CMP R2,#&FF:BEQ quit_starter
+ CMP R1,#13    ; return
+  MOVEQ R2,#4
+  FNexitEQ
+ CMP R1,#127   ; delete
+  BNE no_delete_key
+   LDR   R4,prot_curr_pos
+   SUBS  R4,R4,#1
+   ADRPL R3,prot_entry_str
+   ADDPL R3,R3,R4
+   SUBPL R3,R3,#1
+   BPL coconut
+
+.no_delete_key
+  BIC R1,R1,#32
+  CMP R1,#ASC("A"):BMI quit_starter
+  CMP R1,#ASC("Z"):BGT quit_starter
+
+  ADR R3,prot_entry_str
+  LDR R4,prot_curr_pos
+  CMP R4,#11:BPL quit_starter
+  STRB R1,[R3,R4]!
+  ADD R4,R4,#1
+.coconut
+  STR R4,prot_curr_pos
+  MOV R4,#13
+  STRB R4,[R3,#1]
+
+  ADR R0,prot_empty_str
+  MOV R2,#244
+  MOV R3,#40
+  BL CentredString
+
+  ADR R0,prot_entry_str
+  MOV R2,#244
+  BL CentredString
+
+.quit_starter
+ SWI "OS_Mouse"
+FNout
+
+FNbin
+
+.prot_curr_pos  EQUD 0
+.prot_entry_str FNstring("           ") ; max 11 char ;THIS WILL BE TESTED
+.prot_empty_str FNstring("eeeeeeeeeee")
+
+.transformers
+ MOV R0,#129      ; =129
+ SUB R1,R0,#128   ; =1
+ SUB R2,R1,R1     ; =0
+ SWI "OS_Byte"
+]
+ PROCenCode(transformers+00)
+ PROCenCode(transformers+04)
+ PROCenCode(transformers+08)
+ PROCenCode(transformers+12)
+[OPT PASS
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.draw_bande    ; input R12=read pointer ; R1=begin line ; R2=lines #
+               ; R3=delta X from margin
+
+ FNldr(4,BASESCR)
+ ADD R4,R4,R1,LSL#8
+ ADD R4,R4,R1,LSL#6
+ ADD R4,R4,#24
+
+ MOV R5,#0
+
+.loop_draw_bande
+ SUB R11,R3,#24
+.loop_draw_bande_L
+ STR R5,[R4],#4
+ SUBS R11,R11,#4:BNE loop_draw_bande_L
+
+ MOV R11,R3,LSL#1
+ RSB R11,R11,#320
+.loop_draw_bande_M
+ LDMIA R12!,{R6-R7}:STMIA R4!,{R6-R7}
+ SUBS R11,R11,#8:BNE loop_draw_bande_M
+
+ SUB R11,R3,#24
+.loop_draw_bande_R
+ STR R5,[R4],#4
+ SUBS R11,R11,#4:BNE loop_draw_bande_R
+
+ ADD R4,R4,#48
+
+SUBS R2,R2,#1:BNE loop_draw_bande
+
+ MOV R6,#0:MOV R7,#0:MOV R8,#0
+
+ MOV R2,#5*5
+.loop_some_black_lines
+ STMIA R4!,{R5-R8}:STMIA R4!,{R5-R8}:STMIA R4!,{R5-R8}:STMIA R4!,{R5-R8}
+SUBS R2,R2,#1:BNE loop_some_black_lines
+
+MOV PC,R14
+
+FNbin
+
+.draw_sun         ; input R0=phase=0,1 or 2
+ MOV R2,#120
+.draw_sun_generic ; input R2=x pos
+
+ CMP R0,#1
+ FNadr(0,soleil_data)
+ MOVPL R1,#6160 AND &FF00
+ ADDPL R1,R1,#6160 AND &FF
+ ADDEQ R0,R0,R1
+ ADDGT R0,R0,R1,LSL#1
+
+ FNldr(3,BASESCR)
+ FNadd(3,120*320)
+ ADD R3,R3,R2
+
+ MOV R2,#77
+.loop_draw_sun
+ LDMIA R0!,{R4-R8}:STMIA R3!,{R4-R8}
+ LDMIA R0!,{R4-R8}:STMIA R3!,{R4-R8}
+ LDMIA R0!,{R4-R8}:STMIA R3!,{R4-R8}
+ LDMIA R0!,{R4-R8}:STMIA R3!,{R4-R8}
+ ADD R3,R3,#320-80
+
+SUBS R2,R2,#1:BNE loop_draw_sun
+MOV PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.star_pause    ; input R13=how much
+FNin
+ BL fullStars:BL fullStars
+ BL fullStars:BL fullStars
+ BL fullStars:BL fullStars
+ BL fullStars:BL fullStars
+FNout
+
+FNbin
+
+]
+=0
+
+DEFPROCenCode(Q%)
+!(Q%+O%-P%)=(!(Q%+O%-P%)) EOR transformers
+ENDPROC

@@ -1,0 +1,142 @@
+REM >MASTER.FNboom3
+REM written by P Baerlocher
+REM last version : 1er janvier 93
+
+REM Ces routines creent des particules en fonction d'un objet
+REM statique(BoomObj) ou dynamique(BoomDinamic) qu'on veut
+REM faire exploser
+__________________________________________________________________________
+
+DEFFNboom
+eod=65536
+[OPT PASS
+
+.BoomObj               ; input R1,R2=(x,y) in land
+FNadr(10,myScape+128*128*2)
+AND R1,R1,#127:AND R2,R2,#127
+ADD R10,R10,R1:LDRB R0,[R10,R2,LSL#7]!
+TST R0,#1:MOVEQ PC,R14   ; no obj here! (or dead one)
+
+FNin
+
+ADD R11,R0,#1:STRB R11,[R10]  ; transform object from alive to dead
+SUB R10,R10,#128*128*2
+LDRB R10,[R10] ; read high
+ADD R10,R10,R10,ASR#1      ; x1.5
+
+MOV R0,R0,LSR#1:MOV R5,R2:BL boom_rawmat
+MOV R0,R0,LSL#1:ADD R0,R0,#1     ; restore R0 as on myScape(for ReadOA)
+
+MOV R1,R1,LSL#5:MOV R2,R5,LSL#5  ; in atom units
+ADR R14,baricentre:STMIA R14,{R1,R2,R10}
+
+BL ReadObjectAddress:ADD R7,R0,#8
+FNadr(10,buf2Dobj):SUB R10,R10,R7
+
+LDR R0,[R7,#-8]:ADD R7,R7,R0,LSR#22 ;go directly to surface definition
+
+.wrtBm
+LDR R0,[R7],#4:CMP R0,#eod:BEQ endBm
+TST R0,#%1<<30:ADDNE R7,R7,#8:BNE wrtBm
+
+MOV R1,R7,LSL#31
+AND R0,R0,#&FF             ;7
+MOV R0,R0,LSL#8:ADD R0,R0,#15:SUB R0,R0,R1,LSR#31   ; # de phases
+
+LDMIA R7!,{R1,R2,R3,R4}:ADD R7,R7,#12  ; load and skip light
+SUB R1,R1,R10:SUB R2,R2,R10:SUB R3,R3,R10:SUB R4,R4,R10
+
+LDMIA R4,{R4,R5,R6}
+LDMIA R3,{R11,R12,R14}
+ ADD R4,R4,R11:ADD R5,R5,R12:ADD R6,R6,R14
+LDMIA R2,{R11,R12,R14}
+ ADD R4,R4,R11:ADD R5,R5,R12:ADD R6,R6,R14
+LDMIA R1,{R11,R12,R14}
+ ADD R4,R4,R11:ADD R5,R5,R12:ADD R6,R6,R14   ; moyenne coords
+
+ADR R14,baricentre:LDMIA R14,{R1-R3}
+ADD R1,R1,R4,ASR#2
+ADD R2,R2,R5,ASR#2
+ADD R3,R3,R6,ASR#2
+MOV R4,R4,ASL#15:MOV R5,R5,ASL#15:MOV R6,R6,ASL#15 ; speed
+ BL InsertParticle
+
+B wrtBm
+
+.endBm
+
+MOV R0,#8:ORR R0,R0,#&FF<<8  ; insert Explosion
+ADR R1,baricentre:LDMIA R1,{R1-R3}:ADD R3,R3,#20
+
+LDR R5,rnd_boom:ADD R5,R5,R5,ROR#1:EOR R5,R5,R5,ROR#13:STR R5,rnd_boom
+MOV R4,R5,ASR#7:ADD R5,R5,R5,ROR#1:MOV R5,R5,ASR#7:MOV R6,#8<<20
+BL InsertParticle
+
+ADR R1,baricentre:LDMIA R1,{R1-R3}:ADD R3,R3,#20
+MOV R14,R4:RSB R4,R5,#0:MOV R5,R14:MOV R6,#6<<20
+BL InsertParticle
+
+ADR R1,baricentre:LDMIA R1,{R1-R3}:ADD R3,R3,#20
+RSB R4,R4,#0:RSB R5,R5,#0
+ SUB R0,R0,#1 ; some dephasage in animation
+BL InsertParticle
+
+ADR R1,baricentre:LDMIA R1,{R1-R3}:ADD R3,R3,#20
+MOV R14,R4:MOV R4,R5:RSB R5,R14,#0:MOV R6,#5<<20
+BL InsertParticle
+
+ADR R1,baricentre:LDMIA R1,{R1-R3}:ADD R3,R3,#20
+RSB R4,R4,#0:RSB R5,R5,#0:MOV R6,#7<<20
+BL InsertParticle
+
+FNbeep(0,18)
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.BoomDinamic  ; (R1,R2,R3)=32-bit coords
+FNin          ; could be useful for other effects!(not only dinamics)
+
+MOV R0,#&FF00:ORR R0,R0,#12
+
+MOV R7,R1,LSR#20:MOV R8,R2,LSR#20:MOV R9,R3,LSR#20 ; remember the position
+
+                           BL rndExpl
+              SUB R0,R0,#1:BL rndExpl
+              SUB R0,R0,#1:BL rndExpl
+              SUB R0,R0,#1:BL rndExpl
+              SUB R0,R0,#1:BL rndExpl
+                          :BL rndExpl
+              SUB R0,R0,#1:BL rndExpl
+                          :BL rndExpl
+              SUB R0,R0,#1:BL rndExpl
+FNbeep(0,14)
+
+FNout
+
+.rndExpl
+ MOV R1,R7:MOV R2,R8:MOV R3,R9
+
+ LDR R6,rnd_boom
+ ADD R6,R6,R6,ROR#3:EOR R6,R6,R6,ROR#17
+ STR R6,rnd_boom
+ AND R4,R6,#&0000FF:SUB R4,R4,#128<<00
+ AND R5,R6,#&00FF00:SUB R5,R5,#128<<08
+ AND R6,R6,#&FF0000:SUB R6,R6,#128<<16
+
+ MOV R4,R4,LSL#16-00
+ MOV R5,R5,LSL#16-08
+ MOV R6,R6,LSL#16-16
+B InsertParticle  ; do particle with a (R4,R5,R6) random vector
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.rnd_boom EQUD -TIME
+
+.baricentre EQUD 0:EQUD 0:EQUD 0
+
+FNbin
+
+]
+=0

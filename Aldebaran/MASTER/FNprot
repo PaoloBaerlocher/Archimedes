@@ -1,0 +1,303 @@
+REM >MASTER.FNprot
+END
+__________________________________________________________________________
+
+DEFFNprot_flyback
+[OPT PASS
+
+.cs_2begin
+
+.fly_value              ; output R1
+ SWI "OS_EnterOS"
+ MOV R1,R1,LSR#24
+ ADD R2,R1,#1
+ MOV R3,#0
+ MOV R4,#&32
+.loop_fly_value
+ LDR R0,[R3,R4,LSL#20]
+ TST R0,#&80
+ ADD R1,R1,#1
+ BNE loop_fly_value
+ SUB R1,R1,R2
+ TEQP PC,#0
+ MOV R0,R0
+ CMP R1,#512:BMI fly_value
+MOVS PC,R14
+
+.cs_2end
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNcheck
+ cs_count%+=1
+ cs%=cs_count%
+ check_routines(cs_count%)=P%
+CASE cs_count% OF
+ WHEN  1: =FNchecksum_instance(cs_1begin,cs_1end, bind_exit_mainship)
+ WHEN  2: =FNchecksum_instance(cs_2begin,cs_2end, bind_destroyed_FL)
+ WHEN  3: =FNchecksum_instance(cs_3begin,cs_3end, bind_exit_zarchscape)
+ WHEN  4: =FNchecksum_instance(cs_4begin,cs_4end, bind_exit_planet)
+ WHEN  5: =FNchecksum_instance(cs_5begin,cs_5end, mouse_flush)
+ WHEN  6: =FNchecksum_instance(cs_6begin,cs_6end, add_time)
+ OTHERWISE : ERROR " ### ERROR : too many check_sums"
+ENDCASE
+=0
+
+DEFFNcheck_checksum(target%)
+ ccs_count%+=1
+ cs%=ccs_count%+cs_num%
+ IF ccs_count%>cs_num% ERROR " ### ERROR : too many check_check_sums"
+ =FNchecksum_instance(check_routines(ccs_count%),check_routines(ccs_count%)+4*19,target%)
+
+DEFFNchecksum_instance(from%,to%,target%)
+
+ delta%=to%-from%
+
+ reg1%=RND(4)
+ reg0%=reg1%+3
+ reg2%=8+RND(3)
+ reg3%=reg2%+1
+
+IF (O% AND 8)=0 THEN =FNch1(from%,to%,target%) ELSE =FNch2(from%,to%,target%)
+
+DEFFNch1(from%,to%,target%)
+ IF PASS=PASStwo THEN PRINT " ### NOTE : ch1 used"
+[OPT PASS
+
+ FNadr(reg0%,from%)
+ MOV reg1%,#delta%*256
+ MOV reg3%,reg0%,LSL#30
+.loop_checksum
+  SUBS reg1%,reg1%,#256<<2
+  LDR reg2%,[reg0%],#4
+  ADD reg3%,reg2%,reg3%,ROR reg2%
+.addr_to_link
+  FNfullmov(reg2%,FNprot_calc_checksum(from%,to%))
+ SUBNE PC,PC,#4*9
+ CMP reg3%,reg2%
+ FNfullmov(reg2%,&EA000000+(protection_bad_entry-target%-8)/4)  ; branch
+ FNsetflag("NE")
+ FNstr(reg2%,reg1%,target%)
+]
+ PROCprot_link(addr_to_link,reg2%,from%,to%)
+=0
+
+DEFFNch2(from%,to%,target%)
+ IF PASS=PASStwo THEN PRINT " ### NOTE : ch2 used"
+[OPT PASS
+
+ FNadr(reg0%,from%)
+ MOV reg3%,#0
+ MOV reg1%,#delta%/4
+.loop_checksum
+  SUBS reg1%,reg1%,#1
+  LDMIA (reg0%)!,{reg2%}
+  ADD reg3%,reg2%,reg3%,ROR reg2%
+ SUBNE PC,PC,#4*5
+.addr_to_link
+ FNfullmov(reg2%,FNprot_calc_checksum(from%,to%))
+ CMP reg3%,reg2%
+  LDRNE reg3%,[PC]
+  ADDEQ PC,PC,#12
+   EQUD &0A000000+(protection_bad_entry-target%-8)/4  ; branch
+  ORRNE R3,R3,#&E<<28
+ FNstr(reg3%,reg1%,target%)
+]
+ PROCprot_link(addr_to_link,reg2%,from%,to%)
+=0
+
+DEFFNprot_calc_checksum(start%,end%)
+V%=0
+FOR through%=(start%+delta_PO%) TO (end%+delta_PO%)-4 STEP 4
+ V%=(!through%)+FNror(V%,!through%)
+NEXT
+=V%
+
+DEFPROCprot_link(address%,reg%,from%,to%)
+ prot_addr_code(cs%,0)=address%+delta_PO%
+ prot_addr_code(cs%,1)=reg%
+ prot_addr_code(cs%,2)=from%
+ prot_addr_code(cs%,3)=to%
+ENDPROC
+
+DEFPROCprot_new_addr_code
+ FOR t%=1 TO cs_count%+ccs_count%
+  PROCnew_link(t%)
+ NEXT t%
+ PRINT " ### NOTE : "(cs_count%+ccs_count%)" checksums linked"
+ENDPROC
+
+DEFPROCnew_link(through%)
+
+  O%   =prot_addr_code(through%,0)
+  P%   =O%-delta_PO%
+  reg% =prot_addr_code(through%,1)
+  from%=prot_addr_code(through%,2)
+  to%  =prot_addr_code(through%,3)
+
+  [OPT PASStwo
+   FNfullmov(reg%,FNprot_calc_checksum(from%,to%))
+  ]
+
+ENDPROC
+__________________________________________________________________________
+
+DEFFNprot_messages
+[OPT PASS
+.abort_game_message FNstring("ABORT k PIRATED")
+.prot_ask_str       FNstring("PLEASE ENTER THE WORD AT")
+.prot_pos_str       FNstring("PAGE xx LINE xx WORD xx")
+]
+=0
+__________________________________________________________________________
+
+DEFFNprot_matrix_coder
+REM input $prot_entry_str , output !prot_value
+[OPT PASS
+
+.cs_4begin
+
+.eval_entry_matrix
+FNin
+    adr r0,wordout : FNadr(4,prot_entry_str)
+    mov r1,#0 : mov r2,#0
+    .scale_loop
+      ldrb r3,[r4,r1]
+      cmp r3,#ASC("A") : movlt r1,#0 : ldrltb r3,[r4,r1]
+      sub r3,r3,#ASC("A") : mov r3,r3,lsl#3 : add r3,r3,#35
+      strb r3,[r0,r2]
+    add r1,r1,#1 : add r2,r2,#1:cmp r2,#16
+    bne scale_loop
+
+    adr r1,matrix1 : adr r8,matrix2
+
+    ldmia r0,{r2-r5}
+    str r2,[r1,#16] : str r3,[r1,#28]
+    str r4,[r1,#40] : str r5,[r1,#52]
+
+    mov r7,#4
+    .repeat_add
+      add r14,r1,#16 : ldmia r14,{r0,r2-r6,r9-r12}
+      str r0,[r1,#12]:str r0,[r1,#20]:str r0,[r1,#64]
+      str r4,[r1,#24]:str r4,[r1,#32]
+      str r9,[r1,#36]:str r9,[r1,#44]
+      str r12,[r1,#48]:str r12,[r1,#56]:str r12,[r1,#4]
+
+      mov r2,#15
+      .add_loop
+        mov r3,r2,lsr#2:mov r4,r3,lsl#3:add r4,r4,r3,lsl#2:add r4,r4,#16
+        and r3,r2,#%11 : add r3,r3,r4
+
+        ldrb r5,[r1,r3] : add r4,r1,r3
+        ldrb r6,[r4,#-12]: add r5,r5,r6
+        ldrb r6,[r4,#12] : add r5,r5,r6
+        ldrb r6,[r4,#-1] : add r5,r5,r6
+        ldrb r6,[r4,#1]  : add r5,r5,r6
+        mov r6,r5,lsr#8:bic r5,r5,#&ff<<8
+        add r5,r5,r6:add r5,r5,r5,lsr#8
+        strb r5,[r8,r3]                    ; cycle inc of 9th bit
+
+      subs r2,r2,#1
+      bne add_loop
+
+      eor r8,r8,r1 : eor r1,r1,r8 : eor r8,r8,r1
+    subs r7,r7,#1
+    bne repeat_add
+
+    ldrb r2,[r1,#29]
+    ldrb r3,[r1,#30] : add r2,r2,r3,lsl#8
+    ldrb r3,[r1,#41] : add r2,r2,r3,lsl#16
+    ldrb r3,[r1,#42] : add r2,r2,r3,lsl#24
+
+    FNstr(2,1,prot_value)
+
+FNout
+
+.cs_4end
+
+FNbin
+
+  .wordout
+    equs STRING$(16,CHR$0)
+  .matrix1
+    equs STRING$(72,CHR$0)
+  .matrix2
+    equs STRING$(72,CHR$0)
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNprot_position_table
+[OPT PASS
+.pos_table    FNload("ZARCH_TWO.IndexTab2")
+]
+=0
+
+DEFFNprot_matrix_table
+[OPT PASS
+.matrix_table FNload("ZARCH_TWO.CodeTab2")
+]
+=0
+
+DEFFNprot_set_pos_string
+[OPT PASS
+
+.cs_5begin
+
+.set_pos_string
+FNin
+ BL fly_value
+ SWI "OS_ReadMonotonicTime"
+ FNldr(2,prot_genesis_time)
+ ADD R0,R0,R1
+ ADD R0,R0,R0, ROR R1
+ ADD R0,R0,R2
+ AND R0,R0,#&FF
+ STR R0,prot_index
+
+ ADD R0,R0,R0,LSL#1
+ MOV R3,#10               ; base for base_counter
+ FNadr(6,prot_pos_str)
+ FNadr(10,pos_table)
+ LDRB R8,[R10,R0]!        ; page
+ LDRB R9,[R10,R3,LSR#3]   ; line      (R3>>3=1)
+ LDRB R10,[R10,R3,LSR#2]  ; word      (R3>>2=2)
+
+ SUB R10,R8,R10
+ MOV R2,R10
+ FNprot_convert_number(21)
+ SUB R2,R8,R9
+ FNprot_convert_number(05)
+ SUB R2,R9,R10
+ FNprot_convert_number(13)
+FNout
+
+.cs_5end
+
+.prot_index EQUD 0
+
+FNbin
+
+]
+=0
+
+DEFFNprot_convert_number(delta_str%)
+[OPT PASS
+     BL base_counter:STRB R0,[R6,#delta_str%+0]
+ ADD R0,R2,#ASC("["):STRB R0,[R6,#delta_str%+1]
+]
+=0
+
+DEFFNprot_test_entry(temp_reg1%,temp_reg2%)
+[OPT PASS
+ FNldr(temp_reg1%,prot_index)
+ FNadr(temp_reg2%,matrix_table)
+ LDR temp_reg2%,[temp_reg2%,temp_reg1%,LSL#2]
+ FNldr(temp_reg1%,prot_value)
+ SUBS temp_reg1%,temp_reg1%,temp_reg2%
+ BNE return_to_DESKTOP
+]
+=0

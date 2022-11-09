@@ -1,0 +1,394 @@
+REM >Master.FNtexture
+
+REM written by paolo baerlocher - 1992
+REM reduced and faster version (05.1992)
+
+LIBRARY "MASTER.FNadr"
+
+MODE 15:MODE 13:OFF
+
+DIM START 30000
+FOR PASS=0 TO 2 STEP 2
+P%=START
+[OPT PASS
+
+;.BASESCR EQUD &1FD8000
+
+FNtextureRoutine
+
+;.Divis
+]
+NEXT
+PRINT "LEN "Divis-BASESCR
+END
+
+DEFFNtextureRoutine
+[OPT PASS                  ;input R10=spriteAdr,R11=(0..15) nbLinesToDraw
+
+.PutTexture
+FNin
+
+STR R11,cuttedLines
+FNadr(13,Divis)
+
+CMP R4,R2:BPL noSwp1T:MOV R9,R2:MOV R2,R4:MOV R4,R9
+                     MOV R9,R1:MOV R1,R3:MOV R3,R9
+.noSwp1T
+CMP R6,R2:BPL noSwp2T:MOV R9,R2:MOV R2,R6:MOV R6,R9
+                     MOV R9,R1:MOV R1,R5:MOV R5,R9
+.noSwp2T
+CMP R6,R4:BPL noSwp3T:MOV R9,R4:MOV R4,R6:MOV R6,R9
+                     MOV R9,R3:MOV R3,R5:MOV R5,R9
+.noSwp3T
+CMP R8,R4:BPL noSwp4T:MOV R9,R4:MOV R4,R8:MOV R8,R9
+                     MOV R9,R3:MOV R3,R7:MOV R7,R9
+.noSwp4T
+CMP R3,R1:BPL noSwp5T
+                     MOV R9,R1:MOV R1,R3:MOV R3,R9
+.noSwp5T
+CMP R7,R5:BPL noSwp6T
+                     MOV R9,R5:MOV R5,R7:MOV R7,R9
+
+.noSwp6T
+
+SUBS R9,R6,R2:BLE nextT     ; zero lines   (R9= delta Y)
+
+SUBS R11,R5,R1          ; dx AC
+ADDPL R11,R13,R11,LSL#2
+SUBMI R11,R13,R11,LSL#2
+LDR R11,[R11,R9,LSL#9]  ; dy AC
+ RSBMI R11,R11,#640<<16
+
+SUBS R12,R7,R3          ; dx BD
+ADDPL R12,R13,R12,LSL#2
+SUBMI R12,R13,R12,LSL#2
+LDR R12,[R12,R9,LSL#9]  ; dy BD
+ RSBMI R12,R12,#640<<16
+
+;;;;;;Test border ;;;;;;;;;;;;;;;;
+
+CMP R2,#0:BMI nextT          ;cut by BorderUP => nop
+CMP R2,#208:CMPCC R6,#208
+CMPCC R1,#320:CMPCC R3,#320:CMPCC R5,#320:CMPCC R7,#320
+BCS clippedT
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+LDR R7,cuttedLines
+ADD R13,R13,R7,LSL#2
+ADD R13,R13,#1*512:LDR R7,[R13,R9,LSL#9]:SUB R7,R7,#320<<16  ;div Y
+MVN R6,R7,ASR#1
+
+LDR R8,BASESCR
+ADD R13,R8,R1:ADD R13,R13,R2,LSL#6:ADD R13,R13,R2,LSL#8
+
+.noclippedT
+
+SUBS R5,R3,R1
+MOVGT R2,R5,LSL#16
+MOV R1,#&8000
+MOVLE R2,#&8000
+
+B fillT  ; jump to drawing routine
+
+;;;;;;;;;;;; Clipped polygon  ;;;;;;;;;;;;;;;;;
+
+.clippedT
+LDR R7,cuttedLines
+ADD R13,R13,R7,LSL#2
+ADD R13,R13,#1*512:LDR R7,[R13,R9,LSL#9]:SUB R7,R7,#320<<16  ;div Y
+MVN R6,R7,ASR#1
+
+ADD R8,R2,R9:RSBS R8,R8,#207:ADDLES R9,R9,R8:BLE nextT ;out of VscrDOWN?
+
+LDR R8,BASESCR
+ADD R13,R8,R2,LSL#6:ADD R13,R13,R2,LSL#8
+ADD R13,R13,R1
+
+SUBS R5,R3,R1        :SUB R3,R13,R1 ; R3=guardian
+MOVGT R2,R5,LSL#16
+MOV R1,#&8000
+MOVLE R2,#&8000
+
+B fillClipT    ; jump to drawing routine
+
+;;;;;;;;;;;;;;;;;;
+; Quit the routine
+;;;;;;;;;;;;;;;;;;
+
+.nextT
+FNout            ; quitDraw
+
+.cuttedLines EQUD 0
+
+FNbin
+
+; ************ How to fill an hline
+
+.retFromClip
+SUBS R9,R9,#1:BLE nextT
+
+.fillClipT
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ MOV R0,R2,LSR#16
+ SUB R0,R0,R1,LSR#16
+
+ ADD R4,R13,R1,LSR#16
+
+ ADD R3,R3,#320 ; move guardian
+
+ ADD R6,R6,R7  ; move Y
+
+ SUBS R14,R4,R3:RSBMI R8,R14,#0:MOVPL R8,#0
+ ADDPL R14,R14,R0:SUBPLS R14,R14,#320:BPL rightClipT
+
+ SUBS R8,R0,R8:BLE retFromClip ; no point to draw?
+
+  ADD R4,R4,R0
+
+ FNadr(14,Divis)
+ ADD R14,R14,#512+4
+ LDR R0,[R14,R0,LSL#9]:SUB R0,R0,#320<<16
+
+ MOV R14,R6,LSR#16
+ ADD R14,R10,R14,LSL#4     ; the right sprite address
+
+ MOV R5,#16<<16
+
+ RSB R8,R8,#49
+ ADD R8,R8,R8,LSL#1
+ ADD PC,PC,R8,LSL#2    ;R8 x12
+ EQUS "JUMP"
+]
+FOR ecoBord%=0TO 49
+[OPT PASS
+ SUB R5,R5,R0,LSL#4
+ LDRB R8,[R14,R5,LSR#16]
+ STRB R8,[R4],#-1
+]
+NEXT
+[OPT PASS
+ B retFromClip
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.cycleFillT
+ SUBS R9,R9,#1:BLE nextT
+
+.fillT
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ MOV R0,R2,LSR#16
+ SUB R0,R0,R1,LSR#16
+
+ ADD R4,R13,R1,LSR#16 ; start fill
+
+ ADD R6,R6,R7
+ MOV R14,R6,LSR#16
+ ADD R14,R10,R14,LSL#4
+
+ADD PC,PC,R0,LSL#2
+EQUS "JUMP"
+B F1                 ; normal line filling
+B F2
+B F3
+B F4
+B F5
+B F6
+B F7
+B F8
+B F9
+B F10
+B F11
+B F12
+B F13
+B F14
+B H15                ; from here high speed line filling
+B H16
+B H17
+B H18
+B H19
+B H20
+B H21
+B H22
+B H23
+B H24
+B H25
+B H26
+B H27
+B H28
+B H29
+B H30
+B H31
+B H32
+B H33
+B H34
+B H35
+B H36
+B H37
+B H38
+B H39
+B H40
+B H41
+B H42
+B H43
+B H44
+B H45
+B H46
+B H47
+B H48
+B H49
+B H50
+
+.F1
+FNfillT(01)
+.F2
+FNfillT(02)
+.F3
+FNfillT(03)
+.F4
+FNfillT(04)
+.F5
+FNfillT(05)
+.F6
+FNfillT(06)
+.F7
+FNfillT(07)
+.F8
+FNfillT(08)
+.F9
+FNfillT(09)
+.F10
+FNfillT(10)
+.F11
+FNfillT(11)
+.F12
+FNfillT(12)
+.F13
+FNfillT(13)
+.F14
+FNfillT(14)
+
+.H15 FNoptimized(15)
+.H16 FNoptimized(16)
+.H17 FNoptimized(17)
+.H18 FNoptimized(18)
+.H19 FNoptimized(19)
+.H20 FNoptimized(20)
+.H21 FNoptimized(21)
+.H22 FNoptimized(22)
+.H23 FNoptimized(23)
+.H24 FNoptimized(24)
+.H25 FNoptimized(25)
+.H26 FNoptimized(26)
+.H27 FNoptimized(27)
+.H28 FNoptimized(28)
+.H29 FNoptimized(29)
+.H30 FNoptimized(30)
+.H31 FNoptimized(31)
+.H32 FNoptimized(32)
+.H33 FNoptimized(33)
+.H34 FNoptimized(34)
+.H35 FNoptimized(35)
+.H36 FNoptimized(36)
+.H37 FNoptimized(37)
+.H38 FNoptimized(38)
+.H39 FNoptimized(39)
+.H40 FNoptimized(40)
+.H41 FNoptimized(41)
+.H42 FNoptimized(42)
+.H43 FNoptimized(43)
+.H44 FNoptimized(44)
+.H45 FNoptimized(45)
+.H46 FNoptimized(46)
+.H47 FNoptimized(47)
+.H48 FNoptimized(48)
+.H49 FNoptimized(49)
+.H50 FNoptimized(50)
+
+.rightClipT
+ ADD R8,R14,#1
+
+ SUBS R8,R8,R0:BPL retFromClip
+
+ FNadr(14,Divis)
+ ADD R14,R14,#512+4
+ LDR R0,[R14,R0,LSL#9]:SUB R0,R0,#320<<16
+
+ MOV R14,R6,LSR#16
+ ADD R14,R10,R14,LSL#4
+
+ MOV R5,#0
+
+ ADD R8,R8,#49
+ ADD R8,R8,R8,LSL#1
+ ADD PC,PC,R8,LSL#2    ;R8 x12
+ EQUS "JUMP"
+]
+FOR ecoBord%=0TO 49
+[OPT PASS
+ ADD R5,R5,R0,LSL#4
+ LDRB R8,[R14,R5,LSR#16]
+ STRB R8,[R4],#1
+]
+NEXT
+[OPT PASS
+ B retFromClip
+]
+=0
+
+DEFFNfillT(loop%)
+
+loop%+=1
+
+c=16/loop%
+
+FOR Z%=1 TO loop%-1
+
+[OPT PASS
+ LDRB R8,[R14,#c]
+ STRB R8,[R4],#1
+]
+
+c+=16/loop%
+
+NEXT
+
+[OPT PASS
+B cycleFillT
+]
+
+=0
+
+DEFFNoptimized(C%)
+
+C%+=1
+c=16/C%
+W%=0
+
+[OPT PASS
+LDMIA R14,{R0,R3,R8,R14}
+]
+
+FOR Z%=1 TO C%-1
+
+ V%=c
+
+ Cd%=0
+ IF V%>=4 AND V%<8 Cd%=3
+ IF V%>=8 AND V%<12 Cd%=8
+ IF V%>=12 Cd%=14
+
+ IF (V% DIV 4=W% DIV 4) AND V%<>W% !O%=&E1A00420+(Cd%<<12)+Cd%:P%+=4:O%+=4
+ !O%=&E4C40001+(Cd%<<12):P%+=4:O%+=4
+
+ W%=V%
+ c+=16/C%
+
+NEXT
+
+[OPT PASS
+B cycleFillT
+]
+=0

@@ -1,0 +1,101 @@
+REM >MASTER.FNsoftWait
+END
+________________________________________________________________________
+
+DEFFNsoftWaitRoutine
+[OPT PASS
+
+.softInterrupt_STATUS EQUD 0
+
+.activate_SoftWait
+ LDR R0,softInterrupt_STATUS
+ RSBS R0,R0,#1:MOVEQS PC,R14
+ STR R0,softInterrupt_STATUS
+
+ MOV R0,#14      ; activate VSYNC event
+ MOV R1,#4
+ SWI "OS_Byte"
+
+ MOV R0,#&10     ; new vector
+ ADR R1,SoftWait
+ MOV R2,#0
+ SWI "OS_Claim"
+
+MOV PC,R14
+
+.kill_SoftWait
+ LDR R0,softInterrupt_STATUS
+ RSBS R0,R0,#1:MOVNES PC,R14
+ STR R0,softInterrupt_STATUS
+
+ MOV R0,#13      ; kill VSYNC event
+ MOV R1,#4
+ SWI "OS_Byte"
+
+ MOV R0,#&10     ; kill vector
+ ADR R1,SoftWait
+ MOV R2,#0
+ SWI "OS_Release"
+
+MOV PC,R14
+
+.reinit_SoftWait
+ SWI "OS_EnterOS"
+
+ FNadr(1,scr_num)
+ LDR R2,[R1]:RSB R3,R2,#80*1024:STR R3,[R1]  ; inverse screen
+
+ MOV R0,#&3200000    ; test flyback
+ LDR R0,[R0]
+ TST R0,#&80
+  MOVNE R2,R2,LSR#2                 ; SwapPage (Hard)
+  ADDNE R2,R2,#&3600000
+  STRNE R2,[R2]
+
+  MOVNE R0,#0
+  MVNEQ R0,#0
+  STR R0,SW_value
+
+ TEQP PC,#0
+ MOVNV R0,R0
+
+MOVS PC,R14
+
+.SW_value EQUD 0     ; flag indicating if program must wait or not
+.SW_count EQUD 0     ; used to set a min_time between frames
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.SoftWait
+CMP R0,#4:MOVNES PC,R14 ; unless right event...
+
+LDR R0,SW_count
+ADD R0,R0,#1
+STR R0,SW_count
+
+LDR R0,SW_value         ; test if right VSYNC
+CMP R0,#0:MOVEQS PC,R14
+MOV R0,#0:STR R0,SW_value
+
+FNldr(0,scr_num):RSB R0,R0,#80*1024
+
+MOV R0,R0,LSR#2         ; SwapPage (Hard)
+ADD R0,R0,#&3600000
+STR R0,[R0]
+
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.wait_mintime_sync
+ LDR R0,SW_value
+ CMP R0,#0:BNE wait_mintime_sync
+.wait_mintime
+ LDR R0,SW_count
+ CMP R0,#2:BMI wait_mintime
+ MOV R0,#0
+ STR R0,SW_count
+MOVS PC,R14
+
+]
+=0

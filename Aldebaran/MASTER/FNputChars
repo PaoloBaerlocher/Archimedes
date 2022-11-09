@@ -1,0 +1,600 @@
+REM >MASTER.FNputChars
+_____________________________________________________________________________
+
+DEFFNputChars
+SPACE_CHAR$=CHR$(65+36)
+[OPT PASS
+
+.draw_char   ; input R0=code ; R1=screen pos ; (R4,R5,R6,R7)=cols
+ SUB R0,R0,#66
+ ADD PC,PC,R0,LSL#2
+ B char_A
+ B char_B
+ B char_C
+ B char_D
+ B char_E
+ B char_F
+ B char_G
+ B char_H
+ B char_I
+ B char_J
+ B char_K
+ B char_L
+ B char_M
+ B char_N
+ B char_O
+ B char_P
+ B char_Q
+ B char_R
+ B char_S
+ B char_T
+ B char_U
+ B char_V
+ B char_W
+ B char_X
+ B char_Y
+ B char_Z
+ B char_zero
+ B char_one
+ B char_two
+ B char_three
+ B char_four
+ B char_five
+ B char_six
+ B char_seven
+ B char_eight
+ B char_nine
+ MOV PC,R14
+ MOV PC,R14
+ B char_points
+ MOV PC,R14
+ MOV PC,R14
+ MOV PC,R14
+ B char_tiret
+ MOV PC,R14
+
+.char_tiret
+ FNmid_line
+MOV PC,R14
+
+.char_points
+ STRB R6,[R1,#320*2+3]:STRB R6,[R1,#320*4+3]
+MOV R15,R14
+
+.char_zero
+ FNup_right
+ FNup_left
+ STRB R7,[R1,#320*3]:STRB R7,[R1,#320*3+6]
+ FNdown_right
+ FNdown_left
+B two_h_lines
+
+.char_one
+ STRB R4,[R1,#320*0+3]:STRB R5,[R1,#320*1+3]
+ STRB R6,[R1,#320*2+3]:STRB R7,[R1,#320*3+3]
+ STRB R6,[R1,#320*4+3]:STRB R5,[R1,#320*5+3]
+ STRB R4,[R1,#320*6+3]
+MOV R15,R14
+
+.char_two
+ FNdown_left
+ FNup_right
+B three_h_lines
+
+.char_three
+ FNup_right
+ FNdown_right
+B three_h_lines
+
+.char_four
+ STRB R6,[R1,#320*4+0]:STRB R6,[R1,#320*4+1]
+ STRB R6,[R1,#320*4+2]:STRB R6,[R1,#320*4+3]
+ STRB R6,[R1,#320*4+4]:STRB R6,[R1,#320*4+5]:STRB R6,[R1,#320*4+6]
+
+ STRB R4,[R1,#320*0]:STRB R5,[R1,#320*1]
+ STRB R6,[R1,#320*2]:STRB R7,[R1,#320*3]
+ STRB R6,[R1,#320*2+3]:STRB R7,[R1,#320*3+3]
+ STRB R5,[R1,#320*5+3]:STRB R4,[R1,#320*6+3]
+MOV R15,R14
+
+.char_five
+ FNup_left
+ FNdown_right
+B three_h_lines
+
+.char_six
+ FNup_left
+ FNdown_left
+ FNdown_right
+B three_h_lines
+
+.char_seven
+ STRB R4,[R1,#0]:STRB R4,[R1,#1]:STRB R4,[R1,#2]:STRB R4,[R1,#3]
+ STRB R4,[R1,#4]:STRB R4,[R1,#5]:STRB R4,[R1,#6]
+
+ STRB R5,[R1,#320*1+6]:STRB R6,[R1,#320*2+6]:STRB R7,[R1,#320*3+6]
+ STRB R6,[R1,#320*4+6]:STRB R5,[R1,#320*5+6]:STRB R4,[R1,#320*6+6]
+MOV R15,R14
+
+.char_eight
+ FNmid_line
+B char_zero
+
+.char_nine
+ FNup_left
+ FNup_right
+ FNdown_right
+
+.three_h_lines
+ FNmid_line
+.two_h_lines
+ FNup_line
+ FNdown_line
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;; LETTERS ;;;;;;;;;;;;;;;;;;;
+
+.char_A
+ FNup_line
+B char_H
+
+.char_B
+ FNdown_right
+ FNmid_line
+
+ STRB R4,[R1,#320*0+1]
+ STRB R4,[R1,#320*0+2]
+ STRB R4,[R1,#320*0+3]
+ STRB R4,[R1,#320*0+4]
+ STRB R4,[R1,#320*0+5]
+
+ STRB R5,[R1,#320*1+5]
+ STRB R6,[R1,#320*2+5]
+B char_L
+
+.char_C
+ FNup_line
+B char_L
+
+.char_D
+ STRB R4,[R1,#320*0+1]
+ STRB R4,[R1,#320*0+2]
+ STRB R4,[R1,#320*0+3]
+ STRB R5,[R1,#320*1+4]
+ STRB R6,[R1,#320*2+5]
+ STRB R7,[R1,#320*3+6]
+ FNdown_right
+B char_L
+
+.char_E
+ FNdown_line
+B char_F
+
+.char_F
+ FNup_line
+ STRB R7,[R1,#320*3+0]:STRB R7,[R1,#320*3+1]
+ STRB R7,[R1,#320*3+2]:STRB R7,[R1,#320*3+3]
+ STRB R7,[R1,#320*3+4]
+ STRB R4,[R1,#320*6+0]
+B updown_left
+
+.char_G
+ STRB R5,[R1,#320*1+6]
+ FNdown_right
+ STRB R7,[R1,#320*3+6]
+ STRB R7,[R1,#320*3+5]
+ STRB R7,[R1,#320*3+4]
+B char_C
+
+.char_H
+ FNmid_line
+B twin_vert
+
+.char_I
+B char_one
+
+.char_J
+ FNup_line
+ FNdown_left
+ STRB R4,[R1,#320*6+0]:STRB R4,[R1,#320*6+1]
+ STRB R4,[R1,#320*6+2]:STRB R4,[R1,#320*6+3]
+B char_I
+
+.char_K
+ STRB R4,[R1,#320*0+0]
+ STRB R7,[R1,#320*3+0]
+ STRB R4,[R1,#320*6+0]
+
+ STRB R7,[R1,#320*3+1]
+ STRB R7,[R1,#320*3+2]
+ STRB R7,[R1,#320*3+3]
+
+ STRB R4,[R1,#320*0+6]
+ STRB R5,[R1,#320*1+5]
+ STRB R6,[R1,#320*2+4]
+ STRB R6,[R1,#320*4+4]
+ STRB R5,[R1,#320*5+5]
+ STRB R4,[R1,#320*6+6]
+B updown_left
+
+.char_L
+ STRB R7,[R1,#320*3]
+ STRB R4,[R1,#320*0]
+ FNdown_line
+B updown_left
+
+.char_M
+ FNup_left
+ FNup_right
+ FNdown_left
+ FNdown_right
+ FNdouble_mid
+ FNdouble_down
+B char_Y_high
+
+.char_N
+ STRB R5,[R1,#320*1+1]
+ STRB R6,[R1,#320*2+2]
+ STRB R7,[R1,#320*3+3]
+ STRB R6,[R1,#320*4+4]
+ STRB R5,[R1,#320*5+5]
+.twin_vert
+ FNup_right
+ FNdown_right
+ FNdouble_mid
+ FNdouble_down
+ FNdouble_up
+B updown_left
+
+.char_O
+B char_zero
+
+.char_P
+ FNup_right
+ FNup_line
+ FNmid_line
+ STRB R4,[R1,#320*6+0]
+.updown_left
+ FNup_left
+ FNdown_left
+MOV PC,R14
+
+.char_Q
+ STRB R5,[R1,#320*5+5]
+B char_O
+
+.char_R
+ STRB R6,[R1,#320*4+4]
+ STRB R5,[R1,#320*5+5]
+ STRB R4,[R1,#320*6+6]
+B char_P
+
+.char_S
+B char_five
+
+.char_T
+ FNup_line
+B char_one
+
+.char_U
+ FNup_right
+ FNdown_right
+ STRB R7,[R1,#320*3+6]
+ STRB R4,[R1,#320*0+6]
+B char_L
+
+.char_V
+ FNdouble_up
+ FNup_left
+ FNup_right
+ STRB R7,[R1,#320*3+0]:STRB R7,[R1,#320*3+6]
+ STRB R6,[R1,#320*4+1]:STRB R6,[R1,#320*4+5]
+ STRB R5,[R1,#320*5+2]:STRB R5,[R1,#320*5+4]
+ STRB R4,[R1,#320*6+3]
+MOV PC,R14
+
+.char_W
+ STRB R7,[R1,#320*3+3]
+ STRB R6,[R1,#320*4+2]:STRB R6,[R1,#320*4+4]
+ STRB R5,[R1,#320*5+1]:STRB R5,[R1,#320*5+5]
+B twin_vert
+
+.char_X
+ STRB R4,[R1,#320*6+0]:STRB R4,[R1,#320*6+6]
+ STRB R5,[R1,#320*5+1]:STRB R5,[R1,#320*5+5]
+ STRB R6,[R1,#320*4+2]:STRB R6,[R1,#320*4+4]
+B char_Y_high
+
+.char_Y
+ STRB R6,[R1,#320*4+3]
+ STRB R5,[R1,#320*5+3]
+ STRB R4,[R1,#320*6+3]
+.char_Y_high
+ STRB R4,[R1,#320*0+0]:STRB R4,[R1,#320*0+6]
+ STRB R5,[R1,#320*1+1]:STRB R5,[R1,#320*1+5]
+ STRB R6,[R1,#320*2+2]:STRB R6,[R1,#320*2+4]
+ STRB R7,[R1,#320*3+3]
+MOV PC,R14
+
+.char_Z
+ STRB R5,[R1,#320*1+5]
+ STRB R6,[R1,#320*2+4]
+ STRB R7,[R1,#320*3+3]
+ STRB R6,[R1,#320*4+2]
+ STRB R5,[R1,#320*5+1]
+B two_h_lines
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; fist of all,the very useful function LEN(S$)
+
+.len_string ; input R0=string pointer ; output R4 (uses R5)
+ MOV R4,#0
+.find_length
+ LDRB R5,[R0,R4]
+ CMP R5,#13
+ ADDNE R4,R4,#1
+ BNE find_length
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Input (R1,R2)=(x,y)
+;       R3=colour(0..47)
+;       R4=character code
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.PutChar
+MOV R10,#9             ; # of lines to draw
+
+CMP R2,#000    :ADDMI R10,R10,R2
+CMPPL R2,#255-9:SUBPL R10,R10,R2:ADDPL R10,R10,#255-9
+
+CMP R10,#0:MOVMI PC,R14 ; no lines to draw
+
+SUBS R4,R4,#65:MOVMI PC,R14
+FNadr(11,VegaChars)
+ADD R11,R11,R4,LSL#7
+SUB R11,R11,R4,LSL#3    ; start chars address
+
+FNldr(12,BASESCR)
+ADD R12,R12,R1
+ADD R12,R12,R2,LSL#8
+ADD R12,R12,R2,LSL#6
+
+FNadr(8,MegaShades+44)
+ADD R9,R3,R3,LSL#1
+ADD R9,R8,R9,LSL#5     ; start colour address
+
+CMP R1,#320:MOVPL PC,R14
+CMP R1,#316:BPL putOne
+CMP R1,#312:BPL putTwo
+CMP R1,#0   :BPL putThree_nobound
+
+SUB R12,R12,R1 ; begin from border
+
+ADD R11,R11,#4
+CMN R1,#4   :BPL putTwo
+ADD R11,R11,#4
+CMN R1,#8   :BPL putOne
+MOV PC,R14
+
+.putThree_nobound
+TST R1,#2:BEQ putThree
+BIC R12,R12,#1    ; unset bound bits
+
+.putThree_pixel
+CMP R10,#6
+ LDRPL R8,[R9],#8
+ LDRMI R8,[R9],#-8
+
+ LDMIA R11!,{R5-R6,R13}
+ AND R5,R5,R8:AND R6,R6,R8:AND R13,R13,R8
+
+ LDR R8,[R12]
+ MOV R4,R5,LSL#16
+ ORR R4,R4,R8,LSR#16
+
+ MOV R5,R5,LSR#16
+ ORR R5,R5,R6,LSL#16
+
+ MOV R6,R6,LSR#16
+ ORR R6,R6,R13,LSL#16
+
+ LDR R8,[R12,#12]
+ MOV R13,R13,LSR#16
+ ORR R13,R13,R8,LSL#16
+
+ STMIA R12,{R4-R6,R13}:ADD R12,R12,#320
+
+SUBS R10,R10,#1:BPL putThree_pixel
+MOV PC,R14
+
+.putThree
+CMP R10,#6
+ LDRPL R8,[R9],#8
+ LDRMI R8,[R9],#-8
+
+ LDMIA R11!,{R4-R6}
+ AND R4,R4,R8:AND R5,R5,R8:AND R6,R6,R8
+ STMIA R12,{R4-R6}:ADD R12,R12,#320
+
+SUBS R10,R10,#1:BPL putThree
+MOV PC,R14
+
+.putTwo
+CMP R10,#6
+ LDRPL R8,[R9],#8
+ LDRMI R8,[R9],#-8
+
+ LDMIA R11!,{R4-R6}
+ AND R4,R4,R8:AND R5,R5,R8
+ STMIA R12,{R4-R5}:ADD R12,R12,#320
+
+SUBS R10,R10,#1:BPL putTwo
+MOV PC,R14
+
+.putOne
+CMP R10,#6
+ LDRPL R8,[R9],#8
+ LDRMI R8,[R9],#-8
+
+ LDR R4,[R11],#12
+ AND R4,R4,R8
+ STR R4,[R12],#320
+
+SUBS R10,R10,#1:BPL putOne
+MOV PC,R14
+
+.CentredString    ; input like PutString,but R1=centre instead of x=160
+ MOV R1,#160
+.GenCentredString   ; R1 is a parameter
+FNin
+ BL len_string
+ ADD R4,R4,R4,LSL#1
+ SUB R1,R1,R4,LSL#1 ; calc x
+ BL PutString
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Input R0=string pointer
+;       (R1,R2)=(x,y)
+;       R3=colour(0..47)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.PutString
+FNin2
+
+.loopPutString
+LDRB R4,[R0],#1
+CMP R4,#13:BEQ quitPutString
+
+CMP R4,#32     ; if not space...
+BLNE PutChar
+ADD R1,R1,#12  ; move x
+B loopPutString
+
+.quitPutString
+FNout2
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.leftcut_zeros    ; input R0=string pointer
+ LDRB R1,[R0]
+ CMP R1,#91:ADDEQ R0,R0,#1:BEQ leftcut_zeros
+ CMP R1,#91:SUBMI R0,R0,#1:CMP R1,#101:SUBPL R0,R0,#1 ; if 0 then show it
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\SAME ROUTINES FOR "MINICHARS" \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.GenCentredMiniString
+FNin
+ BL len_string
+ SUB R1,R1,R4,LSL#2 ; calc x
+ BL PutMiniString
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Input R0=string pointer
+;       (R1,R2)=(x,y)
+;       R3=base colour
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.PutMiniString
+FNin
+
+ ADD R4,R3,#0
+ ADD R5,R3,#1
+ ADD R6,R3,#2
+ ADD R7,R3,#3
+
+ FNldr(14,BASESCR)
+ ADD R14,R14,R1
+ ADD R14,R14,R2,LSL#8
+ ADD  R1,R14,R2,LSL#6
+
+ MOV R8,R0
+
+.loopPutMiniString
+LDRB R0,[R8],#1
+CMP R0,#13:FNexitEQ
+
+ CMP R0,#65
+ BLPL draw_char
+
+ADD R1,R1,#8   ; move x
+B loopPutMiniString
+
+FNout
+
+FNbin
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNmid_line
+[OPT PASS
+ STRB R7,[R1,#320*3+0]:STRB R7,[R1,#320*3+1]
+ STRB R7,[R1,#320*3+2]:STRB R7,[R1,#320*3+3]
+ STRB R7,[R1,#320*3+4]:STRB R7,[R1,#320*3+5]:STRB R7,[R1,#320*3+6]
+]
+=0
+
+DEFFNup_line
+[OPT PASS
+ STRB R4,[R1,#0]:STRB R4,[R1,#1]:STRB R4,[R1,#2]:STRB R4,[R1,#3]
+ STRB R4,[R1,#4]:STRB R4,[R1,#5]:STRB R4,[R1,#6]
+]
+=0
+
+DEFFNdown_line
+[OPT PASS
+ STRB R4,[R1,#320*6+0]:STRB R4,[R1,#320*6+1]
+ STRB R4,[R1,#320*6+2]:STRB R4,[R1,#320*6+3]
+ STRB R4,[R1,#320*6+4]:STRB R4,[R1,#320*6+5]:STRB R4,[R1,#320*6+6]
+]
+=0
+
+DEFFNup_right
+[OPT PASS
+ STRB R5,[R1,#320*1+6]:STRB R6,[R1,#320*2+6]
+]
+=0
+
+DEFFNup_left
+[OPT PASS
+ STRB R5,[R1,#320*1]:STRB R6,[R1,#320*2]
+]
+=0
+
+DEFFNdown_right
+[OPT PASS
+ STRB R6,[R1,#320*4+6]:STRB R5,[R1,#320*5+6]
+]
+=0
+
+DEFFNdown_left
+[OPT PASS
+ STRB R6,[R1,#320*4]:STRB R5,[R1,#320*5]
+]
+=0
+
+DEFFNdouble_mid
+[OPT PASS
+ STRB R7,[R1,#320*3+0]:STRB R7,[R1,#320*3+6]
+]
+=0
+
+DEFFNdouble_down
+[OPT PASS
+ STRB R4,[R1,#320*6+0]:STRB R4,[R1,#320*6+6]
+]
+=0
+
+
+DEFFNdouble_up
+[OPT PASS
+ STRB R4,[R1,#320*0+0]:STRB R4,[R1,#320*0+6]
+]
+=0

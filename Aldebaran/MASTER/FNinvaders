@@ -1,0 +1,705 @@
+REM >MASTER.FNinvaders
+
+REM debut de l'ecran virtuel : 68 V-pixels
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+
+LIBRARY "MASTER.FNsprite"
+LIBRARY "MASTER.FNgraf_lib"
+
+MODE 15:MODE 13:OFF
+
+DIM cde 250000
+FOR PASS=4TO 6 STEP 2
+P%=cde
+O%=cde
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.borne_data FNload("ZARCH_TWO.borne")
+
+FNspriteRoutine
+
+FNinvaders
+
+FNgraf_lib
+
+FNbin
+
+.MegaShades
+
+.get_buffer_addr
+ ADR R2,dataExp
+MOVS PC,R14
+
+.dataExp        ; only to have FNsprite working
+]
+PROCendinout
+NEXT
+
+CALL Init_StartScr
+CALL enter_invaders
+
+END
+__________________________________________________________________________
+
+DEFFNinvaders
+[OPT PASS
+
+.enter_invaders
+
+ BL mouse_mini_box
+ BL mouse_off
+
+ FNadr(0,borne_data)
+ FNldr(1,BASESCR)
+ BL get_buffer_addr
+ SWI "LZWD_Decompress"
+
+ FNldr(0,BASESCR)
+
+ MOV R12,#256
+.loop_reflect_borne
+ ADD R1,R0,#160
+ MOV R2,#160/4
+ BL invert_row
+ ADD R0,R0,#320
+ SUBS R12,R12,#1:BNE loop_reflect_borne
+
+ MOV R0,#0:BL draw_manet:MOV R0,#0:BL draw_bouton
+
+ MOV R0,#0:MOV R1,#256
+ BL CopyInOtherPage
+
+ FNcheck_checksum(add_time)
+
+ FNldr(14,invaders_scanner_card)
+ CMP R14,#0:BNE scanner_view
+
+ BL SwapVDUScreens
+ BL ViewScreen
+ BL invaders_presentation
+ BL invaders_pause
+
+ BL init_invaders
+
+.mainloop_invaders
+ BL SwapVDUScreens
+ BL draw_and_update_invaders
+ LDR R14,invaders_infos+24
+ CMP R14,#0:BLNE draw_blocks
+
+ FNmouse:MOV R1,R0,ASR#2:STR R1,ship_infos
+                         STR R2,ship_mouse
+
+ CMP R2,#%010:BEQ enter_brain ;return to calling program when MENU pressed
+
+ LDR R1,ship_mouse_xx
+ STR R0,ship_mouse_xx
+ SUBS R0,R0,R1 ; =sgn(x-xx)
+  MOVGT R0,#1
+  MVNMI R0,#0
+ BL draw_manet
+
+ BL draw_ship
+ BL draw_fires
+  LDR R2,ship_mouse:CMP R2,#4:BLEQ ship_activate_fire
+
+ BL test_if_ship_destroyed
+ CMN R0,#1:BNE no_ship_destr
+
+  FNwait
+  BL ViewScreen
+  BL init_invaders
+  MVN R0,#0
+  BL invaders_end_wave
+  BL invaders_pause
+  BL invaders_presentation
+  BL invaders_pause
+.no_ship_destr
+
+ LDR R0,ship_mouse
+ BL draw_bouton
+
+ FNwait
+ BL ViewScreen
+
+B mainloop_invaders
+
+.ship_mouse    EQUD 0
+.ship_mouse_xx EQUD 0
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.invaders_pause
+ MOV R4,#64
+.loop_invaders_pause
+ FNwait
+ SUBS R4,R4,#1:BNE loop_invaders_pause
+MOV PC,R14
+
+.invaders_cls
+ FNldr(0,BASESCR)
+ FNadd(0,320*61+68)
+
+ MOV R2,#0:MOV R3,R2:MOV R4,R2:MOV R5,R2
+
+ MOV R1,#136  ;lines
+.loop_invaders_cls
+
+ STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}
+ STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}
+ STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}:STMIA R0!,{R2-R5}:STMIA R0!,{R2-R3}
+ ADD R0,R0,#320-4*4*12+8
+
+ SUBS R1,R1,#1:BNE loop_invaders_cls
+MOV PC,R14
+
+.draw_and_update_invaders
+FNin
+
+ BL  invaders_cls
+
+ LDR R0,invaders_infos+2*4:ADD R0,R0,#8:STR R0,invaders_infos+2*4
+
+ LDR R14,invaders_infos+4*4
+ LDR R0,invaders_infos+3*4       ; higher speed if not many invaders
+ CMP R0,#16:MOVMI R14,R14,LSL#1
+
+ LDR R0,invaders_infos+0*4:ADD R0,R0,R14:STR R0,invaders_infos+0*4
+
+ MOV R10,#3    ; line number    -1
+ .lyInvaders
+ MOV R11,#7    ; coloumn number -1
+ .lxInvaders
+
+ ADR R12,invaders_status
+ ADD R12,R12,R11:LDRB R14,[R12,R10,LSL#3]!
+ CMP R14,#0:BEQ dead_invaders
+ CMP R14,#5:SUBNE R14,R14,#1
+            STRNEB R14,[R12]
+
+ STR R10,stock_R10
+ STR R11,stock_R11
+
+ MOV R0,R11,LSL#4
+ MOV R1,R10,LSL#4
+
+ LDR R14,invaders_infos+0*4:ADD R0,R0,R14
+ LDR R14,invaders_infos+1*4:ADD R1,R1,R14
+
+ CMP R0,#166:MOVCS R14,#255:STRCS R14,invaders_infos+5*4 ; border found
+ CMP R1,#096:MOVPL R14,#0  :STRPL R14,invaders_infos+6*4 ; blocks found
+ CMP R1,#127:BPL invaders_sad_end
+
+ ADD R0,R0,#78                ; centre X-screen
+
+ LDR R14,ship_fires+4
+ SUB R14,R14,#3
+ CMP R14,#130:BCS no_invaders_collision
+
+ LDR R14,ship_fires+0:SUBS R14,R14,R0:RSBMI R14,R14,#0   ; test collision
+ CMP R14,#6:BPL no_invaders_collision
+ LDR R14,ship_fires+4:SUBS R14,R14,R1:RSBMI R14,R14,#0
+ CMP R14,#8:BPL no_invaders_collision
+ MOV R14,#4:STRB R14,[R12]                               ; kill invader
+ MOV R14,#0:STR  R14,ship_fires+4                        ; abort missile
+            LDR  R14,invaders_infos+12
+            SUBS R14,R14,#1
+            BEQ  invaders_happy_end
+            STR  R14,invaders_infos+12
+.no_invaders_collision
+
+ LDRB R14,[R12]
+ FNadr(12,invaders_grf)
+ CMP R14,#3:ADDMI R12,R12,#256*11:BMI invaders_boom
+ CMP R14,#5:ADDMI R12,R12,#256*10:BMI invaders_boom
+
+ FNadr(12,invaders_grf+256)
+ ADD R12,R12,R10,LSL#9
+
+ LDR R14,invaders_infos+2*4
+ TST R14,#128:SUBEQ R12,R12,#256 ; other phase
+.invaders_boom
+ ADD R1,R1,#64                ; centre Y-screen
+
+ BL   fire_or_not
+ BLNE invader_activate_fire
+
+ MOV R2,#16/4  ; taille
+ BL PutSprite
+
+ LDR R10,stock_R10
+ LDR R11,stock_R11
+.dead_invaders
+ SUBS R11,R11,#1:BPL lxInvaders
+ SUBS R10,R10,#1:BPL lyInvaders
+
+ LDR R14,invaders_infos+5*4
+ CMP R14,#0:BLNE invaders_change_dir
+
+.end_draw_and_update_invaders
+FNout
+
+.stock_R10 EQUD 0
+.stock_R11 EQUD 0
+.rnd_data  EQUD -31284 EOR &34A12859
+
+.invaders_change_dir
+ LDR R12,invaders_infos+1*4
+ ADD R12,R12,#1               ; down 1 line
+ STR R12,invaders_infos+1*4
+
+ LDR R12,invaders_infos+4*4
+ RSB R12,R12,#0               ; invert direction
+ STR R12,invaders_infos+4*4
+
+ MOV R12,#0
+ STR R12,invaders_infos+5*4   ; unset flag "change_dir"
+MOV PC,R14
+
+.fire_or_not
+ LDR R2,rnd_data
+ ADD R2,R2,R2,ASR#1
+ EOR R2,R2,R2,ROR#17
+ STR R2,rnd_data
+ AND R2,R2,R2,ROR#5
+ TST R2,#1              ; random bit
+MOV PC,R14
+
+.draw_ship
+FNin
+ LDR R0,ship_infos
+ MOV R1,#190   ; Y pos
+ MOV R2,#16/4  ; taille
+ ADR R12,invaders_grf
+ ADD R12,R12,#256*8
+ BL PutSprite
+FNout
+
+.draw_blocks      ; draw the 3 protective blocks
+FNin
+
+ MOV R0,#112
+ MOV R1,#168
+ MOV R2,#16/4
+ ADR R12,invaders_grf
+ ADD R12,R12,#256*9
+ BL PutSprite
+
+ MOV R0,#162
+ MOV R1,#168
+ MOV R2,#16/4
+ ADR R12,invaders_grf
+ ADD R12,R12,#256*9
+ BL PutSprite
+
+ MOV R0,#212
+ MOV R1,#168
+ MOV R2,#16/4
+ ADR R12,invaders_grf
+ ADD R12,R12,#256*9
+ BL PutSprite
+
+FNout
+
+FNbin
+
+.invaders_happy_end        ; end of game (well done!)
+ BL SwapVDUScreens
+ MOV R0,#0:BL invaders_end_wave
+ BL init_invaders
+B end_draw_and_update_invaders
+
+.invaders_sad_end          ; game over
+ BL SwapVDUScreens
+ MVN R0,#0:BL invaders_end_wave
+ BL invaders_presentation
+ BL invaders_pause
+ BL init_invaders
+B end_draw_and_update_invaders
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.invaders_infos
+ EQUD 0           ; left border
+ EQUD 0           ; top  border
+ EQUD 0           ; counter for animation
+ EQUD 4*8         ; # of remaining invaders
+ EQUD 1           ; direction (-1,+1)
+ EQUD 0           ; flag "change dir" ={0,1}
+ EQUD 1           ; flag "with blocks" ={0,1}
+.ship_infos
+ EQUD 60          ; position X
+
+.init_invaders
+ ADR R0,invaders_status
+ MOV R1,#5
+ MOV R2,#4*8
+ .loop_init_invaders
+ STRB R1,[R0],#1
+ SUBS R2,R2,#1:BNE loop_init_invaders
+
+ MOV R0,#0 :STR R0,invaders_infos+0
+ MOV R0,#4 :STR R0,invaders_infos+4
+ MOV R0,#32:STR R0,invaders_infos+12
+ MOV R0,#1 :STR R0,invaders_infos+24
+ MOV R0,#60:STR R0,ship_infos
+
+ MVN R0,#255:STR R0,invaders_fires+4      ; reset fires
+             STR R0,invaders_fires+4+8
+             STR R0,invaders_fires+4+16
+             STR R0,invaders_fires+4+24
+             STR R0,invaders_fires+4+32
+
+MOV PC,R14
+
+.invaders_status  ; 1 byte for every invader
+
+ EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5 ; 4 rows
+ EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5 ; of 8 invaders
+ EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5
+ EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5:EQUB 5
+
+.draw_fires
+ ADR R0,invaders_fires
+ FNldr(1,BASESCR)
+ MOV R5,#255      ; the colour of fire
+
+ MOV R2,#5
+.loop_draw_fires
+ LDMIA R0!,{R3,R4} ; load fire particle
+
+ CMP R2,#1:ADDNE R4,R4,#2:SUBEQ R4,R4,#3  ; the direction of fire...
+
+ CMP R4,#130                  ; outside screen?
+ MVNCS R4,#255
+ STMDB R0,{R3,R4}
+ BCS no_fires
+
+ LDR R6,invaders_infos+6*4
+ CMP R6,#0:BEQ invaders_noBlock           ; is there any stop-block?
+
+ CMP R4,#167-64:BMI invaders_noBlock
+ CMP R4,#175-64:BPL invaders_noBlock
+
+ CMP R3,#104:BMI invaders_noBlock
+ CMP R3,#119:BMI invaders_Block
+ CMP R3,#154:BMI invaders_noBlock
+ CMP R3,#169:BMI invaders_Block
+ CMP R3,#204:BMI invaders_noBlock
+ CMP R3,#219:BMI invaders_Block
+
+.invaders_noBlock
+ ADD R4,R4,#64
+ ADD R3,R3,R4,LSL#8
+ ADD R3,R3,R4,LSL#6
+
+ STRB R5,[R3,R1]!    ; draw fire
+ STRB R5,[R3,#320]
+ STRB R5,[R3,#640]
+ STRB R5,[R3,#321]
+ STRB R5,[R3,#641]
+ STRB R5,[R3,#1]
+.no_fires
+ SUBS R2,R2,#1:BNE loop_draw_fires
+MOV PC,R14
+
+.invaders_Block
+MVN R4,#255:STR R4,[R0,#-4]                 ; abort fire particle
+B no_fires
+
+.ship_activate_fire
+
+ LDR R0,ship_fires+4
+ CMN R0,#256
+ LDREQ R0,ship_infos
+ SUBEQ R0,R0,#1
+ STREQ R0,ship_fires+0
+ MOVEQ R0,#130
+ STREQ R0,ship_fires+4
+MOV PC,R14
+
+.invader_activate_fire  ; input (R0,R1)=(x,y)
+ LDR R10,fires_pointer
+ ADD R10,R10,#1
+ AND R10,R10,#3
+ STR R10,fires_pointer
+
+ ADR R11,invaders_fires
+ ADD R11,R11,R10,LSL#3
+
+ LDR R2,[R11,#4]
+ CMN R2,#256:MOVNE PC,R14  ; already used
+
+ SUB R2,R1,#64
+ STMIA R11,{R0,R2}
+MOV PC,R14
+
+.test_if_ship_destroyed ; return R0={0,-1}
+
+ MVN R0,#0        ; a priori R0=FALSE
+ ADR R1,invaders_fires
+ LDR R2,ship_infos
+
+ MOV R3,#4        ; test every missile
+.loop_test_ship
+ LDMIA R1!,{R4,R5}
+ CMP R5,#126:BMI no_test_ship
+ SUBS R4,R4,R2:RSBMI R4,R4,#0
+ CMP R4,#8:MOVMI PC,R14
+.no_test_ship
+ SUBS R3,R3,#1:BNE loop_test_ship
+
+ MOV R0,#0        ; ok,pas de collision
+MOV PC,R14
+
+.fires_pointer EQUD 0
+
+.invaders_fires   ; list (Xpos,Ypos)
+ EQUD 0:EQUD -256
+ EQUD 0:EQUD -256
+ EQUD 0:EQUD -256 ; -256 <=> not activated
+ EQUD 0:EQUD -256
+.ship_fires
+ EQUD 0:EQUD -256
+
+.invaders_end_wave   ; input R0={0,-1}={good,bad}
+FNin
+
+ CMP R0,#0
+
+ SWI "OS_WriteS"
+ EQUS CHR$31+CHR$16+CHR$15
+ EQUB 0
+ ALIGN
+
+ BEQ invaders_new_game
+ SWI "OS_WriteS"
+ EQUS "GAME OVER"
+ EQUB 0
+ ALIGN
+
+B invaders_wait_a_moment
+.end_moment
+FNout
+
+.invaders_new_game
+ SWI "OS_ReadMonotonicTime"
+ TST R0,#1:BEQ invaders_exception
+
+ SWI "OS_WriteS"
+ EQUS "NEXT WAVE"
+ EQUB 0
+ ALIGN
+
+.invaders_wait_a_moment
+ MOV R10,#64
+.loop_wait_a_moment
+ MOV R0,#19:SWI "OS_Byte"
+ SUBS R10,R10,#1:BNE loop_wait_a_moment
+B end_moment
+
+.invaders_presentation
+ SWI "OS_WriteS"
+ EQUS CHR$31+CHR$10+CHR$11
+ EQUS "  PEACE AND FLOWERS"  +CHR$31+CHR$10+CHR$13
+ EQUS "by ArcAngels software"+CHR$31+CHR$10+CHR$15
+ EQUS "    co-pirat 1971"    +CHR$31+CHR$10+CHR$18
+ EQUS "     INSERT COIN"
+ EQUB 0
+ ALIGN
+MOV PC,R14
+
+.invaders_grf
+FNload("ZARCH_TWO.invad_DATA")
+
+.draw_manet_ram EQUD 0  ; to avoid discontinuity from left to right
+
+.draw_manet ; input R0=phase={-1,0,+1}
+
+FNldr(1,scr_num)
+CMP R1,#0
+LDRNE  R0,draw_manet_ram
+LDREQ  R1,draw_manet_ram
+ADDEQS R1,R1,R0
+MOVEQ  R0,#0
+STR    R0,draw_manet_ram
+
+FNldr(1,BASESCR)
+FNadd(1,320*206+140)
+
+MOV R7,#41  ; lines #
+
+CMP R0,#0:BEQ draw_centre_manet
+          BGT draw_right_manet
+.draw_left_manet
+FNin
+ ADR R0,manet_grf-8:ADD R0,R0,#41*40+8
+.loop_draw_left_manet
+ MOV R2,#32/4
+ BL invert_row
+ ADD R0,R0,#32
+ ADD R1,R1,#320-32
+SUBS R7,R7,#1:BNE loop_draw_left_manet
+FNout
+
+.draw_centre_manet
+ ADR R0,manet_grf
+.loop_draw_centre_manet
+ LDMIA R0!,{R2-R6}:STMIA R1!,{R2-R6}
+ LDMIA R0!,{R2-R6}:STMIA R1!,{R2-R6}
+ ADD R1,R1,#320-40
+SUBS R7,R7,#1:BNE loop_draw_centre_manet
+MOV PC,R14
+
+.draw_right_manet
+ ADR R0,manet_grf-8:ADD R0,R0,#41*40+8
+ ADD R1,R1,#8
+.loop_draw_right_manet
+ LDMIA R0!,{R2-R5}:STMIA R1!,{R2-R5}
+ LDMIA R0!,{R2-R5}:STMIA R1!,{R2-R5}
+ ADD R1,R1,#320-32
+SUBS R7,R7,#1:BNE loop_draw_right_manet
+MOV PC,R14
+
+FNbin
+
+.manet_grf
+FNload("ZARCH_TWO.manet_DATA") ; 2 raw sprites
+
+.draw_bouton ; input R0={0,-1}="PRESSED"
+ CMP R0,#0
+ ADR R0,boutons_grf
+ ADDNE R0,R0,#17*32
+
+ FNldr(1,BASESCR)
+ FNadd(1,320*227+256)
+
+ MOV R2,#17
+.loop_draw_bouton
+ LDMIA R0!,{R3-R10}:STMIA R1,{R3-R10}
+ ADD R1,R1,#320
+ SUBS R2,R2,#1:BNE loop_draw_bouton
+MOV PC,R14
+
+.boutons_grf
+FNload("ZARCH_TWO.but_DATA")
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.invaders_exception
+
+ SWI "OS_WriteS"
+ EQUS CHR$31+CHR$10+CHR$11
+ EQUS "LINE 25:SYNTAX ERROR"  +CHR$31+CHR$10+CHR$13
+ EQUS ">        "+CHR$8+CHR$8+CHR$8+CHR$8+CHR$8+CHR$8+CHR$8+CHR$8
+ EQUB 0
+ ALIGN
+
+ ADR R0,inv_answer
+ MOV R1,#8
+ MOV R2,#0
+ MOV R3,#255
+ SWI "OS_ReadLine"
+
+ LDR R0,inv_answer
+ LDR R1,quit_ans
+ CMP R0,R1:BEQ enter_brain
+ LDR R1,right_ans
+ CMP R0,R1:BNE invaders_exception
+
+B end_moment
+
+.inv_answer FNstring("        ")
+.right_ans  FNstring("RUN")
+.quit_ans   FNstring("QUIT")
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.scanner_view
+ BL SwapScreens
+FNmouse
+ CMP R2,#%010:BEQ enter_brain
+
+ LDR R0,scanner_value
+  CMP R2,#4:SUBEQ R0,R0,#1
+  CMP R2,#1:ADDEQ R0,R0,#1
+  AND R0,R0,#7
+ STR R0,scanner_value
+ BL draw_map
+
+ LDR R0,scanner_value
+ BL access_rawmat
+ LDR R9,[R2,#00]
+ LDR R9,[R9,#04]
+
+ MOV R0,R9:MOV R1,#160:MOV R2,#65:MOV R3,#000:BL GenCentredMiniString
+ MOV R0,R9:MOV R1,#160:MOV R2,#67            :BL GenCentredMiniString
+ MOV R0,R9:MOV R1,#161:MOV R2,#66            :BL GenCentredMiniString
+ MOV R0,R9:MOV R1,#159                       :BL GenCentredMiniString
+ MOV R0,R9:MOV R1,#160           :MOV R3,#244:BL GenCentredMiniString
+
+ MOV R12,#6
+.scanner_wait
+ FNwait:SUBS R12,R12,#1:BNE scanner_wait
+ BL ViewScreen
+B scanner_view
+
+.scanner_value EQUD 0
+
+.draw_map               ; input R0=raw code
+
+ MOV R0,R0,LSL#1  ; code for "existing" resoruce
+ ADD R0,R0,#1
+
+ FNadr(4,myScape)
+
+ MOV R11,#2*128*128
+ FNldr(12,BASESCR)
+ FNadd(12,320*64+96)
+
+ MOV R2,#0
+.loop_draw_map_y
+ MOV R3,#0
+.loop_draw_map_x
+
+  ADD R6,R2,#67   ; recenter
+  ADD R7,R3,#67
+  AND R6,R6,#127
+  AND R7,R7,#127
+
+  CMP R6,#7       ; test if base
+  CMPMI R7,#7
+  MOVMI R8,#200
+  BMI draw_map_point
+
+  ADD R7,R7,R6,LSL#7
+
+  LDRB R6,[R7,R4]!   ; =high%
+  LDRB R7,[R7,R11]   ; =obj%
+
+  CMP R7,R0:MOVEQ R8,#254:BEQ draw_map_point
+
+  LDRB  R8,[PC,R6,LSR#6]
+  MOV   PC,PC
+.map_planet_cols
+  EQUB  0
+  EQUB  8
+  EQUB  32
+  EQUB  68
+  AND R6,R6,#%00110000
+  ADD R8,R8,R6,LSR#4
+
+.draw_map_point
+  STRB R8,[R12],#1
+
+  ADD R3,R3,#1:CMP R3,#128:BNE loop_draw_map_x
+ ADD R12,R12,#320-128
+ ADD R2,R2,#1:CMP R2,#128:BNE loop_draw_map_y
+MOVS PC,R14
+
+]
+=0

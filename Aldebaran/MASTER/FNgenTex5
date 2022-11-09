@@ -1,0 +1,887 @@
+REM >MASTER.FNgenTex5
+
+LIBRARY "MASTER.FNadr"
+
+REM **************************
+REM * Version : 25 . 03 . 1992
+REM * by P Baerlocher
+
+MODE 15:MODE 13:OFF
+
+DIM cde 130000
+FOR PASS=0 TO 2 STEP 2
+P%=cde
+[OPT PASS
+
+.gogo
+EQUD 0:EQUD 0
+EQUD 0:EQUD 0
+EQUD 0:EQUD 0
+EQUD 0:EQUD 0
+
+.go
+STR R13,mymy
+STR R14,mwmw
+
+ADR R0,gogo
+LDMIA R0,{R1-R8}
+
+LDR R12,spritedataAdr   ;16x16 sprite without header
+
+BL PutGeneralTexture
+LDR R13,mymy
+LDR R15,mwmw
+
+.mymy EQUD 0
+.mwmw EQUD 0
+.spritedataAdr EQUD spritedata+256*20
+
+;.BASESCR EQUD &1FD8000
+
+FNGenTextureRoutine
+
+.spritedata
+]
+NEXT
+PRINT "LEN "spriteData-BASESCR
+OSCLI("LOAD ZARCH_TWO.TEXTOR "+STR$~spritedata)
+
+COLOUR 177
+
+REPEAT
+
+!BASESCR=&1FD8000
+
+MOUSE mx,my,mz
+
+RESTORE
+
+FOR E%=0TO 3
+READ a1%,a2%
+IF E%=0 a2%=80+20*SIN(TIME/50)
+ !(gogo+E%*8+0)=160+a1%
+ !(gogo+E%*8+4)=128+a2%
+NEXT
+
+WAIT:CLS:CALL go
+
+UNTIL FALSE
+
+END
+
+DATA -10,70
+DATA 0,0
+DATA 50,50
+DATA 50,50
+
+DEFFNr =RND(126)-RND(126)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+REM conditions d'usage
+
+REM - quadrilatere oriente' de la bonne facon
+REM - quadrilatere convexe
+REM - triangle seulement si p3=p4
+
+DEFFNGenTextureRoutine        :REM (R1,R8) x 4   and R12=spritedata
+
+IF PASS=PASSone THEN DIM noretry(4)
+
+[OPT PASS
+
+.correspondant
+EQUD 0
+EQUD 15<<16
+EQUD (15<<16)+15
+EQUD 15
+
+.adrTexture EQUD 0
+
+.PutGeneralTexture
+CMP R1,#320:CMPCS R3,#320:CMPCS R5,#320:CMPCS R7,#320:MOVCS PC,R14 ;out!
+
+STR R14,MEMO14g
+
+STR R12,adrTexture
+
+;;;;;;;;; Texture data filling ;;;;;;;;;
+
+CMP R2,R4:CMPMI R2,R6:CMPMI R2,R8:MOVMI R0,#0:BMI okLowest
+CMP R4,R6:CMPMI R4,R8:MOVMI R0,#1:BMI okLowest
+CMP R6,R8:MOVMI R0,#2:MOVPL R0,#3
+
+CMPEQ R5,R7 : SUBEQ R9,R0,#2:ADDEQ R10,R0,#1:BEQ contT  ; if triangle
+
+.okLowest
+
+SUB R9,R0,#1                           ; pred
+ADD R10,R0,#1                          ; succ
+
+.contT
+AND R9,R9,#3:AND R10,R10,#3
+
+ADR R12,correspondant
+
+;;;;;;; calcule starting points et sauve les
+
+LDR R13,[R12,R0,LSL#2]
+BIC R11,R13,#&FF:STR R11,block1:STR R11,block1+16
+MOV R11,R13,LSL#16:STR R11,block1+4:STR R11,block1+20
+
+;;;;;;; calcule finish points et sauve les
+
+LDR R13,[R12,R9,LSL#2]
+BIC R11,R13,#&FF:STR R11,block1+8
+MOV R11,R13,LSL#16:STR R11,block1+12
+
+LDR R13,[R12,R10,LSL#2]
+BIC R11,R13,#&FF:STR R11,block1+24
+MOV R11,R13,LSL#16:STR R11,block1+28
+
+;;;;;;;
+;;; recalc vector 1
+
+CMP R9,#1:SUBMI R11,R2,R4:SUBEQ R11,R4,R6:SUBGT R11,R6,R8:CMPGT R9,#2:SUBGT R11,R8,R2
+
+LDR R13,Div512Adrb:LDR R13,[R13,R11,LSL#2] ; 65536/dy
+
+LDR R11,block1+8:LDR R12,block1:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,block1+8
+
+LDR R11,block1+12:LDR R12,block1+4:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,block1+12
+
+;;; recalc vector 2
+
+CMP R10,#1:SUBMI R11,R2,R8:SUBEQ R11,R4,R2:SUBGT R11,R6,R4:CMPGT R10,#2:SUBGT R11,R8,R6
+
+LDR R13,Div512Adrb:LDR R13,[R13,R11,LSL#2] ; 65536/dy
+
+LDR R11,block1+24:LDR R12,block1:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,block1+24
+
+LDR R11,block1+28:LDR R12,block1+4:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,block1+28
+
+;;;;;; ACTIVATE BLOCK 2
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+CMP R9,#1:MOVMI R13,R2:MOVEQ R13,R4:MOVGT R13,R6:CMPGT R9,#2:MOVGT R13,R8
+CMP R10,#1:MOVMI R12,R2:MOVEQ R12,R4:MOVGT R12,R6:CMPGT R10,#2:MOVGT R12,R8
+
+CMP R13,R12:BEQ cas_special:BPL cas2_bl2
+
+.cas1_bl2 MOV R0,R9: SUB R9,R9,#1:AND R9,R9,#3    :FNcalc(9,block2,00, 0)
+          B end_bl2
+.cas2_bl2 MOV R0,R10:ADD R10,R10,#1:AND R10,R10,#3:FNcalc(10,block2,16, 1)
+          B end_bl2
+.cas_special
+           SUB R0,R9,#1:AND R0,R0,#3 ; final point
+          FNspecial(block2)
+          B end_bl3
+.end_bl2
+
+;;;;;; ACTIVATE BLOCK 3
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+CMP R9,#1:MOVMI R13,R2:MOVEQ R13,R4:MOVGT R13,R6:CMPGT R9,#2:MOVGT R13,R8
+CMP R10,#1:MOVMI R12,R2:MOVEQ R12,R4:MOVGT R12,R6:CMPGT R10,#2:MOVGT R12,R8
+
+CMP R13,R12:BPL cas2_bl3
+
+.cas1_bl3 MOV R0,R9: SUB R9,R9,#1:AND R9,R9,#3    :FNcalc(9,block3,00, 2)
+          B end_bl3
+.cas2_bl3 MOV R0,R10:ADD R10,R10,#1:AND R10,R10,#3:FNcalc(10,block3,16, 3)
+
+.end_bl3
+
+LDR R12,adrTexture        ;retrieve R12
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+LDR R13,Div512Adrb
+
+CMP R2,R4:BMI noSwp1g
+CMPEQ R1,R3:BLE noSwp1g
+                     MOV R9,R2:MOV R2,R4:MOV R4,R9
+                     MOV R9,R1:MOV R1,R3:MOV R3,R9
+
+.noSwp1g
+CMP R2,R6:BMI noSwp2g
+CMPEQ R1,R5:BLE noSwp2g
+                     MOV R9,R2:MOV R2,R6:MOV R6,R9
+                     MOV R9,R1:MOV R1,R5:MOV R5,R9
+.noSwp2g
+CMP R2,R8:BMI noSwp3g
+CMPEQ R1,R7:BLE noSwp3g
+                     MOV R9,R2:MOV R2,R8:MOV R8,R9
+                     MOV R9,R1:MOV R1,R7:MOV R7,R9
+.noSwp3g
+CMP R6,R4:BPL noSwp4g:MOV R9,R4:MOV R4,R6:MOV R6,R9
+                     MOV R9,R3:MOV R3,R5:MOV R5,R9
+.noSwp4g
+CMP R8,R4:BPL noSwp5g:MOV R9,R4:MOV R4,R8:MOV R8,R9
+                     MOV R9,R3:MOV R3,R7:MOV R7,R9
+.noSwp5g
+CMP R8,R6:BPL noSwp6g:MOV R9,R6:MOV R6,R8:MOV R8,R9
+                     MOV R9,R5:MOV R5,R7:MOV R7,R9
+.noSwp6g
+
+;;;;;;Test border ;;;;;;;;;;;;;;;;
+
+CMP R2,#208:CMPCC R8,#208
+CMPCC R1,#320:CMPCC R3,#320:CMPCC R5,#320:CMPCC R7,#320
+EORCS R12,R12,#1<<31
+
+STR R12,memoriag
+
+SUB R11,R3,R1       ; dx AB :STR R11,deltaStartg
+SUB R9,R4,R2
+LDR R9,[R13,R9,LSL#2]
+MUL R9,R11,R9
+
+CMP R2,R4:CMPEQ R2,R6:BNE nonog
+SUB R10,R5,R1:CMP R10,R11:STRGT R10,deltaStartg
+.nonog
+
+SUB R14,R5,R1          ; d AC
+SUB R10,R6,R2
+LDR R10,[R13,R10,LSL#2]
+MUL R10,R14,R10
+
+SUB R14,R7,R1         ; d AD
+SUB R11,R8,R2
+LDR R11,[R13,R11,LSL#2]
+MUL R11,R14,R11
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ADD R1,R1,R2,LSL#6:ADD R1,R1,R2,LSL#8
+
+CMP R9,R10
+BMI sel1G
+
+CMP R9,R11:BMI sel1bG
+           MOV R12,R9
+           SUB R9,R4,R2
+           SUB R0,R6,R4:STR R0,[R13,#-4]
+
+          SUB R14,R7,R3       ; d BD
+          SUB R0,R8,R4
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+          SUB R14,R5,R3       ; d BC
+          SUB R3,R6,R4
+          LDR R3,[R13,R3,LSL#2]
+          MUL R3,R14,R3
+
+
+          CMP R0,R3
+
+           BMI sel1fG
+
+   ; middle BD
+
+           STR R0,[R13,#-8]   ; pente R12
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+
+          SUB R14,R7,R5        ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+           STR R0,[R13,#-12-12] ; pente R11 last
+
+         CMP R10,R11:MOVMI R11,R10
+          STR R11,[R13,#-12]
+          BMI startDrawg
+
+           SUB R0,R8,R4:STR R0,[R13,#-4]
+           MOV R0,#0:STR R0,[R13,#-12-4]
+
+          B startDraw2g
+
+       .sel1fG
+           STR R3,[R13,#-8]   ; pente R12
+
+          SUB R14,R7,R5       ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+
+         CMP R10,R11:MOVMI R11,R10
+            STR R11,[R13,#-12]
+            STR R11,[R13,#-12-12] ; R11 last
+
+           B startDrawg
+
+.sel1bG
+           MOV R12,R11
+           SUB R9,R6,R2
+           MOV R0,#0:STR R0,[R13,#-4]
+
+           MOV R11,R10
+
+          SUB R14,R7,R5       ; dx CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+           STR R0,[R13,#-12-12]
+           STR R12,[R13,#-8-12]
+
+B startDrawg
+
+.sel1G
+
+CMP R10,R11:BMI minusg:MOV R12,R10
+
+.plusg
+CMP R9,R11:BMI sel1dG
+
+           SUB R9,R6,R2
+           MOV R0,#0:STR R0,[R13,#-4]
+
+          SUB R14,R7,R5       ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+           STR R11,[R13,#-12-12]
+
+           B startDrawg
+.sel1dG
+           MOV R11,R9
+           SUB R9,R4,R2
+
+           SUB R0,R6,R4:STR R0,[R13,#-4]
+
+          SUB R14,R7,R3       ; d BD
+          SUB R0,R8,R4
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+          SUB R14,R5,R3       ; d BC
+          SUB R3,R6,R4
+          LDR R3,[R13,R3,LSL#2]
+          MUL R3,R14,R3
+
+
+          CMP R0,R3
+
+           BMI sel1gG
+
+          STR R3,[R13,#-12]   ; pente R11
+
+          SUB R14,R7,R5       ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+          STR R0,[R13,#-12-12]   ; pente R11 last
+          STR R12,[R13,#-8-12]   ; pente R12 last
+
+          B sel1eG
+       .sel1gG
+          STR R0,[R13,#-12]         ; pente R11
+
+          STR R0,[R13,#-12-12]      ; pente R11 last
+
+          SUB R14,R7,R5       ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+          STR R0,[R13,#-8-12]       ; pente R12 last
+
+.sel1eG
+           STR R12,[R13,#-8]
+           B startDrawg
+
+.minusg
+MOV R12,R11
+CMP R9,R11:BMI sel1d2G
+
+           SUB R9,R6,R2
+           MOV R0,#0:STR R0,[R13,#-4]
+
+          SUB R14,R7,R5       ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+           STR R11,[R13,#-12-12]
+
+           B startDrawg
+.sel1d2G
+           MOV R11,R9
+           SUB R9,R4,R2
+
+          SUB R14,R7,R3       ; d BD
+          SUB R0,R8,R4
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+          SUB R14,R5,R3       ; d BC
+          SUB R3,R6,R4
+          LDR R3,[R13,R3,LSL#2]
+          MUL R3,R14,R3
+
+
+          CMP R0,R3
+
+           BMI sel1g2G
+
+          STR R3,[R13,#-12]   ; pente R11
+
+           SUB R0,R6,R4:STR R0,[R13,#-4]     ;;;
+
+          SUB R14,R7,R5       ; d CD
+          SUB R0,R8,R6
+          LDR R0,[R13,R0,LSL#2]
+          MUL R0,R14,R0
+
+
+          STR R0,[R13,#-12-12]   ; pente R11 last
+          STR R12,[R13,#-8-12]   ; pente R12 last
+
+          B sel1e2G
+       .sel1g2G
+          STR R0,[R13,#-12]         ; pente R11
+
+          STR R12,[R13,#-8]         ; pente R12
+
+          SUB R0,R8,R4:STR R0,[R13,#-4]
+          MOV R0,#0:STR R0,[R13,#-4-12]
+
+          B startDraw2g
+
+.sel1e2G
+           STR R12,[R13,#-8]
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.startDrawg
+           SUB R0,R8,R6:STR R0,[R13,#-4-12]
+.startDraw2g
+
+LDR R14,memoriag
+TST R14,#1<<31:BNE clippedg
+
+FNldr(10,BASESCR):ADD R10,R10,R1
+
+.noclippedg
+
+MOV R1,#&8000
+MOV R2,#&8000
+
+CMP R9,#0:BNE noNextg
+LDR R5,deltaStartg
+CMP R5,#0
+MOVGT R2,R5,LSL#16
+MOVMI R1,R5,LSL#16
+B nextOneg
+
+.noNextg
+
+FNstoreTexDatas(1)
+
+ADD R5,PC,#24:STR R5,returng
+.loop1g
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ ADD R10,R10,#320
+ MOV R0,R2,ASR#16
+ SUBS R0,R0,R1,ASR#16
+ BGT fillg
+SUBS R9,R9,#1:BNE loop1g
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextOneg
+FNstoreTexDatas(2)
+
+LDR R13,Div512Adrb
+
+LDR R9,[R13,#-4]!
+CMP R9,#0:BEQ nextTwoKg
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+
+ADD R5,PC,#24:STR R5,returng
+.loop2g
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ ADD R10,R10,#320
+ MOV R0,R2,ASR#16
+ SUBS R0,R0,R1,ASR#16
+ BGT fillg
+SUBS R9,R9,#1:BNE loop2g
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextTwog
+FNstoreTexDatas(3)
+.nextTwoKg
+
+LDR R13,Div512Adrb
+
+LDR R9,[R13,#-16]!
+CMP R9,#0:BEQ nextg
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+ADD R5,PC,#24:STR R5,returng
+.loop3g
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ ADD R10,R10,#320
+ MOV R0,R2,ASR#16
+ SUBS R0,R0,R1,ASR#16
+ BGT fillg
+SUBS R9,R9,#1:BNE loop3g
+
+.nextg
+LDR R15,MEMO14g  ; quitDraw
+
+;;;;;;;;;;;; Clipped polygon  ;;;;;;;;;;;;;;;;;
+
+.clippedg
+EOR R14,R14,#1<<31 ;reset the right bit
+
+FNldr(10,BASESCR):
+                ADD R7,R10,R2,LSL#8:ADD R7,R7,R2,LSL#6 : STR R7,guardiang
+                ADD R10,R10,R1
+MOV R1,#&8000
+MOV R2,#&8000
+
+CMP R9,#0:BNE noNextCg
+LDR R5,deltaStartg
+CMP R5,#0
+MOVGT R2,R5,LSL#16
+MOVMI R1,R5,LSL#16
+B nextOneCg
+
+.noNextCg
+FNstoreTexDatas(1)
+
+ADD R5,PC,#24:STR R5,returng
+.loop1Cg
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ ADD R10,R10,#320
+ MOV R0,R2,ASR#16
+ SUBS R0,R0,R1,ASR#16
+ B fillClipg
+SUBS R9,R9,#1:BNE loop1Cg
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextOneCg
+FNstoreTexDatas(2)
+
+LDR R13,Div512Adrb
+
+LDR R9,[R13,#-4]!
+CMP R9,#0:BEQ nextTwoCKg
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+ADD R5,PC,#24:STR R5,returng
+.loop2Cg
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ ADD R10,R10,#320
+ MOV R0,R2,ASR#16
+ SUBS R0,R0,R1,ASR#16
+ B fillClipg
+SUBS R9,R9,#1:BNE loop2Cg
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextTwoCg
+FNstoreTexDatas(3)
+.nextTwoCKg
+LDR R13,Div512Adrb
+
+LDR R9,[R13,#-16]!
+CMP R9,#0:BEQ nextg
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+ADD R5,PC,#24:STR R5,returng
+.loop3Cg
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ ADD R10,R10,#320
+ MOV R0,R2,ASR#16
+ SUBS R0,R0,R1,ASR#16
+ B fillClipg
+SUBS R9,R9,#1:BNE loop3Cg
+
+B nextg
+
+  ; ************ How to fill an hline with texture
+
+.block1
+ EQUD 0<<16:EQUD 0<<16 ; point 1
+ EQUD 0<<16:EQUD 0<<16 ; point 2
+ EQUD 64:EQUD 0:EQUD 0:EQUD 64
+
+.block2
+EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 64:EQUD 0:EQUD 0:EQUD 64
+
+.block3
+EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 64:EQUD 0:EQUD 0:EQUD 64
+
+ .returng EQUD 0
+ .blockToRead EQUD block1
+
+.fillg
+
+ LDR R4,blockToRead                    ; all points shifted by <<16
+                LDMIA R4,{R5,R6, R7,R8}
+                ADD R5,R5,R7:ADD R6,R6,R8
+                STMIA R4,{R5,R6}:ADD R4,R4,#16
+
+                LDMIA R4!,{R7,R8}
+                LDMIA R4,{R3,R13}
+                ADD R7,R7,R3:ADD R8,R8,R13
+                STMDB R4,{R7,R8}
+
+ LDR R13,Div512Adrb
+ LDR R13,[R13,R0,LSL#2]     ;load division
+ SUB R7,R7,R5:MOV R7,R7,ASR#4:MUL R3,R7,R13
+ SUB R8,R8,R6:MOV R8,R8,ASR#4:MUL R13,R8,R13
+
+ ADD R4,R10,R1,ASR#16 ; start fill
+
+.drawTexture
+
+.alignWord
+  TST R4,#3:BEQ entryWordFill
+  SUBS R0,R0,#1:LDRMI PC,returng
+  FNbyte(8)
+  STRB R8,[R4],#1
+  B alignWord
+
+.Tex_wordFill
+  FNword_tex(8)
+  STR R8,[R4],#4
+.entryWordFill
+  SUBS R0,R0,#4:BPL Tex_wordFill
+
+.lastBytes
+  TST R0,#3:LDREQ PC,returng
+  FNbyte(8)
+  STRB R8,[R4],#1
+  SUB R0,R0,#1
+  B lastBytes
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.fillClipg
+
+ LDR R4,blockToRead
+                LDMIA R4,{R5,R6, R7,R8}
+                ADD R5,R5,R7:ADD R6,R6,R8
+                STMIA R4,{R5,R6}:ADD R4,R4,#16
+
+                LDMIA R4!,{R7,R8}
+                LDMIA R4,{R3,R13}
+                ADD R7,R7,R3:ADD R8,R8,R13
+                STMDB R4,{R7,R8}
+
+ LDR R4,guardiang:ADD R4,R4,#320:STR R4,guardiang
+
+ LDRLE PC,returng       ; quit if R0<=0
+
+ LDR R13,Div512Adrb
+ LDR R13,[R13,R0,LSL#2]     ;load division
+ SUB R7,R7,R5:MOV R7,R7,ASR#4:MUL R3,R7,R13
+ SUB R8,R8,R6:MOV R8,R8,ASR#4:MUL R13,R8,R13
+
+ MOV R7,R4  ; =!guardiang
+
+ ADD R4,R10,R1,ASR#16 ; start fill
+
+ SUBS R7,R4,R7:BPL noLeftg    ; left margin
+ ADDS R0,R0,R7:LDRLE PC,returng:SUB R4,R4,R7
+
+.re_equil
+ ADD R5,R5,R3,ASR#12
+ ADD R6,R6,R13,ASR#12
+ ADDS R7,R7,#1:BMI re_equil
+
+.noLeftg
+ ADD R7,R7,R0
+ RSBS R7,R7,#320  ; right margin
+ ADDLES R0,R0,R7
+.okMarging
+ LDRLE PC,returng  ; out of border
+
+ FNldr(7,BASESCR)
+ SUBS R7,R4,R7:LDRMI PC,returng ; out of Vborder UP
+ CMP R7,#65*1024:BPL nextg      ; out of Vborder DOWN >> end of work
+
+B drawTexture
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.MEMO14g EQUD 0
+.Div512Adrb EQUD Div512
+.deltaStartg EQUD 0
+.memoriag EQUD 0
+.guardiang EQUD 0
+
+]
+=0
+
+DEFFNbyte(reg)
+[OPT PASS
+
+MOVS reg,R6,ASR#16
+ADD reg,R14,reg,LSL#4
+LDRB reg,[reg,R5,ASR#16]
+
+ADD R5,R5,R3,ASR#12
+ADD R6,R6,R13,ASR#12
+
+]
+=0
+
+DEFFNword_tex(reg)
+[OPT PASS
+ FNbyte(reg)
+ FNbyte(7)  :ORRPL reg,reg,7,LSL#8
+ FNbyte(7)  :ORRPL reg,reg,7,LSL#16
+ FNbyte(7)  :ORRPL reg,reg,7,LSL#24
+]
+=0
+
+DEFFNstoreTexDatas(d%)
+CASE d% OF
+WHEN 1: [OPT PASS:ADR R13,block1:STR R13,blockToRead:]
+WHEN 2: [OPT PASS:ADR R13,block2:STR R13,blockToRead:]
+WHEN 3: [OPT PASS:ADR R13,block3:STR R13,blockToRead:]
+OTHERWISE : ERROR 17," ### bad parameter"
+ENDCASE
+
+IF d%>1 THEN
+[OPT PASS             ; indication de recuperer le point precedent
+LDR R5,[R13,#0]:CMN R5,#256:SUBEQ R5,R13,#32
+                            LDMEQIA R5,{R5-R8}
+                            STMEQIA R13,{R5-R8}
+
+LDR R5,[R13,#16]:CMN R5,#256:LDMEQDB R13,{R5-R8}
+                             ADDEQ R0,R13,#16
+                             STMEQIA R0,{R5-R8}
+]
+
+ENDIF
+=0
+
+DEFFNcalc(reg,bl,del,IJ%)   :REM   bl IS block; del="indication" offset
+nodel=16-del
+[OPT PASS                        ; reg=[R9..R10]
+ MVN R11,#255:STR R11,bl+nodel
+
+FNadr(12,correspondant)
+LDR R13,[R12,R0,LSL#2]           ; change previous point (new one!)
+BIC R11,R13,#&FF:STR R11,bl+0+del
+MOV R11,R13,LSL#16:STR R11,bl+4+del
+
+LDR R13,[R12,reg,LSL#2]          ; end point now
+BIC R11,R13,#&FF:STR R11,bl+8+del
+MOV R11,R13,LSL#16:STR R11,bl+12+del
+
+CMP R0,#1:MOVMI R13,R2:MOVEQ R13,R4:MOVGT R13,R6:CMPGT R0,#2:MOVGT R13,R8
+CMP reg,#1:MOVMI R11,R2:MOVEQ R11,R4:MOVGT R11,R6:CMPGT reg,#2:MOVGT R11,R8
+
+SUBS R11,R11,R13:BGT noretry(IJ%)
+
+]
+
+IF reg=10 [OPT PASS :ADD R0,R10,#1 :] ELSE [OPT PASS :SUB R0,R9,#1 :]
+                      :REM R0 is the next point ,only to calc dy but
+[OPT PASS               ; dont move reg or R0 !!!
+
+AND R0,R0,#3
+
+CMP R0,#1:MOVMI R11,R2:MOVEQ R11,R4:MOVGT R11,R6:CMPGT R0,#2:MOVGT R11,R8
+SUBS R11,R11,R13
+
+ MOVLE R13,#0:STRLE R13,bl+8+del:STRLE R13,bl+12+del
+
+.noretry(IJ%)
+
+LDRGT R13,Div512Adrb:LDRGT R13,[R13,R11,LSL#2] ; 65536/dy
+
+LDRGT R11,bl+8+del:LDRGT R12,bl+del:SUBGT R11,R11,R12:MOVGT R11,R11,ASR#16
+MULGT R11,R13,R11:STRGT R11,bl+8+del
+
+LDRGT R11,bl+12+del:LDRGT R12,bl+4+del:SUBGT R11,R11,R12:MOVGT R11,R11,ASR#16
+MULGT R11,R13,R11:STRGT R11,bl+12+del
+
+]
+=0
+
+
+
+DEFFNspecial(bl)                 :REM bl IS block
+[OPT PASS
+
+ADR R12,correspondant
+LDR R13,[R12,R9,LSL#2]           ; starting point
+BIC R11,R13,#&FF:STR R11,bl+0
+MOV R11,R13,LSL#16:STR R11,bl+4
+
+LDR R13,[R12,R10,LSL#2]          ; starting point
+BIC R11,R13,#&FF:STR R11,bl+16
+MOV R11,R13,LSL#16:STR R11,bl+20
+
+LDR R13,[R12,R0,LSL#2]           ; end point now
+BIC R11,R13,#&FF:STR R11,bl+8:STR R11,bl+24
+MOV R11,R13,LSL#16:STR R11,bl+12:STR R11,bl+28
+
+CMP R0,#1:SUBMI R11,R2,R4:SUBEQ R11,R4,R6:SUBGT R11,R6,R8:CMPGT R0,#2:SUBGT R11,R8,R2
+
+LDR R13,Div512Adrb:LDR R13,[R13,R11,LSL#2] ; 65536/dy
+
+LDR R11,bl+8:LDR R12,bl:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,bl+8
+
+LDR R11,bl+12:LDR R12,bl+4:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,bl+12
+
+
+LDR R11,bl+8+16:LDR R12,bl+16:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,bl+8+16
+
+LDR R11,bl+12+16:LDR R12,bl+4+16:SUB R11,R11,R12:MOV R11,R11,ASR#16
+MUL R11,R13,R11:STR R11,bl+12+16
+
+]
+=0

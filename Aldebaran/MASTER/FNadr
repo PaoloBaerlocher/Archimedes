@@ -1,0 +1,226 @@
+REM >MASTER.FNadr
+
+DEFFNadd(r%,val%)
+b%=0
+ WHILE (val% AND (1<<b%))=0
+  b%+=1
+ ENDWHILE
+e%=31
+ WHILE (val% AND (1<<e%))=0
+  e%-=1
+ ENDWHILE
+
+b%=b% AND NOT 1
+
+d%=e%-b%+1
+
+[OPT PASS : ADDEQ r%,r%,#val% AND (&0000FF<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+IF d%>08 THEN [OPT PASS : ADDEQ r%,r%,#val% AND (&00FF00<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+IF d%>16 THEN [OPT PASS : ADDEQ r%,r%,#val% AND (&FF0000<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNmov(r%,val%)
+b%=0
+ WHILE (val% AND (1<<b%))=0
+  b%+=1
+ ENDWHILE
+e%=31
+ WHILE (val% AND (1<<e%))=0
+  e%-=1
+ ENDWHILE
+
+b%=b% AND NOT 1
+
+d%=e%-b%+1
+
+[OPT PASS : MOVEQ r%,#val% AND (&0000FF<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+IF d%>08 THEN [OPT PASS : ADDEQ r%,r%,#val% AND (&0000FF00<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+IF d%>16 THEN [OPT PASS : ADDEQ r%,r%,#val% AND (&00FF0000<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+IF d%>24 THEN [OPT PASS : ADDEQ r%,r%,#val% AND (&FF000000<<b%) :]:!(O%-4)=(!(O%-4))+ZF%
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNfullmov(r%,val%)
+[OPT PASS : MOVEQ r%,#val%    AND (&000000FF<<00) :]:!(O%-4)=(!(O%-4))+ZF%
+[OPT PASS : ADDEQ r%,r%,#val% AND (&0000FF00<<00) :]:!(O%-4)=(!(O%-4))+ZF%
+[OPT PASS : ADDEQ r%,r%,#val% AND (&00FF0000<<00) :]:!(O%-4)=(!(O%-4))+ZF%
+[OPT PASS : ADDEQ r%,r%,#val% AND (&FF000000<<00) :]:!(O%-4)=(!(O%-4))+ZF%
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNadr(r%,LAB%)
+
+IF main_assembly% THEN
+ IF (LAB%=sinus) OR (LAB%=sinus+256) OR (LAB%=MegaShades) OR (LAB%=buf2Dobj) OR (LAB%=Divis) OR (LAB%=myScape) OR (LAB%=myScape+16*1024) OR (LAB%=myScape+32*1024) OR (LAB%=theSkyBlue) OR (LAB%=theSkyRed) OR (LAB%=table3D) THEN
+  [OPT PASS: MOV r%,#LAB% :]
+  !(O%-4)=(!(O%-4)) OR ZF%
+  PROCresetZF
+  =0
+   ELSE
+  =FNnormadr(r%,LAB%)
+ ENDIF
+ELSE
+=FNnormadr(r%,LAB%)
+ENDIF
+__________________________________________
+
+DEFFNnormadr(r%,LAB%)
+d%=LAB%-P%
+IF ABS(d%)>256*1024-12 ERROR 1,"FNadr out of range"
+
+IF (d% AND 3)>0 THEN
+
+IF ABS(d%)>64*1024-12 ERROR 1,"FNadr (not bound) out of range"
+
+IF d%>0 THEN d%-=8:Cd%=&800000 ELSE d%=8-d%:Cd%=&400000
+!O%=ZF%+Cd%+&020F0000+(r%<<12)+(d% AND &FF):P%+=4:O%+=4
+!O%=ZF%+Cd%+&02000C00+(r%<<12)+(r%<<16)+((d% AND &FF00)>>8):P%+=4:O%+=4
+
+ELSE
+
+IF d%>0 THEN
+ d%-=8
+ [OPT PASS :ADDEQ r%,PC,#d% AND (&FF<<2):ADDEQ r%,r%,#d% AND (&FF<<10) :]
+ELSE
+ d%=8-d%
+ [OPT PASS :SUBEQ r%,PC,#d% AND (&FF<<2):SUBEQ r%,r%,#d% AND (&FF<<10) :]
+ENDIF
+
+ !(O%-4)=(!(O%-4)) OR ZF%      :REM set flag
+ !(O%-8)=(!(O%-8)) OR ZF%
+
+ENDIF
+
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNldrb(r%,LAB%)
+d%=LAB%-P%
+IF d%>0 THEN d%-=8:Cd%=&800000:Ce%=&900000 ELSE d%=8-d%:Cd%=&400000:Ce%=&100000
+!O%=ZF%+Cd%+&020F0A00+(r%<<12)+((d% AND &FF000)>>12):P%+=4:O%+=4
+!O%=ZF%+(1<<22)+Ce%+&05000000+(r%<<12)+(r%<<16)+(d% AND &FFF):P%+=4:O%+=4
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNldr(r%,LAB%)
+d%=LAB%-P%
+IF d%>0 THEN d%-=8:Cd%=&800000:Ce%=&900000 ELSE d%=8-d%:Cd%=&400000:Ce%=&100000
+!O%=ZF%+Cd%+&020F0A00+(r%<<12)+((d% AND &FF000)>>12):P%+=4:O%+=4
+!O%=ZF%+Ce%+&05000000+(r%<<12)+(r%<<16)+(d% AND &FFF):P%+=4:O%+=4
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNstr(r%,s%,LAB%)    :REM store r% with the help of s%
+d%=LAB%-P%
+IF d%>0 THEN d%-=8:Cd%=&800000:Ce%=&800000 ELSE d%=8-d%:Cd%=&400000:Ce%=&000000
+!O%=ZF%+Cd%+&020F0A00+(s%<<12)+((d% AND &FF000)>>12):P%+=4:O%+=4
+!O%=ZF%+Ce%+&05000000+(r%<<12)+(s%<<16)+(d% AND &FFF):P%+=4:O%+=4
+PROCresetZF
+=0
+__________________________________________
+
+DEFFNmodify(r%,s%,LAB%,value%)
+d%=LAB%-P%
+IF d%>0 THEN d%-=8:Cd%=&800000:Ce%=&900000 ELSE d%=8-d%:Cd%=&400000:Ce%=&100000
+!O%=ZF%+Cd%+&020F0A00+(s%<<12)+((d% AND &FF000)>>12):P%+=4:O%+=4
+!O%=ZF%+Ce%+&05000000+(r%<<12)+(s%<<16)+(d% AND &FFF)+&200000:P%+=4:O%+=4
+IF value%>0 THEN [OPT PASS : ADDEQ r%,r%,#+value% :]:!(O%-4)=(!(O%-4))+ZF%
+IF value%<0 THEN [OPT PASS : SUBEQ r%,r%,#-value% :]:!(O%-4)=(!(O%-4))+ZF%
+                 [OPT PASS : STREQ r%,[s%]        :]:!(O%-4)=(!(O%-4))+ZF%
+PROCresetZF
+=0
+
+DEFFNincr(r%,s%,LAB%) =FNmodify(r%,s%,LAB%,+1)
+DEFFNdecr(r%,s%,LAB%) =FNmodify(r%,s%,LAB%,-1)
+__________________________________________
+
+DEFFNsetflag(S$)
+CASE S$ OF
+WHEN "EQ" : ZF%=&0<<28
+WHEN "NE" : ZF%=&1<<28
+WHEN "CS" : ZF%=&2<<28
+WHEN "CC" : ZF%=&3<<28
+WHEN "MI" : ZF%=&4<<28
+WHEN "PL" : ZF%=&5<<28
+WHEN "VS" : ZF%=&6<<28
+WHEN "VC" : ZF%=&7<<28
+WHEN "HI" : ZF%=&8<<28
+WHEN "LS" : ZF%=&9<<28
+WHEN "GE" : ZF%=&A<<28
+WHEN "LT" : ZF%=&B<<28
+WHEN "GT" : ZF%=&C<<28
+WHEN "LE" : ZF%=&D<<28
+WHEN "AL" : ZF%=&E<<28
+WHEN "NV" : ZF%=&F<<28
+OTHERWISE : ERROR 1," ### ABORT : bad flag in FNsetflag"
+ENDCASE
+=0
+
+REM ZF% initialise' dans PROCinitinout
+
+DEFPROCresetZF : ZF%=&E<<28 : ENDPROC
+_________________________________________________________________________
+
+DEFFNram(Zram%)
+IF ((Zram% AND 3)=0) AND PASS=PASStwo  THEN
+ =FNzero(Zram%)     :REM FNbordel(Zram%)
+  ELSE
+ P%+=Zram%:O%+=Zram%
+ENDIF
+=0
+_________________________________________________________________________
+
+DEFFNzero(Zram%)
+FOR C%=0TO Zram%/4-1
+!O%=0:P%+=4:O%+=4
+NEXT
+=0
+_________________________________________________________________________
+
+DEFFNbordel(Zram%)
+IF Zram% MOD 4>0 THEN ERROR 1," ### ABORT : in FNbordel"
+
+FOR bordel_loop%=0 TO Zram%/4-1
+
+ r%=RND(13)-1:s%=RND(13)-1:t%=RND(4095):u%=RND(31)
+
+CASE RND(8) OF
+ WHEN 1 :[OPT PASS : MOV r%,s%,ROR#8     :]
+ WHEN 2 :[OPT PASS : ADD r%,r%,s%        :]
+ WHEN 3 :[OPT PASS : SUB r%,r%,s%        :]
+ WHEN 4 :[OPT PASS : LDRB r%,[R0],#t%    :]
+ WHEN 5 :[OPT PASS : MOVEQ PC,R14,ROR#24 :]
+ WHEN 6 :[OPT PASS : EOR r%,r%,s%        :]
+ WHEN 7 :[OPT PASS : CMP r%,#RND(255)    :]
+ WHEN 8 :[OPT PASS : RSB r%,r%,s%,LSL#u% :]
+ENDCASE
+
+IF RND(10)=1 THEN !(O%-4)=(!(O%-4)) EOR (1<<RND(31))
+
+NEXT
+=0
+_________________________________________________________________________
+
+DEFFNprot
+[OPT PASS
+
+.hache_str  ; input R0=pointer to str  ; return R1
+ MOV R14,R14,ROR#8
+ SUB R1,R1,R1
+.loop_hache
+ LDRB R13,[R0],#1
+ CMP R13,#13
+ EOR R1,R1,R13
+ MOVEQ PC,R14,ROR#24
+SUBNE PC,PC,#4*4+8      ; ???
+
+]
+
+=0

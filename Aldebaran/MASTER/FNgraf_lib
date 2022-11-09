@@ -1,0 +1,651 @@
+REM >MASTER.FNgraf_lib
+
+REM screen controller code,graphic routines and other things like:
+ REM - FNpalette
+ REM - FNload_scape
+
+END
+________________________________________________________________________
+
+DEFFNgraf_lib
+[OPT PASS
+
+ FNgraf_lib_BASESCR
+ FNgraf_lib_NOBASESCR
+
+]
+=0
+
+DEFFNgraf_lib_NOBASESCR
+[OPT PASS
+
+.CopyInOtherPage  ; R0 = start line ; R1 = lines #
+
+ FNldr(2,BASESCR) ; R2 and R3 = adresses of both screens
+ FNldr(3,StartScr)
+ CMP R2,R3
+  ADDEQ R3,R2,#80*1024
+
+ ADD R0,R0,R0,LSL#2
+ ADD R2,R2,R0,LSL#6
+ ADD R3,R3,R0,LSL#6
+
+.loop_CopyInOtherPage
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+ LDMIA R2!,{R0,R4-R12}:STMIA R3!,{R0,R4-R12}
+
+ SUBS R1,R1,#1:BNE loop_CopyInOtherPage
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.invert_row    ; input R0=start row; R1=destination row; R2=length row
+ MOV R4,#&FF                                           ;  (in words)
+ ORR R4,R4,R4,LSL#16    ; R4=&00FF00FF
+
+.invert_row_loop
+ SUBS R2,R2,#1
+ LDRPL R3,[R0,R2,LSL#2] ; read word
+
+ ANDPL R5,R4,R3,ROR#24
+ ANDPL R3,R3,R4
+ ORRPL R3,R5,R3,ROR#8
+
+ STRPL R3,[R1],#4       ; write inverted row
+ BPL invert_row_loop
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.press_button  ; for the main panel buttons  ; input R0=Xstart,R1=dir
+
+ ADR R2,main_panel   ; data block
+ FNldr(3,BASESCR)
+ ADD R3,R3,R0
+
+ LDRB R0,[R2],#1     ; x_len
+ LDRB R4,[R2],#1     ; new_col
+
+.loop_press_button
+ MOV R8,R4           ; remember the colour
+
+ LDRB R5,[R2],#1:LDRB R6,[R2],#1
+
+ ADD R5,R5,R5,LSL#2
+ ADD R5,R3,R5,LSL#6  ; screen address
+
+.move_down_again
+ LDRB R7,[R5]
+ STRB R8,[R5],#320
+ MOV  R8,R7
+ SUBS R6,R6,#1:BPL move_down_again
+
+ ADD R3,R3,R1        ; move base screen address in the right direction
+
+ SUBS R0,R0,#1:BNE loop_press_button
+MOV PC,R14
+
+;;; data block format for press_button routine:
+;;;
+;;; EQUB x_len
+;;; EQUB new_col
+;;;
+;;; REPEAT x_len TIMES [ EQUB ys
+;;;                      EQUB ye-ys ]
+
+.main_panel
+ EQUB 55
+ EQUB 9
+]
+FOR col%=0TO 24
+[OPT PASS :EQUB 226+24-col%:EQUB col%+2 :]
+NEXT
+FOR col%=0TO 12
+[OPT PASS :EQUB 226:EQUB 26 :]
+NEXT
+FOR col%=0TO 16
+[OPT PASS :EQUB 226:EQUB 25.9-col%*1.48 :]
+NEXT
+
+[OPT PASS
+
+ALIGN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.draw_window    ; input (R0,R1)=(x,y) ; (R2,R3)=(dx,dy)
+ FNldr(4,BASESCR)
+ ADD R4,R4,R0
+ ADD R4,R4,R1,LSL#8
+ ADD R4,R4,R1,LSL#6
+
+ MOV R6,#166:MOV R7,#167:MOV R8,#216:MOV R9,#217:MOV R10,#218  ; the colors
+
+ SUB R5,R2,#5
+.win1_loop
+  STRB R7 ,[R4,#320*4]
+  STRB R9 ,[R4,#320*3]
+  STRB R8 ,[R4,#320*2]
+  STRB R7 ,[R4,#320*1]
+  STRB R9 ,[R4],#1
+ SUBS R5,R5,#1:BNE win1_loop
+
+ SUB R5,R3,#5
+.win2_loop
+  STRB R6 ,[R4,#4]
+  STRB R9 ,[R4,#3]
+  STRB R8 ,[R4,#2]
+  STRB R7 ,[R4,#1]
+  STRB R10,[R4],#320
+ SUBS R5,R5,#1:BNE win2_loop
+
+ ADD R4,R4,#4
+
+ SUB R5,R2,#5
+.win3_loop
+  STRB R7 ,[R4,#320*4]
+  STRB R9 ,[R4,#320*3]
+  STRB R8 ,[R4,#320*2]
+  STRB R7 ,[R4,#320*1]
+  STRB R9 ,[R4],#-1
+ SUBS R5,R5,#1:BNE win3_loop
+
+ SUB R4,R4,#4
+ ADD R4,R4,#320*4
+
+ SUB R5,R3,#5
+.win4_loop
+  STRB R6 ,[R4,#4]
+  STRB R9 ,[R4,#3]
+  STRB R8 ,[R4,#2]
+  STRB R7 ,[R4,#1]
+  STRB R10,[R4],#-320
+ SUBS R5,R5,#1:BNE win4_loop
+
+MOV PC,R14
+
+]
+=0
+
+DEFFNgraf_lib_BASESCR
+[OPT PASS
+
+.StartScr EQUD &1FD8000 ; Adresse base de la RAM video (constante)
+.BASESCR  EQUD &1FD8000 ; variable
+.scr_num  EQUD 0        ; (page #) * 40960 = 0 or 81920
+
+.Init_StartScr
+ ADR R0,init_StartScr_block
+ ADR R1,StartScr
+ SWI "OS_ReadVduVariables"
+MOV PC,R14
+
+.init_StartScr_block EQUD 149:EQUD -1
+
+.SwapScreens
+ LDR R0,StartScr
+ LDR R1,scr_num
+ RSB R1,R1,#81920
+ STR R1,scr_num
+ ADD R0,R0,R1
+ STR R0,BASESCR
+MOVS PC,R14
+
+.SetScreen
+ LDR R0,StartScr
+ LDR R1,scr_num
+ ADD R0,R0,R1
+ STR R0,BASESCR
+MOVS PC,R14
+
+.SwapVDUScreens
+ LDR R0,StartScr
+ LDR R1,scr_num
+ RSBS R1,R1,#81920
+ STR R1,scr_num
+ ADD R0,R0,R1
+ STR R0,BASESCR
+
+ MOV R0,#112
+ MOVNE R1,#2
+ SWI "OS_Byte"
+MOVS PC,R14
+
+.ViewScreen
+ SWI "OS_EnterOS"                 ; SwapPage (Hard)
+ MOV R0,#&3600000
+ LDR R1,scr_num
+ ADD R0,R0,R1,LSR#2
+ STR R0,[R0]
+ TEQP PC,#0
+ MOVNV R0,R0
+MOVS PC,R14
+
+.ViewScreen_OS
+                                  ; SwapPage (Hard) when in OS mode
+ MOV R0,#&3600000
+ LDR R1,scr_num
+ ADD R0,R0,R1,LSR#2
+ STR R0,[R0]
+MOVS PC,R14
+
+.clear_wholescr
+LDR R0,BASESCR
+ADD R1,R0,#80*1024
+B cont_cls
+
+.clear_scr
+LDR R0,BASESCR
+ADD R1,R0,#65*1024
+.cont_cls
+ FNin
+MOV R2,#0
+MOV R3,R2
+MOV R4,R2
+MOV R5,R2
+MOV R6,R2
+MOV R7,R2
+MOV R8,R2
+MOV R9,R2
+MOV R10,R2
+MOV R11,R2
+MOV R12,R2
+MOV R13,R2
+MOV R14,R2
+
+.clearscr_loop
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}
+STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R14}:STMIA R0!,{R2-R9}
+CMP R1,R0:BGT clearscr_loop
+
+FNout
+]
+=0
+
+DEFFNwait
+[OPT PASS
+ MOV R0,#19:SWI "OS_Byte"
+]
+=0
+
+DEFFNpalette
+[OPT PASS
+
+.bright_palette
+ ADR R9,palette_1
+ B change_palette
+
+.norm_palette
+ ADR R9,palette_2
+
+.change_palette
+ SWI "OS_EnterOS"
+ MOV R0,#&3400000
+ LDMIA R9!,{R1-R7}
+ STMIA R0,{R1-R7}
+ LDMIA R9,{R1-R8}
+ STMIA R0,{R1-R8}
+ TEQP PC,#0
+ MOVNV R0,R0
+MOVS PC,R14
+
+.palette_1
+]
+ FOR C%=1 TO 15
+[OPT PASS : EQUD ((C%*4)<<24)+(C%)+((C% OR 3)<<4)+(&F00) :]
+ NEXT
+
+[OPT PASS
+.palette_2
+;EQUD (00<<24)+(0<<0)+(0<<4)+(0<<8)
+ EQUD (04<<24)+(1<<0)+(1<<4)+(1<<8)
+ EQUD (08<<24)+(2<<0)+(2<<4)+(2<<8)
+ EQUD (12<<24)+(3<<0)+(3<<4)+(3<<8)
+ EQUD (16<<24)+(4<<0)+(0<<4)+(0<<8)
+ EQUD (20<<24)+(5<<0)+(1<<4)+(1<<8)
+ EQUD (24<<24)+(6<<0)+(2<<4)+(2<<8)
+ EQUD (28<<24)+(7<<0)+(3<<4)+(3<<8)
+ EQUD (32<<24)+(0<<0)+(0<<4)+(4<<8)
+ EQUD (36<<24)+(1<<0)+(1<<4)+(5<<8)
+ EQUD (40<<24)+(2<<0)+(2<<4)+(6<<8)
+ EQUD (44<<24)+(3<<0)+(3<<4)+(7<<8)
+ EQUD (48<<24)+(4<<0)+(0<<4)+(4<<8)
+ EQUD (52<<24)+(5<<0)+(1<<4)+(5<<8)
+ EQUD (56<<24)+(6<<0)+(2<<4)+(6<<8)
+ EQUD (60<<24)+(7<<0)+(3<<4)+(7<<8)
+]
+
+=0
+
+DEFFNdefine_pointer
+[OPT PASS
+
+.mouse_colors
+SWI "OS_WriteS"
+ EQUS CHR$19+CHR$1+CHR$25+CHR$(200+32)+CHR$(060+32)+CHR$(085+32)
+ EQUS CHR$19+CHR$2+CHR$25+CHR$(200+16)+CHR$(060+16)+CHR$(085+16)
+ EQUS CHR$19+CHR$3+CHR$25+CHR$(200+00)+CHR$(060+00)+CHR$(085+00)+CHR$0
+ ALIGN
+MOVS PC,R14
+
+.mouse_normal_box
+ ADR R1,normal_box_data   :B mouse_word
+.mouse_infinite_box
+ ADR R1,infinite_box_data :B mouse_word
+.mouse_mini_box
+ ADR R1,mini_box_data     :B mouse_word
+.mouse_hori_mini_box
+ ADR R1,hori_mini_box_data:B mouse_word
+.mouse_pos_quarter
+ ADR R1,quarter_pos_data  :B mouse_word
+.mouse_norm_step
+ ADR R1,norm_step_data    :B mouse_word
+.mouse_hori_step
+ ADR R1,hori_step_data    :B mouse_word
+.mouse_vert_step
+ ADR R1,vert_step_data    :B mouse_word
+
+.mouse_word
+ MOV R0,#&15
+ SWI "OS_Word"
+MOVS PC,R14
+
+.normal_box_data
+ EQUB 1
+ EQUB &00:EQUB &00
+ EQUB &00:EQUB &00
+ EQUB &FF:EQUB &04
+ EQUB &FF:EQUB &03
+ALIGN
+
+.infinite_box_data
+ EQUB 1
+ EQUB &00:EQUB &80
+ EQUB &00:EQUB &80
+ EQUB &FF:EQUB &7F
+ EQUB &FF:EQUB &7F
+ALIGN
+
+.mini_box_data
+ EQUB 1
+ EQUB &40:EQUB &01
+ EQUB &00:EQUB &00
+ EQUB &C0:EQUB &03
+ EQUB &FF:EQUB &03
+ALIGN
+
+.hori_mini_box_data
+ EQUB 1
+ EQUB &40:EQUB &00
+ EQUB &00:EQUB &00
+ EQUB &C0:EQUB &04
+ EQUB &FF:EQUB &03
+ALIGN
+
+.quarter_pos_data ; at (640,256)
+ EQUB 3
+ EQUB &80:EQUB &02
+ EQUB &00:EQUB &01
+ALIGN
+
+.norm_step_data
+ EQUB 2
+ EQUB 2:EQUB 2
+ALIGN
+
+.hori_step_data
+ EQUB 2
+ EQUB 2:EQUB 0
+ALIGN
+
+.vert_step_data
+ EQUB 2
+ EQUB 0:EQUB 2
+ALIGN
+
+.mouse_off
+ MOV R0,#&6A:MOV R1,#0:SWI "OS_Byte"
+MOVS PC,R14
+
+.mouse_flush
+ MOV R0,#15:MOV R1,#0:SWI "OS_Byte"
+MOVS PC,R14
+
+.pointer_definitions           ;redefine the 3 mouse pointers
+ MOV R12,#0
+.loop_pointer_def
+ ADR R0,pointer_data_blocks
+ ADD R0,R0,R12,LSL#8
+ ADR R1,change_pointer
+ STR R0,[R1,#6]
+ ADD R0,R12,#1    ; shape #
+ STRB R0,[R1,#1]
+ MOV R0,#&15:SWI "OS_Word"
+
+ ADD R12,R12,#1
+ CMP R12,#5:BMI loop_pointer_def
+MOV PC,R14
+
+EQUB 0
+EQUB 0
+.change_pointer
+EQUB 0
+EQUB 1
+EQUB 8      ; taille
+EQUB 32
+EQUB 16     ; pointer point
+EQUB 16
+EQUD pointer_data_blocks
+
+.pointer_animate
+ SWI "OS_ReadMonotonicTime"
+ AND R1,R0,#3<<3:MOV R1,R1,LSR#3:ADD R1,R1,#1
+ MOV R0,#106:SWI "OS_Byte"
+MOV PC,R14
+
+.pointer_data_blocks
+FNload("ZARCH_TWO.pointers")
+]
+=0
+_________________________________________________________________________
+
+DEFFNload_scape
+[OPT PASS
+
+.load_fractaland
+FNin
+
+ FNldr(0,curr_planet)
+
+ TST R0,#%10            ; select a sky colour
+  MOVEQ R1,#theSkyBlue
+  MOVNE R1,#theSkyRed
+  FNstr(1,2,curr_sky)
+
+ ADD R0,R0,#64
+ STRB R0,fract_file
+.try_to_load_again
+ MOV R0,#&FF      ; load file
+ ADR R1,fract_header
+ FNadr(2,myScape)
+ MOV R3,#0
+ SWI "XOS_File"
+ BVS bad_file
+
+ FNadr(2,myScape)
+ ADD R3,R2,#128*128
+
+;;;;;;;;;;;;;;;;;;;;
+
+ LDRB R0,fract_file
+ TST R0,#1
+ BEQ land_col_0
+ B   land_col_1
+
+.ret_from_colouring
+ MOV R4,#0:MOV R5,#0
+
+ MOV R7,#128*128
+.loop_fractaland_objects_clear
+ STMIA R3!,{R4-R5}
+ SUBS R7,R7,#8:BNE loop_fractaland_objects_clear
+
+ SUB R3,R3,#128*128        ; objects
+ SUB R4,R3,#2*128*128      ; altitude
+
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+
+ SWI "OS_ReadMonotonicTime"
+ ADD R0,R0,#&AF00
+ EOR R10,R0,R0,ROR#17      ; R10=rnd register
+
+ MOV R0,#7
+.loop_fractaland_sow
+
+ MOV R1,R0,LSL#1:ADD R1,R1,#1 ; value to poke
+
+ BL access_rawmat
+ LDR R2,[R2,#04]           ; load # of instances of raw # R0
+
+.loop_fractaland_objects_sow
+ SUBS R2,R2,#1:BMI quit_loop_fractaland_objects_sow
+
+.try_again_sow
+ ADD R10,R10,R10,ASR#1
+ EOR R10,R10,R10,ROR#3
+
+ AND R11,R10,#127       ; x rnd
+ MOV R12,R10,LSR#32-7   ; y rnd
+
+ CMP R11,#8:CMPMI R12,#8:BMI try_again_sow   ; on base?
+ CMP R11,#8:BCS not_on_base_x                ;
+  CMP R12,#127:BEQ try_again_sow             ;
+.not_on_base_x                               ;
+ CMP R12,#8:BCS not_on_base_y                ;
+  CMP R11,#127:BEQ try_again_sow             ;
+.not_on_base_y
+
+ ADD R11,R11,R12,LSL#7
+
+ LDRB R6,[R4,R11]
+ CMP R6,#140:BMI try_again_sow
+ LDRB R6,[R3,R11]
+ CMP R6,#0:BNE try_again_sow
+
+ STRB R1,[R3,R11]       ; set object
+ B loop_fractaland_objects_sow
+
+.quit_loop_fractaland_objects_sow
+SUBS R0,R0,#1:BPL loop_fractaland_sow
+
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+
+ BL animBases           ; first set of texture (for RadarBackGround)
+ BL RadarBackGround
+
+FNout
+
+.fract_header EQUS "<Alde$Dir>.LANDSCAPES."
+.fract_file   EQUS "A"+CHR$13 ; [ A .. L ]
+              ALIGN
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;MANY WAYS OF COLOURING A PLANET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.land_col_0
+
+ MVN R6,#45          ; rnd value
+
+ MOV R0,#128*128
+.loop_fractaland_colors_1
+
+ LDRB R4,[R2],#1
+
+ CMP R4,#110:MOVPL R5,#25
+ CMP R4,#126:MOVGT R5,#40
+
+ CMP R4,#140
+  MOVPL R5,R6:ANDPL R5,R5,#7:ADDPL R5,R5,#11
+  ANDPL R9,R6,#%11<<20:ADDPL R5,R5,R9,LSR#20
+ CMP R4,#126
+  MOVMI R5,R6:ANDMI R5,R5,#7:ADDMI R5,R5,#23
+
+ STRB R5,[R3],#1
+
+ ADD R6,R6,R6,ROR#1  ; change rnd value
+ EOR R6,R6,R6,ROR#13
+
+SUBS R0,R0,#1:BNE loop_fractaland_colors_1
+B ret_from_colouring
+
+.land_col_1
+
+ MVN R6,#45          ; rnd value
+
+ MOV R0,#128*128
+.loop_fractaland_colors_2
+
+ LDRB R4,[R2],#1
+
+ CMP R4,#110:MOVPL R5,#25
+ CMP R4,#126:MOVGT R5,#40
+
+ CMP R4,#140
+  MOVPL R5,R6:ANDPL R5,R5,#7
+  ANDPL R9,R6,#%11<<20:ADDPL R5,R5,R9,LSR#20
+ CMP R4,#126
+  MOVMI R5,R6:ANDMI R5,R5,#7:ADDMI R5,R5,#23
+
+ STRB R5,[R3],#1
+
+ ADD R6,R6,R6,ROR#1  ; change rnd value
+ EOR R6,R6,R6,ROR#13
+
+SUBS R0,R0,#1:BNE loop_fractaland_colors_2
+B ret_from_colouring
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                                                   ;
+.bad_file                                          ;
+ SWI "OS_WriteS"                                   ;
+ EQUS CHR$30+"Please insert ALDEBARAN disc"+CHR$0  ;
+ ALIGN                                             ;
+B try_to_load_again                                ;
+
+FNbin
+
+]
+=0
+________________________ BASIC library ___________________________________
+
+DEFFNword(V%)
+V%=V% AND &FF
+V%=V% OR (V%<<8)
+V%=V% OR (V%<<16)
+[OPT PASS : EQUD V% :]
+=0
+
+DEFFNlookup_sin
+FOR ang%=0 TO 255+64 : [OPT PASS : EQUD 256*SIN(ang%*PI/128) :] :NEXT
+=0
+
+DEFFNror(A%,B%)
+WHILE (B% AND 31)<>0
+ BIT%=A% AND 1
+ A%=A%>>>1
+ A%=A% OR (BIT%<<31)
+ B%=B%-1
+ENDWHILE
+=A%

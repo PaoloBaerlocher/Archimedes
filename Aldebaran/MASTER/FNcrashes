@@ -1,0 +1,138 @@
+REM >MASTER.FNcrashes
+
+REM written by Paolo Baerlocher 1992
+
+REM les 10 premiers points d'un objet 'dinamic' sont ceux qui sont
+REM testes pour voir s'il y a collision ou pas avec objects
+____________________________________________________________________________
+
+DEFFNcrashes
+[OPT PASS
+
+.CalcObjCollision     ; input R0=rotated list; R1,R2,R3=(x,y,z) in atom
+FNin2
+
+MOV R4,#4096:SUB R4,R4,#1
+AND R1,R1,R4:AND R2,R2,R4  ;out of map? then modulo
+
+ADD R0,R0,#12  ; skip light vector
+
+MOV R6,R1,ASR#5  ; in square units
+MOV R7,R2,ASR#5
+
+FNadr(4,myScape+128*128*2)                      ; pointer object landscape
+ADD R8,R6,R7,LSL#7:LDRB R10,[R4,R8]:CMP R10,#0
+SUBNE R4,R4,#128*128*2:LDRNEB R8,[R4,R8]:BLNE CalcColl
+
+FNadr(4,myScape+128*128*2)
+SUB R7,R7,#1:AND R7,R7,#127
+ADD R8,R6,R7,LSL#7:LDRB R10,[R4,R8]:CMP R10,#0
+SUBNE R4,R4,#128*128*2:LDRNEB R8,[R4,R8]:BLNE CalcColl
+
+FNadr(4,myScape+128*128*2)
+ADD R7,R7,#2:AND R7,R7,#127
+ADD R8,R6,R7,LSL#7:LDRB R10,[R4,R8]:CMP R10,#0
+SUBNE R4,R4,#128*128*2:LDRNEB R8,[R4,R8]:BLNE CalcColl
+
+FNadr(4,myScape+128*128*2)
+SUB R6,R6,#1:AND R6,R6,#127:SUB R7,R7,#1:AND R7,R7,#127
+ADD R8,R6,R7,LSL#7:LDRB R10,[R4,R8]:CMP R10,#0
+SUBNE R4,R4,#128*128*2:LDRNEB R8,[R4,R8]:BLNE CalcColl
+
+FNadr(4,myScape+128*128*2)
+ADD R6,R6,#2:AND R6,R6,#127
+ADD R8,R6,R7,LSL#7:LDRB R10,[R4,R8]:CMP R10,#0
+SUBNE R4,R4,#128*128*2:LDRNEB R8,[R4,R8]:BLNE CalcColl
+
+.noCrash
+MOV R0,#0
+.exitCrash
+FNout2
+
+.collision
+MVN R0,#0
+B exitCrash
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.CalcColl
+FNin
+
+ADD R8,R8,R8,ASR#1 ;x1.5 la hauteur du land
+
+MOV R5,#10   ; read the first 10 points ONLY!
+.lcrash
+LDMIA R0!,{R11,R12,R13}
+
+ADD R11,R1,R11          ; in atom squares
+ADD R12,R2,R12
+ADD R13,R3,R13
+
+BL CalcInPoint
+
+CMP R4,#0:BNE collision ; si on sort avec un code non nul>il y a eu crash!
+
+SUBS R5,R5,#1:BNE lcrash
+
+SUB R0,R0,#12*10       ; restore R0
+
+FNout
+
+FNbin
+
+.CalcInPoint ;test si point (R11,R12,R13) atom se trouve dans l'objet de
+             ;code R10 et qui se trouve au point (R6,R7,R8)
+             ; R6,R7 en square units;R8 en atom units
+             ;Output   R4 = 0 si pas de collision
+MVN R4,#0    ; on part avec l'idee qu'il y a bien collision
+LDR PC,[PC,R10,LSL#2]
+EQUS "JUMP"
+                    EQUD exitCalc ;0
+EQUD tstZynx       :EQUD exitCalc
+EQUD tstErbe       :EQUD exitCalc
+EQUD tstTree       :EQUD exitCalc
+EQUD tstQuadrix    :EQUD exitCalc
+EQUD tstTelef      :EQUD exitCalc
+EQUD tstMystic     :EQUD exitCalc
+EQUD tstCondens    :EQUD exitCalc
+EQUD tstPalace     :EQUD exitCalc
+
+.exitCalc
+MOV R4,#0:MOV PC,R14
+
+.tstZynx    FNcrashes_box(04,04, 00,50)
+            FNbind_twin_boxes
+            FNcrashes_box(12,12, 35,45)  :MOV PC,R14
+.tstErbe    FNcrashes_box(15,15, 00,15)  :MOV PC,R14
+.tstTree    FNcrashes_box(16,16, 40,50)  :MOV PC,R14
+.tstQuadrix FNcrashes_box(15,15, 00,36)  :MOV PC,R14
+.tstPalace  FNcrashes_box(12,12, 16,40)  :MOV PC,R14
+.tstMystic  FNcrashes_box(04,04, 00,25)
+            FNbind_twin_boxes
+            FNcrashes_box(12,12, 25,50)  :MOV PC,R14
+.tstCondens FNcrashes_box(10,10, 00,20)
+            FNbind_twin_boxes
+            FNcrashes_box(10,10, 25,40)  :MOV PC,R14
+.tstTelef   FNcrashes_box(14,08, 20,35)  :MOV PC,R14
+
+]
+=0
+___________________________________________________________
+
+DEFFNcrashes_box(xdelta,ydelta,zmin,zmax)
+               [OPT PASS: SUB R9,R13,R8            :]
+IF zmin>0 THEN [OPT PASS: CMP R9,#zmin:MOVMI R4,#0 :]
+               [OPT PASS: CMP R9,#zmax:MOVCS R4,#0 :]
+
+[OPT PASS
+SUBS R9,R11,R6,LSL#5:RSBMI R9,R9,#0:CMP R9,#xdelta:MOVPL R4,#0
+SUBS R9,R12,R7,LSL#5:RSBMI R9,R9,#0:CMP R9,#ydelta:MOVPL R4,#0
+]
+=0
+
+DEFFNbind_twin_boxes
+[OPT PASS
+ CMN R4,#1:MOVEQ PC,R14 ; inside box
+ MVN R4,#0              ; retry
+]
+=0

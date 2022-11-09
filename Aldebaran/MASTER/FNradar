@@ -1,0 +1,2484 @@
+REM >MASTER.FNradar
+
+REM ###### This library contains :
+REM ######       - the code to draw the radar
+REM ######       - the code to control the dinamic objects and to
+REM ######          draw a row of dinamic objects
+REM ######       - the code to control collisions with bullets
+
+REM ######  Definition d'un object dynamique:
+REM ######
+REM ######  4 bytes   : cde = &aabbccdd
+REM ######  3x4 bytes : position = (x,y, hauteur)     = [ 0..32*128-1]<<20
+REM ######  4 bytes   : alpha,beta,gamma  = [rotation,elevation,giration]
+REM ######  3x4 bytes : vitesse
+REM ###### ------
+REM ######  TOTAL 32 bytes
+REM ######
+REM ######
+REM ######  cde : &aa = code du pointeur a la definition graphique d'objet
+REM ######        &bb = reason code = le but momentane' du vaisseau
+REM ######        &cc = counter for reason code
+REM ######        &dd = couleur a' afficher dans le radar
+REM ######
+REM ######  IF cde=0 THEN dead ship
+_________________________________________________________________
+
+DEFFNctrlBullets
+eod=65536
+[OPT PASS
+
+.Bullets_controller
+FNin
+
+FNadr(02,PartTable)
+FNldr(03,pointerParticle)
+FNadr(5,myScape+128*128*2)  ; pointeur au tableau objects
+
+.Bull_ctrl
+CMP R2,R3:FNexitEQ
+
+ LDMIA R2,{R0, R11,R12,R13}:ADD R2,R2,#28
+ AND R0,R0,#&FF00
+ CMP R0,#&FC00:BNE Bull_ctrl        ; control if this particle is a bullet
+
+ FNUfo_Bull_Collision
+
+ ADD R6,R11,#1<<24:MOV R6,R6,LSR#25 ; test the nearest square object
+ ADD R7,R12,#1<<24:MOV R7,R7,LSR#25
+ ADD R1,R6,R7,LSL#7:LDRB R10,[R1,R5]!
+ CMP R10,#0:BEQ Bull_ctrl
+
+ MOV R11,R11,LSR#20:MOV R12,R12,LSR#20:MOV R13,R13,LSR#20
+
+ SUB R8,R1,#2*128*128:LDRB R8,[R8]:ADD R8,R8,R8,ASR#1 ;=hauteur de l'obj
+ BL CalcInPoint
+ CMP R4,#0:BEQ Bull_ctrl
+                                     ; Bullet collision found
+ ADR R14,memo2b:STMIA R14,{R2,R3,R5} ;
+ MOV R1,R6:MOV R2,R7:BL BoomObj      ;
+ ADR R14,memo2b:LDMIA R14,{R2,R3,R5} ;
+B Bull_ctrl                          ;
+
+FNout
+
+FNbin
+
+.memo2b EQUD 0
+.memo3b EQUD 0
+.memo5b EQUD 0
+
+]
+=0
+
+DEFFNUfo_Bull_Collision    :REM through all ships
+[OPT PASS
+ FNadr(0,flyingObjects)
+.loopUfos
+ LDMIA R0,{R1, R6,R7,R8}
+ CMP R1,#eod:BEQ exit_UBC  ; end test
+ ADD R0,R0,#32             ; move pointer to next one
+ CMP R1,#0:BEQ loopUfos    ; this ufo is already dead
+
+ SUBS R1,R6,R11:RSBMI R1,R1,#0:CMP R1,#12<<20:BPL loopUfos
+ SUBS R1,R7,R12:RSBMI R1,R1,#0:CMP R1,#12<<20:BPL loopUfos
+ SUBS R1,R8,R13:RSBMI R1,R1,#0:CMP R1,#12<<20:BPL loopUfos
+
+ ;;; collision found! Dont need to control the other ships
+
+ LDR R1,[R0,#-32]                   ; read cde
+ MOV R1,R1,LSR#24
+ CMP R1,#64
+  MOVNE R1,#0:STRNE R1,[R0,#-32]    ; destroy ship
+  BLNE more_Shmartz
+  BNE no_FL_bang
+
+ FNldr(1,damage_on_FL)              ; reduce FL health
+ ADD R1,R1,#40
+ CMP R1,#100
+  MOVGT R1,#100
+ FNstr(1,14,damage_on_FL)
+  MOVPL R1,#0:STRPL R1,[R0,#-32]                          ; destroy ship
+  LDRMI R1,[R0,#-32+16]:ADDMI R1,R1,#19<<8:STRMI R1,[R0,#-32+16] ; chock
+  BL set_null_Target
+
+.no_FL_bang
+ ADR R14,memo2b:STMIA R14,{R2,R3,R5}
+ MOV R1,R6:MOV R2,R7:MOV R3,R8:BL BoomDinamic
+ ADR R14,memo2b:LDMIA R14,{R2,R3,R5}
+ BL new_inject
+B Bull_ctrl ; go directly to a new particle,dont test objects collision
+
+.exit_UBC
+
+]
+=0
+
+DEFFNctrlAlienShips
+eod=65536
+[OPT PASS
+
+.set_landing_FL
+ ADR R12,landing_FL_data
+ LDMIA R12!,{R0-R7}
+ STMIA R12,{R0-R7}
+ FNadr(12,oldXval)
+ FNmouse
+ STMIA R12,{R0,R1}
+ MOV R0,#0
+ STR R0,girWeap
+MOVS PC,R14
+
+.start_FL_data FNalien_ship(64,0,32*3.5,32*3,128,0,0,0)
+ ] : !(O%-16)=24<<16 : [OPT PASS      ; just change angles
+
+.init_ship_world
+FNin
+
+ MOV R11,#eod
+ ADR R12,flyingObjects
+
+ ADR R0,start_FL_data
+ LDMIA R0,{R0-R7}
+ STMIA R12,{R0-R7,R11}
+ ADD R12,R12,#32
+ STR R12,nextShipPointer
+
+ MOV R0,#5                 ; 5 births
+ FNstr(0,1,inject_number)
+
+ BL inject_ship            ; 3 already present ships
+ BL inject_ship
+ BL inject_ship
+
+FNout
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.landing_FL_data                    ; should be just before flyingObjects
+FNalien_ship(64,0,32*4,32*3,580,0,-197,6)
+] : !(O%-16)=192<<16 : [OPT PASS      ; just change angles
+
+.flyingObjects
+ FNram(32*16)     ; reserve memory for some objects
+ EQUD eod
+
+.endOfFlyingObjects
+
+;;;;;;;;;;;;;;;;;;;;;;;;; Gestion de la liste des ships ;;;;;;;;;;;;;;;;;;
+
+.ClearShipList
+ ADR R0,flyingObjects
+ STR R0,nextShipPointer
+ MOV R1,#eod:STR R1,[R0]
+MOV PC,R14
+
+.AddShipToList   ; input R0,(R1,R2,R3),R4,(R6,R7,R8)
+ LDR R10,nextShipPointer
+ ADR R9,endOfFlyingObjects-4
+ CMP R9,R10      ; test if enough space in list
+ MOVGT   R9,#eod
+ STMGTIA R10,{R0, R1,R2,R3, R4, R6,R7,R8, R9}
+ ADDGT   R10,R10,#32
+ STRGT   R10,nextShipPointer
+MOVS PC,R14
+
+.nextShipPointer EQUD flyingObjects
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Processor_Stack FNram(4*20)
+
+.Ufo_processor
+FNin
+
+ BL InitAllocate
+
+ ADR R13,Processor_Stack   ; j'utilise un stack pour cette fois...
+
+ADR R12,flyingObjects      ; READ  pointer
+MOV R11,R12                ; WRITE pointer
+.process_loop
+ LDMIA R12!,{R0, R1,R2,R3, R4, R6,R7,R8}
+ CMP R0,#eod:BEQ quit_Ufo_processor
+ BL AllocateObjMemory
+ CMP R0,#0  :BEQ process_loop ; this one is dead
+
+ MOV R9,R0,LSR#24          ; mask pntr code
+ CMP R9,#64                ; tst collision with FlashLight
+  BLEQ TstFLCollision
+ CMP R9,#65                ; tst collision with TopFuns
+  BLGT TstTFCollision
+
+ ADD R1,R1,R6              ; x'=x+speed*1 frame
+ ADD R2,R2,R7
+ ADD R3,R3,R8
+
+ CMP R3,#(128*1.5)<<20     ; water slows down
+  SUBMI R6,R6,R6,ASR#4
+  SUBMI R7,R7,R7,ASR#4
+  SUBMI R8,R8,R8,ASR#3
+
+ SUB R8,R8,#3<<17          ; gravity
+
+ MOVS R9,R0,LSR#24
+ SUBNE R9,R9,#64           ; mask pntr code - 64
+ ADDNE PC,PC,R9,LSL#2
+ B process_loop            ; jump directly to process_loop if dead object
+ B ManualProcess_FL        ; moi = deplacement manuel du FlashLight
+ B Process_TopFun
+ B Process_Medusa
+ B Process_Car
+ B Process_Ebudae
+ B Process_MiniMine
+ B Process_Toupy
+ B Process_Eagle
+ B Process_LadyBird
+ B Process_Conca
+ B Process_Framey
+ B Process_Exaode
+ B Process_Batship
+ B Process_Jaily
+ B Process_Framey ; Globule!
+ B Process_Reticule
+
+.end_Process
+ STMIA R11!,{R0-R4,R6-R8}  ; store new ufo description
+ B process_loop
+
+.quit_Ufo_processor
+ STR R0,[R11]              ; store eod sentinel
+ STR R11,nextShipPointer
+
+ LDR R1,inject_counter     ; test if inject needed
+ SUBS R1,R1,#1
+ MOVMI R1,#100
+ STR R1,inject_counter
+ BPL quit_injector
+
+ LDR R1,inject_number
+ SUBS R1,R1,#1
+  STRPL R1,inject_number
+  BLPL inject_ship
+
+.quit_injector
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.inject_ship
+ LDR R0,rnd_ships
+  ADD R0,R0,R0,ASR#1
+  EOR R0,R0,R0,ROR#17
+ STR R0,rnd_ships
+
+ AND R1,R0,#63          ; start pos far from FL
+  ADD R1,R1,#32
+ AND R2,R0,#63<<6
+  ADD R2,R2,#32<<6
+
+ MOV R0,R0,LSR#32-4
+ ADR R4,alien_headers
+ LDR R0,[R4,R0,LSL#2]
+
+ LDR R12,flyingObjects+4   ; FL x pos
+ ADD R1,R12,R1,LSL#25
+ LDR R12,flyingObjects+8   ; FL y pos
+ ADD R2,R12,R2,LSL#25-6
+
+ MOV R3,#480<<20
+
+ MOV R4,#0:MOV R6,#0:MOV R7,#0:MOV R8,#0  ; angles & speed = 0
+B AddShipToList
+
+.inject_counter EQUD 0
+.inject_number  EQUD 0
+
+.new_inject LDR R0,inject_number
+            ADD R0,R0,#1
+            STR R0,inject_number
+           MOVS PC,R14
+
+.alien_headers
+               FNalien_ship_header(66,0)
+               FNalien_ship_header(67,0)
+               FNalien_ship_header(68,0)
+               FNalien_ship_header(70,0)
+               FNalien_ship_header(71,0)
+               FNalien_ship_header(72,0)
+               FNalien_ship_header(73,0)
+               FNalien_ship_header(74,0)
+               FNalien_ship_header(75,0)
+               FNalien_ship_header(76,0)
+               FNalien_ship_header(77,0)
+               FNalien_ship_header(78,0)
+               FNalien_ship_header(79,0)
+               FNalien_ship_header(68,0)
+               FNalien_ship_header(70,0)
+               FNalien_ship_header(74,0)
+
+.rnd_ships     EQUD -TIME EOR &237819A
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.ManualProcess_FL
+ STMIA R13!,{R11}
+
+ FNadr(14,virtual_FL)      ; set virtual copy of FL
+ STMIB R14,{R1-R3}
+
+ BL landScape_ApproxHeight
+ SUB R14,R3,R5,LSL#20      ; dz
+ CMP R14,#48<<20
+  BLMI absorb_resource
+.return_from_absorb
+
+ BL Ask_Mouse
+ ADD R4,R4,R10,LSL#16
+ ADD R4,R4,R11,LSL#8
+
+ LDR R9,mStatus:TST R9,#1
+ BLNE Process_Fire
+
+ LDR R9,mStatus:TST R9,#4
+ SUBEQ R6,R6,R6,ASR#6      ; reduce speed
+ SUBEQ R7,R7,R7,ASR#6
+ SUBEQ R6,R6,R6,ASR#5
+ SUBEQ R7,R7,R7,ASR#5
+ BLNE Give_gaz
+
+ LDR R9,mStatus:TST R9,#2
+ BNE menu_FL_act
+.return_from_menu_FL_act
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ;=!underland
+ CMP R14,#0:BPL no_FL_UL   ; if underland=true then ...
+
+ AND R9,R4,#&00FF00
+ ADD R9,R9,#56<<8
+ AND R9,R9,#&FF<<8
+ CMP R9,#56<<9:BLPL veryhard_landing
+
+ BL ChAngles_from_LandScape_smooth
+
+ CMN R8,#20<<20:BLMI hard_landing
+
+  CMP R8,#0:RSBMI R8,R8,#0:MOVMI R8,R8,ASR#2
+  SUB R6,R6,R6,ASR#3:SUB R7,R7,R7,ASR#3 ; less speed
+  MOV R14,#0        :STR R14,girWeap    ; reset spinfire
+  MOV R14,R4,LSL#24
+  MOV R14,R14,ASR#23:STR R14,girAuto    ; reset Giration value
+ B quit_ManualProcess_FL
+
+.no_FL_UL
+ BL CalcGiration
+
+.quit_ManualProcess_FL
+
+ LDR R9,weapon_c      ; uses a counter to reduce weaponry frequency
+ SUBS R9,R9,#1
+ STRPL R9,weapon_c
+
+ LDMDB R13!,{R11}
+B end_Process
+
+.hard_landing
+STMIA R13!,{R0-R6, R11,R12, R14}
+
+ FNmov(0,&FF08)
+ MOV R1,R1,ASR#20
+ MOV R2,R2,ASR#20
+ MOV R3,R3,ASR#20
+ MOV R4,R6
+ MOV R5,R7
+ MOV R6,#0
+ BL InsertParticle
+
+ FNldr(0,damage_on_FL)     ; ouch!
+ CMP R0,#96
+ ADDMI R0,R0,#4
+ FNstr(0,1,damage_on_FL)
+
+LDMDB R13!,{R0-R6, R11,R12, PC}
+
+.veryhard_landing
+STMIA R13!,{R0-R6, R11,R12, R14}
+
+ FNmov(0,&FF08)
+ MOV R1,R1,ASR#20
+ MOV R2,R2,ASR#20
+ MOV R3,R3,ASR#20
+ MOV R4,R6
+ MOV R5,R7
+ MOV R6,#0
+ BL InsertParticle
+
+ FNldr(0,damage_on_FL)     ; ouch!
+ CMP R0,#92
+ ADDMI R0,R0,#8
+ FNstr(0,1,damage_on_FL)
+
+LDMDB R13!,{R0-R6, R11,R12, PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.menu_FL_act                                    ; first test enterbase
+ CMP R1,#2<<25:CMPPL R2,#1<<25:BMI menu_arme    ; out of base?
+ CMP R1,#5<<25:CMPMI R2,#4<<25:BPL menu_arme
+
+ BL landScape_ApproxHeight
+ SUB R14,R3,R5,LSL#20                  ; dz
+ CMP R14,#16<<20
+  MOVMI R9,#01
+  FNsetflag("MI")
+  FNstr(9,14,enterbase_counter)        ; set counter
+BMI return_from_menu_FL_act
+
+.menu_arme
+
+ LDR R9,weapon_c              ; test weaponry counter
+ CMP R9,#0
+ BGT return_from_menu_FL_act
+ MOV R9,#16
+ STR R9,weapon_c
+
+ FNldr(9,FL_curr_wea)         ; activate current weapon
+ TST R9,#1
+ BNE return_from_menu_FL_act  ; no execution for proftaker/supershield
+ FNadr(14,FL_wea_0)
+ LDR R5,[R14,R9,LSL#2]        ; load instances # of this weapon
+ SUBS R5,R5,#1
+  STRPL R5,[R14,R9,LSL#2]     ; save less instances
+  ADDPL PC,PC,R9,LSL#2
+ B return_from_menu_FL_act
+  B exec_spinfire
+  B return_from_menu_FL_act   ; proftaker  (dont need MENU to be executed)
+  B exec_lightning
+  B return_from_menu_FL_act   ; supershield(dont need MENU to be executed)
+  B exec_smartrocket
+
+.exec_spinfire
+ LDR R9,girWeap      ; spinfire
+ CMP R9,#0
+ MOVEQ R9,#256       ; reinit spinfire
+ STREQ R9,girWeap
+B return_from_menu_FL_act
+
+.exec_lightning
+
+ STMIA R13!,{R0-R8,R10,R12}
+  MOV R0,#&FA00:ADD R0,R0,#8     ; flash particle
+  MOV R7,R1,LSR#20:MOV R8,R2,LSR#20:MOV R9,R3,LSR#20
+
+  MOV R10,#8
+.loop_make_lightning
+  MOV R1,R7:MOV R2,R8:MOV R3,R9
+  LDR R6,rnd_ships:ADD R6,R6,R6,ASR#1:EOR R6,R6,R6,ROR#7:STR R6,rnd_ships
+  AND R4,R6,#31<<00:SUB R4,R4,#16<<00:MOV R4,R4,LSL#20-00
+  AND R5,R6,#31<<05:SUB R5,R5,#16<<05:MOV R5,R5,LSL#20-05
+  AND R6,R6,#31<<10:SUB R6,R6,#16<<10:MOV R6,R6,LSL#20-10
+  BL InsertParticle
+
+ SUBS R10,R10,#1:BNE loop_make_lightning
+
+  BL bright_palette
+
+ FNadr(10,flyingObjects)
+.loop_lightning_afterboom
+ FNadr(1,flyingObjects)       ; through ufos list
+ LDMIB R1,{R1,R2}             ; load FL pos (x,y)
+.loop_lightning
+ LDR R9,[R10,#32]!
+ CMP R9,#eod:MOVNES R9,R9,LSR#24:BEQ quit_lightning
+ LDMIB R10,{R12,R14}  ; load (x,y)
+
+ SUBS R12,R12,R1:RSBMI R12,R12,#0
+ SUBS R14,R14,R2:RSBMI R14,R14,#0
+ CMP R12,#10<<25
+ CMPMI R14,#10<<25
+  BPL loop_lightning
+
+ MOV R9,#0           ; boom object
+ STR R9,[R10]
+ LDMIB R10,{R1-R3}
+ BL BoomDinamic
+ BL new_inject
+ BL more_Shmartz
+B loop_lightning_afterboom
+
+.quit_lightning
+ LDMDB R13!,{R0-R8,R10,R12}
+B return_from_menu_FL_act
+
+
+.exec_smartrocket
+STMIA R13!,{R0, R1-R3,R8}
+
+ FNmov(0,(65<<24)+&FF00+FNradColor(65))   ; create coroutine "Top Fun"
+
+ SUB R1,R1,R6
+ SUB R2,R2,R7
+ ADD R3,R3,#12<<20
+ SUB R3,R3,R8
+ ADD R8,R8,#20<<20
+ BL AddShipToList
+
+LDMDB R13!,{R0, R1-R3,R8}
+B return_from_menu_FL_act
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.absorb_resource
+ ADD R5,R2,#16<<20
+ MOV R5,R5,LSR#25
+ FNadr(9,myScape+128*128*2)   ; pointer to object map
+ ADD R9,R9,R5,LSL#7
+ ADD R5,R1,#16<<20
+ LDRB R5,[R9,R5,LSR#25]!      ; load nearest object
+ TST R5,#1
+  BEQ return_from_absorb      ; null object
+ CMP R5,#15
+  BGT return_from_absorb      ; not a raw object
+
+ STMIA R13!,{R0-R2,R4,R6-R8,R10}
+
+ MOV R1,R9
+ MOV R2,R5
+
+ BL FL_cargo_value
+ CMP R0,#cargo_max%
+
+  ADDMI R0,R2,#1
+  STRMIB R0,[R1]              ; boom object
+  MOVMI R0,R2,LSR#1           ; =raw code
+  BLMI take_rawmat
+
+ LDMDB R13!,{R0-R2,R4,R6-R8,R10}
+B return_from_absorb
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;    SUBROUTINES FOR THE FLASHLIGHT CTRL    ;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.CalcGiration
+STMIA R13!,{R0,R1, R14}
+
+ LDR R0,[R12,#-16]   ; load old angle register
+
+ AND R0,R0,#&FF0000
+ AND R1,R4,#&FF0000
+ SUB R0,R0,R1        ; delta rotation
+ MOV R0,R0,LSL#8
+
+ LDR R1,girAuto
+ ADD R1,R1,R0,ASR#24
+ SUB R1,R1,R1,ASR#2  ; modulation -> 0
+ STR R1,girAuto
+
+ CMP R3,#(128*1.5)<<20
+  MOVPL R9,#16       ; Spinfire slows down in water
+  MOVMI R9,#08
+
+ LDR R0,girWeap
+ SUBS R0,R0,R9
+ MOVMI R0,#0
+ STR R0,girWeap
+
+ ADD R1,R0,R1,ASR#1
+ AND R1,R1,#&FF
+
+ BIC R4,R4,#&0000FF  ; erase previous giration
+ ORR R4,R4,R1        ; new giration
+
+LDMDB R13!,{R0,R1, PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Ask_Mouse
+STMIA R13!,{R0,R1,R2,R3, R14}
+ FNmouse
+.FL_ctrl_instruction
+ RSBNV R1,R1,#0   ; inverse Y to make like an airplane
+ STR R2,mStatus
+ LDR R10,oldXval:STR R0,oldXval:SUB R10,R0,R10
+ LDR R11,oldYval:STR R1,oldYval:SUB R11,R1,R11
+LDMDB R13!,{R0,R1,R2,R3, PC}^
+
+;;;;;;;;;;;;;;;;
+; FL own datas ;
+;;;;;;;;;;;;;;;;
+
+.oldXval    EQUD 0
+.oldYval    EQUD 0
+.mStatus    EQUD 0
+.girAuto    EQUD 0
+.girWeap    EQUD 0
+.weapon_c   EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OTHER PROCESS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Ebudae
+ STMIA R13!,{R11,R12}
+
+ BL Distance_XY
+ CMP R5,#(32*20)^2:BPL noAttack_EBUDAE
+
+ BL Distance_XYZ     ; trop pres?
+ CMP R5,#(32*5)^2
+  ADDMI R6,R6,R6,ASR#2
+  ADDMI R7,R7,R7,ASR#2
+  ADDMI R8,R8,#2<<20
+
+ MOV  R5,R0,LSL#16
+ ADDS R5,R5,#1<<24
+ BIC  R0,R0,#&0000FF00
+ ORR  R0,R0,R5,LSR#16
+ BMI  tactic2_EBUDAE
+
+.tactic1_EBUDAE
+ LDR R9,virtual_FL+8
+ LDR R14,virtual_FL+4
+.newObjectif
+ CMP R1,R14       :ADDMI R6,R6,#1<<20:SUBPL R6,R6,#1<<20
+ CMP R2,R9        :ADDMI R7,R7,#1<<20:SUBPL R7,R7,#1<<20
+
+ FNmax_speed(6,15)
+ FNmax_speed(7,15)
+
+ LDR R14,virtual_FL+12
+ CMP R3,R14:ADDMI R8,R8,#1<<20:SUBPL R8,R8,#1<<20
+ FNmax_speed(8, 15)
+
+ BL landScape_ApproxHeight  ; avoid land-collision
+ RSB R5,R5,R3,LSR#20
+ CMP R5,#60
+ ADDMIS R8,R8,#3<<19
+ SUBMI  R8,R8,R8,ASR#2
+ ADDMI  R8,R8,#4<<19
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ;=!underland
+ CMP R14,#0:CMPMI R8,#0     ; if underland=true then ...
+ RSBMI R8,R8,#0
+
+  BL Process_Jet
+  BL Attack_Angles_smooth_FL
+
+ ADD R4,R4,#7
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+.tactic2_EBUDAE
+ LDR R9,virtual_FL+8
+ LDR R14,virtual_FL+4
+
+ CMP R1,R14       :ADDMI R6,R6,#1<<20:SUBPL R6,R6,#1<<20
+ CMP R2,R9        :ADDMI R7,R7,#1<<20:SUBPL R7,R7,#1<<20
+
+ FNmax_speed(6,12)
+ FNmax_speed(7,12)
+
+ LDR R14,virtual_FL+12
+ ADD R14,R14,#130<<20
+ CMP R3,R14:ADDMI R8,R8,#1<<20:SUBPL R8,R8,#1<<20
+
+ FNmax_speed(8,8)
+
+ BL landScape_ApproxHeight  ; avoid land-collision
+ RSB R5,R5,R3,LSR#20
+ CMP R5,#60
+ ADDMIS R8,R8,#3<<19
+ SUBMI  R8,R8,R8,ASR#2
+ ADDMI  R8,R8,#4<<19
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]            ;=!underland
+ CMP R14,#0:CMPMI R8,#0      ; if underland=true then ...
+ RSBMI R8,R8,#0
+
+  TST R4,#1
+  BLEQ Process_Fire
+  BL Process_Jet
+  BL Attack_Angles_FL
+
+ ADD R4,R4,#19
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+.noAttack_EBUDAE
+BL Process_Jet
+
+ADD R14,R2,#64<<25
+ADD R9,R1,#64<<25
+
+B newObjectif
+
+FNbin
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Car
+ STMIA R13!,{R11}
+
+  BL  landScape_ApproxHeight
+  MOV R3,R5,LSL#20
+
+  TST R0,#&FF<<8
+   SUBNE R0,R0,#1<<8
+   BNE alarm_water
+
+  CMP R5,#140*1.5
+   ADDMI R4,R4,#3<<16
+  CMP R5,#128*1.5
+   ORRMI R0,R0,#&32<<8        ; alarm flag (under water!)
+.alarm_water
+
+  BL  Detect_Object_in_Path
+  BL  ChAngles_from_LandScape
+  MOV R6,#0:MOV R7,#0
+  BL  ChSpeed_from_Angles
+  MOV R6,R6,LSL#2:MOV R7,R7,LSL#2
+  MOV R8,#0 ; a constant z-speed
+
+ LDMDB R13!,{R11}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Medusa
+ STMIA R13!,{R0,R11}
+
+  BL  landScape_Height
+  MOV R3,R5,LSL#20
+  ADD R3,R3,#80<<20
+
+  TST R3,#1<<20
+  ADDEQ R4,R4,#1<<16
+  ADDNE R4,R4,#255<<16
+
+  MOV R6,#0:MOV R7,#0
+  BL  ChSpeed_from_Angles
+  MOV R6,R6,LSL#2:MOV R7,R7,LSL#2
+
+  TST R0,#%1111111<<11
+   FNsetflag("EQ")
+   FNmov(0,(69<<24)+&FF00+FNradColor(69))
+   MOVEQ R8,#14<<20
+   BLEQ AddShipToList   ; create coroutine
+
+  MOV R8,#0 ; a constant z-speed
+
+ LDMDB R13!,{R0,R11}
+
+ BL Process_Jet
+
+ ADD R14,R0,#1<<11         ; bilzo balzo
+ AND R14,R14,#&3F800
+ BIC R0,R0,  #&3F800
+ ORR R0,R0,R14
+
+ FNadr(5,sinus)
+ AND R14,R0,#&FF00
+ LDR R5,[R5,R14,LSR#8-2]
+ MOV R5,R5,LSR#3
+ BIC R4,R4,#&00FF00
+ ADD R4,R4,R5,LSL#8
+
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_MiniMine
+ SUB R0,R0,#1<<8
+ TST R0,#&FF00:BEQ process_loop ; die
+
+ SUB R8,R8,R8,ASR#4        ; float
+
+ CMP R3,#(128*1.5)<<20:MOVMI R6,#0:MOVMI R7,#0:BMI end_Process
+
+ ADD R4,R4,#&070000
+ AND R4,R4,#&FF0000
+ MOV R6,#0:MOV R7,#0
+ BL  ChSpeed_from_Angles
+ MOV R6,R6,LSL#1:MOV R7,R7,LSL#1
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ; =!underland
+ CMP R14,#0:CMPMI R8,#0
+ RSBMI R8,R8,#0
+
+ BL Process_Jet
+
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Toupy
+  STMIA R13!,{R11}
+
+  BL landScape_Height
+  MOV R3,R5,LSL#20
+  CMP R3,#(125*1.5)<<20
+   MOVMI R3,#(125*1.5)<<20
+
+  SUBS R5,R5,#128*1.5
+  ADDMI R5,R5,#80*1.5
+  MOVMI R5,R5,ASR#4
+  ADDMI R4,R4,R5,LSL#16
+
+  MOV R6,#0:MOV R7,#0
+  BL  ChSpeed_from_Angles
+  ADD R6,R6,R6,LSL#2:ADD R7,R7,R7,LSL#2
+
+ TST R0,#&9500:BLEQ Process_Fire
+ TST R0,#&FF00:SUBNE R0,R0,#&0100  ; decrement counter
+   ORREQ R0,R0,#&FF00
+
+  MOV R8,#0
+
+ LDMDB R13!,{R11}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.Process_TopFun
+ STMIA R13!,{R11,R12}
+
+ FNadr(12,flyingObjects)      ; through ufos list
+ MOV R10,#0                   ; nearest object
+ MOV R11,#1<<30               ; minimum distance
+
+.loop_topfun
+ LDR R9,[R12,#32]!
+ CMP R9,#eod:BEQ quit_topfun_nearest   ; stop searching
+ MOVS R9,R9,LSR#24
+ CMPNE R9,#65     ; if TopFun...
+ CMPNE R9,#69     ; or MiniMine
+BEQ loop_topfun   ; then search another one
+ LDMIB R12,{R9,R14}  ; load (x,y)
+
+ SUB R9,R9,R1  :MOV R9,R9,LSR#32-7  :CMP R9,#64 :RSBGT R9,R9,#128
+ SUB R14,R14,R2:MOV R14,R14,LSR#32-7:CMP R14,#64:RSBGT R14,R14,#128
+ ADD R9,R9,R14    ; distance
+ CMP R9,R11
+  MOVMI R11,R9
+  MOVMI R10,R12
+B loop_topfun
+
+.quit_topfun_nearest
+ CMP R10,#0:MOVEQ R0,#0:BEQ quit_Process_TopFun    ; no object to seek
+ LDMIB R10,{R9,R14}
+
+ CMP R1,R9        :ADDMI R6,R6,#2<<20:SUBPL R6,R6,#2<<20
+ CMP R2,R14       :ADDMI R7,R7,#2<<20:SUBPL R7,R7,#2<<20
+
+ FNmax_speed(6,18)
+ FNmax_speed(7,18)
+
+ LDR R14,[R10,#12]   ; load (z)
+ CMP R3,R14    :ADDMI R8,R8,#2<<20:SUBPL R8,R8,#2<<20
+
+ FNmax_speed(8,12)
+
+ BL landScape_ApproxHeight  ; avoid land-collision
+ RSB R5,R5,R3,LSR#20
+ CMP R5,#40
+ ADDMIS R8,R8,#2<<20
+ SUBMI R8,R8,R8,ASR#1
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ; =!underland
+ CMP R14,#0:BPL no_TP_UL   ; if underland then ...
+ CMP R8,#0:RSBMI R8,R8,#0
+.no_TP_UL
+
+ BL Attack_Angles_smooth
+ ADD R4,R4,#7
+
+.quit_Process_TopFun
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.Process_Eagle
+ STMIA R13!,{R11,R12}
+
+ ADD R14,R0,#1<<8    ; incr counter
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ BL Distance_XYZ
+ CMP R5,#(32*8)^2:BPL far_Eagle
+
+ BL landScape_Height
+  MOV R3,R5,LSL#20
+  ADD R3,R3,#95<<20
+
+ LDR R9,virtual_FL+8
+ LDR R14,virtual_FL+4
+ CMP R1,R14       :ADDMI R6,R6,#1<<20:SUBPL R6,R6,#1<<20
+ CMP R2,R9        :ADDMI R7,R7,#1<<20:SUBPL R7,R7,#1<<20
+
+  TST R0,#%1100<<8
+  BLEQ Process_Fire
+  ADD R4,R4,#5
+  BL Attack_Angles_smooth_FL
+  B quit_Process_Eagle
+
+.far_Eagle
+
+ BL landScape_Height
+  MOV R3,R5,LSL#20
+  ADD R3,R3,#95<<20
+
+ TST R5,#%1<<4
+
+ ADDEQ R14,R0,#1<<16       ; add counter
+ SUBNE R14,R0,#1<<16
+ AND R14,R14,#&FF0000
+ BIC R0,R0,#&FF0000
+ ORR R0,R0,R14
+
+ FNadr(5,sinus+64*4)
+ LDR R8,[R5,R14,LSR#16-2]!
+ LDR R5,[R5,#-64*4]
+ ADD R6,R6,R8,LSL#12
+ ADD R7,R7,R5,LSL#12       ; vector speed
+
+ FNadd(4,&020101)
+
+.quit_Process_Eagle
+
+ FNmax_speed(6,8)
+ FNmax_speed(7,8)
+ MOV R8,#0
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.Process_LadyBird
+ STMIA R13!,{R11,R12}
+
+ ADD R14,R0,#1<<8    ; incr counter
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ BL Distance_XYZ
+ CMP R5,#(32*22)^2:BPL noAttack_Lady
+
+ ANDS R14,R0,#&FF<<16
+ BEQ nolooping_lady
+ SUB R0,R0,#1<<16
+  TST R14,#&10<<16
+  ADDNE R4,R4,#&000400
+  ADD   R4,R4,#&000002
+ B looping_lady
+
+.nolooping_lady
+ CMP R5,#(32*4.5)^2
+  ORRMI R0,R0,#&1C<<16
+
+ BL Attack_Angles_FL
+
+ TST R0,#1<<8
+ BLEQ Process_Fire
+
+ MOV R14,R4,LSL#24
+ MOV R14,R14,ASR#25
+ AND R14,R14,#&FF
+ BIC R4,R4,#&FF
+ ORR R4,R4,R14
+
+.looping_lady
+ BL Give_gaz
+
+ FNmax_speed(6,12)
+ FNmax_speed(7,12)
+
+ FNmax_speed(8,12)
+
+B quit_Process_Lady
+
+.noAttack_Lady
+ CMP R6,#2<<20:ADDMI R6,R6,#1<<19:SUBPL R6,R6,#1<<19
+ CMP R7,#5<<20:ADDMI R7,R7,#1<<19:SUBPL R7,R7,#1<<19
+
+ BIC R0,R0,#&FF<<16
+
+.quit_Process_Lady
+
+ BL landScape_ApproxHeight ; reste a' une certaine hauteur
+ RSB R5,R5,R3,LSR#20
+ CMP R5,#80
+  ADDMI R8,R8,#3<<20
+ CMP R5,#512
+  SUBPL R8,R8,#3<<20
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Conca
+ STMIA R13!,{R11,R12}
+
+ FNmax_speed(8,12)
+
+ ADD R0,R0,#1<<8
+ TST R0,#1<<17
+  BEQ Conca_moving
+
+.Conca_firing
+
+ BL landScape_ApproxHeight
+ RSB R5,R5,R3,LSR#20
+ CMP R5,#60
+  ADDMI R8,R8,#3<<20
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ; =!underland
+ CMP R14,#0                ; if underland then...
+ CMPMI R8,#0:RSBMI R8,R8,#0
+             SUBMI R8,R8,R8,ASR#2
+
+ MOV R6,#0           ; no speed
+ MOV R7,#0
+
+ TST R0,#3<<8
+ BLEQ Process_Fire
+ BL Attack_Angles_smooth_FL
+
+ ADD R4,R4,#4
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+.Conca_moving
+ BL landScape_ApproxHeight
+ RSB R14,R5,R3,LSR#20
+ CMP R14,#60
+  SUBMI R8,R8,R8,ASR#2
+
+  MOV R6,#3<<20      ; speed
+  MOV R7,#4<<20
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ; =!underland
+ CMP R14,#0                ; if underland then...
+ CMPMI R8,#0:RSBMI R8,R8,#0
+
+ FNadd(4,&080000)
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.Process_Framey
+ STMIA R13!,{R11,R12}
+
+ BL landScape_Height
+ TST R5,#%1<<4
+
+ ADDEQ R14,R0,#1<<8        ; add counter
+ SUBNE R14,R0,#1<<8
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ ADD R4,R4,#(256-5)<<8     ; rotate obj
+ AND R4,R4,#&FF00
+ ORR R4,R4,#64
+ ORR R4,R4,R14,LSL#16-8
+
+ FNadr(7,sinus+64*4)
+ LDR R6,[R7,R14,LSR#8-2]!
+ LDR R7,[R7,#-64*4]
+ MOV R6,R6,LSL#15
+ MOV R7,R7,LSL#15          ; vector speed
+
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]          ; =!underland
+ CMP R14,#0:CMPMI R8,#0
+            RSBMI R8,R8,#0 ; if underland then INVERSE z-speed
+            MOVMI R8,R8,ASR#1
+
+ CMP R3,#(128*1.5)<<20
+            SUBMI R6,R6,R6,ASR#2       ; slow down when in water
+            SUBMI R7,R7,R7,ASR#2
+
+ CMP R14,#eod:
+            MOVEQ R3,#(16*1.5)<<20  ; if NOT visible then stick it to land
+            MOVEQ R8,#0
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.Process_Exaode
+ ADD R14,R0,#1<<8    ; incr counter
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ MOV R3,#400<<20
+ FNadd(4,&040703)
+ MOV R6,#3<<20
+ MOV R7,#1<<20
+ MOV R8,#0
+
+TST R0,#1<<15
+TSTNE R4,#1
+ BLNE Process_Fire
+
+ BL Process_Jet
+
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Batship
+ STMIA R13!,{R11,R12}
+
+ ADD R14,R0,#1<<8    ; incr counter
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ BL Distance_XYZ
+ CMP R5,#(32*20)^2:BPL noAttack_Batship
+
+ CMP R5,#(32*5)^2
+  ADDMI R4,R4,#&000300
+  ADDMI R4,R4,#&030000
+  BMI looping_bat
+
+ BL Attack_Angles_smooth_FL
+
+ CMP R5,#(32*8)^2
+  BPL looping_bat
+   TST R0,#1<<8
+   BLEQ Process_Fire
+
+.looping_bat
+  BL Give_gaz
+
+ FNmax_speed(6, 9)
+ FNmax_speed(7, 9)
+
+ FNmax_speed(8, 8)
+
+ FNadr(14,sinus)
+ AND R10,R0,#&0F00
+ LDR R14,[R14,R10,LSR#4-2]
+ MOV R14,R14,ASR#3
+ BIC R4,R4,#&FF
+ AND R14,R14,#&FF
+ ORR R4,R4,R14             ; sinusoidal giration
+
+B quit_Process_Batship
+
+.noAttack_Batship
+ CMP R6,#6<<20:ADDMI R6,R6,#1<<19:SUBPL R6,R6,#1<<19
+ CMP R7,#4<<20:ADDMI R7,R7,#1<<19:SUBPL R7,R7,#1<<19
+
+.quit_Process_Batship
+
+ BL landScape_ApproxHeight ; reste a' une certaine hauteur
+ RSB R5,R5,R3,LSR#20
+ CMP R5,#80
+  ADDMI R8,R8,#3<<20
+ CMP R5,#220
+  SUBPL R8,R8,#3<<20
+
+ LDMDB R13!,{R11,R12}
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Jaily
+
+ BL landScape_Height
+ TST R5,#%1<<4
+
+ ADDEQ R14,R0,#2<<8        ; add counter
+ SUBNE R14,R0,#1<<8
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ FNadr(7,sinus+64*4)
+ LDR R6,[R7,R14,LSR#8-2]!
+ LDR R7,[R7,#-64*4]
+ MOV R6,R6,LSL#14
+ MOV R7,R7,LSL#14          ; vector speed
+
+  ADD R3,R5,#160
+  MOV R3,R3,LSL#20
+
+  MOV R8,#0
+
+ ADD R14,R0,#2<<16    ; incr counter
+ AND R14,R14,#&FF0000
+ BIC R0,R0,#&FF0000
+ ORR R0,R0,R14
+
+ MOV R8,#0
+ FNadd(4,&030500)
+
+ FNadr(14,sinus)
+ AND R10,R0,#&3F0000
+ LDR R14,[R14,R10,LSR#8+6-2]
+ ADD R3,R3,R14,LSL#20-3
+ MOV R14,R14,ASR#3
+ BIC R4,R4,#&FF
+ AND R10,R14,#&FF
+ ORR R4,R4,R10             ; sinusoidal giration
+
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Reticule
+
+ MOV R8,#0
+
+ BL landScape_Height
+ TST R5,#%1<<5
+
+ ADDEQ R14,R0,#1<<8        ; add counter
+ SUBNE R14,R0,#1<<8
+ AND R14,R14,#&FF00
+ BIC R0,R0,#&FF00
+ ORR R0,R0,R14
+
+ FNadr(7,sinus+64*4)
+ LDR R6,[R7,R14,LSR#8-2]!
+ LDR R7,[R7,#-64*4]
+ MOV R6,R6,LSL#15
+ MOV R7,R7,LSL#15          ; vector speed
+
+  ADD R3,R5,#96
+  MOV R3,R3,LSL#20
+  CMP R3,#(130*1.5)<<20
+   MOVMI R3,#(130*1.5)<<20
+
+  BL Distance_XYZ       ; trop pres?
+  CMP R5,#(32*6)^2
+  BMI no_bilbalzo
+
+  TST R0,#&FF0000
+  BEQ no_bilbalzo_reset
+
+  SUB R0,R0,#&010000
+
+  AND R14,R4,#&00FF00
+  ADD R14,R14,R14,LSL#1 ;x3
+  ADD R14,R14,#64<<8
+  AND R14,R14,#&00FF00
+  MOV R14,R14,LSR#2+8
+  BIC R4,R4,#&00FF00
+  ORR R4,R4,R14,LSL#8
+
+  B after_bilbalzo
+
+.no_bilbalzo_reset
+ FNadr(14,sinus)
+ AND R5,R0,#&FF00
+ LDR R14,[R14,R5,LSR#8-2]
+ MOV R14,R14,ASR#3      ; bilzo balzo
+ AND R14,R14,#&FF
+ BIC R4,R4,#&FF00
+ ADD R4,R4,#64<<8
+ ADD R4,R4,R14,LSL#8
+
+.after_bilbalzo
+ ADD R4,R4,#7           ; rotate obj
+ ADD R4,R4,#3<<16
+
+ BL Process_Jet
+B end_Process
+
+.no_bilbalzo
+  BL Attack_Angles_smooth_FL
+  BL Process_Fire
+  ADD R4,R4,#5          ; superspin
+  ORR R0,R0,#&090000    ; reset bilzo balzo flag
+
+ BL Process_Jet
+B end_Process
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;; SUBROUTINES FOR THE UFO CTRL ;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.set_null_Target        ; set FL copy very far
+ LDR R10,virtual_FL+4
+ ADD R10,R10,#32<<25
+ STR R10,virtual_FL+4
+
+ LDR R10,virtual_FL+8
+ ADD R10,R10,#32<<25
+ STR R10,virtual_FL+8
+MOVS PC,R14
+
+.virtual_FL FNalien_ship(64, 0, 0,0,480 ,0,0,0)
+
+.Distance_XYZ
+ STMIA R13!,{R14}
+  BL Distance_XY
+  FNldr(14,Alt)
+  SUB R14,R14,R3,LSR#20
+  MLA R5,R14,R14,R5
+ LDMDB R13!,{PC}
+
+.Distance_XY                ; return R5=(distance from ship)^2
+ STMIA R13!,{R9,R10, R14}
+ FNldr(14,RealPos)
+ MOV R9,R14,LSR#16:ADD R9,R9,#13.5*32:SUB R9,R9,R1,LSR#20
+ FNadjustTore(9)
+ MOV R10,R14,LSL#16:MOV R10,R10,LSR#16:ADD R10,R10,#6*32:SUB R10,R10,R2,LSR#20
+ FNadjustTore(10)
+
+ MUL R5,R9,R9:MLA R5,R10,R10,R5
+
+ LDMDB R13!,{R9,R10, PC}
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Detect_Object_in_Path
+ STMIA R13!,{R1,R2,R11,R12, R14}
+ CMP R6,#0:ADDPL R11,R1,#1<<25     ; 1 square left
+           MOVMI R11,R1
+ CMP R7,#0:ADDPL R12,R2,#1<<25     ; 1 square up
+           MOVMI R12,R2
+
+ MOV R11,R11,LSR#25:SUB R1,R1,R11,LSL#25:MOV R1,R1,ASR#20  ; delta vector
+ MOV R12,R12,LSR#25:SUB R2,R2,R12,LSL#25:MOV R2,R2,ASR#20  ; between 2 obj
+
+ ADD R11,R11,R12,LSL#7
+
+ FNadr(12,myScape+128*128*2)      ; pointer to object land
+
+ LDRB R11,[R12,R11]               ; load object code
+ CMP R11,#0:BEQ NULL_object       ; NULL_object?
+
+ MOV R11,R6,ASR#20
+ MOV R12,R7,ASR#20
+
+ MUL R1,R12,R1:RSB R1,R1,#0
+ MLAS R1,R11,R2,R1
+
+ ADDPL R4,R4,#5<<16   ; turn in the right direction!
+ SUBMI R4,R4,#5<<16
+
+.NULL_object
+ LDMDB R13!,{R1,R2,R11,R12 ,PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.ChAngles_from_LandScape
+ STMIA R13!,{R1,R2,R5,R6,R7,R8,R9, R14}
+
+ AND R4,R4,#&FF0000        ; maintain rot only
+
+ FNadr(9,sinus)
+ LDR R8,[R9,R4,LSR#16-2]!  ; sin(rot)
+ LDR R9,[R9,#64*4]         ; cos(rot)
+
+ BL landScape_Height :MOV R7,R5 ; hA
+ ADD R1,R1,R9,LSL#16
+ ADD R2,R2,R8,LSL#16
+ BL landScape_Height :MOV R6,R5 ; hB
+ SUB R1,R1,R9,LSL#16:SUB R1,R1,R8,LSL#16
+ SUB R2,R2,R8,LSL#16:ADD R2,R2,R9,LSL#16
+ BL landScape_Height ;MOV R5,R5 ; hC
+
+ SUB R6,R6,R7:MOV R6,R6,LSL#1:AND R6,R6,#&FF:ORR R4,R4,R6,LSL#8
+ SUB R5,R5,R7:MOV R5,R5,LSL#1:AND R5,R5,#&FF:ORR R4,R4,R5   ; new angles
+
+ LDMDB R13!,{R1,R2,R5,R6,R7,R8,R9, PC}^
+
+
+.ChAngles_from_LandScape_smooth
+ STMIA R13!,{R1,R2,R5,R6,R7,R8,R9, R14}
+
+ AND R8,R4,#&FF0000        ; maintain rot only
+
+ FNadr(9,sinus)
+ LDR R8,[R9,R8,LSR#16-2]!  ; sin(rot)
+ LDR R9,[R9,#64*4]         ; cos(rot)
+
+ BL landScape_Height :MOV R7,R5 ; hA
+ ADD R1,R1,R9,LSL#16
+ ADD R2,R2,R8,LSL#16
+ BL landScape_Height :MOV R6,R5 ; hB
+ SUB R1,R1,R9,LSL#16:SUB R1,R1,R8,LSL#16
+ SUB R2,R2,R8,LSL#16:ADD R2,R2,R9,LSL#16
+ BL landScape_Height ;MOV R5,R5 ; hC
+
+ SUB R6,R6,R7:MOV R6,R6,LSL#1                               ; new angles
+  MOV R14,R4,LSL#16
+  BIC R4,R4,#&00FF00
+  AND R14,R14,#&FF<<24
+   SUBS R8,R14,#64<<24     ; trop dephase
+   EORPL R4,R4,#128<<16    ; change direction
+  ADD R14,R14,R6,LSL#24    ; mean value
+  MOV R14,R14,ASR#1
+  AND R14,R14,#&FF<<24
+  ORR R4,R4,R14,LSR#16
+ SUB R5,R5,R7:MOV R5,R5,LSL#1
+  MOV R14,R4,LSL#24
+  BIC R4,R4,#&0000FF
+  ADD R14,R14,R5,LSL#24
+  MOV R14,R14,ASR#1
+  ORR R4,R4,R14,LSR#24
+
+ LDMDB R13!,{R1,R2,R5,R6,R7,R8,R9, PC}^
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Give_gaz
+STMIA R13!,{R14}
+ BL ChSpeed_from_Angles
+ BL Process_Jet
+LDMDB R13!,{PC}^
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.ChSpeed_from_Angles
+ STMIA R13!,{R0,R1,R2,R3, R14}
+
+ FNadr(0,sinus):ADD R1,R0,#64*4
+
+ AND R2,R4,#&00FF00:LDR R2,[R1,R2,LSR#08-2]    ; cos(alfa)
+ AND R3,R4,#&FF0000:LDR R3,[R1,R3,LSR#16-2]    ; cos(beta)
+ MUL R3,R2,R3
+
+ ADD R6,R6,R3,LSL#4        ; modify x-speed
+
+ AND R3,R4,#&FF0000:LDR R3,[R0,R3,LSR#16-2]    ; sin(beta)
+ MUL R3,R2,R3
+
+ ADD R7,R7,R3,LSL#4        ; modify y-speed
+
+ AND R3,R4,#&00FF00:LDR R3,[R0,R3,LSR#08-2]    ; sin(alfa)
+
+ ADD R8,R8,R3,LSL#5+8      ; modify z-speed
+
+ LDMDB R13!,{R0,R1,R2,R3, PC}^
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.landScape_Height
+ STMIA R13!,{R7,R8,R9,R10,R11,R12,R14}
+ FNadr(10,myScape)
+ MOV R11,R1,LSR#32-7
+ MOV R12,R2,LSR#32-7
+
+ ADD R8,R11,R12,LSL#7:LDRB R8,[R10,R8] ; h1
+ ADD R11,R11,#1:AND R11,R11,#127
+ ADD R9,R11,R12,LSL#7:LDRB R9,[R10,R9] ; h2
+
+ AND R14,R1,#%11111<<20
+ SUB R9,R9,R8:MUL R9,R14,R9:ADD R8,R8,R9,ASR#25 ;=hA(h1,h2)
+
+ ADD R12,R12,#1:AND R12,R12,#127
+ ADD R9,R11,R12,LSL#7:LDRB R9,[R10,R9] ; h3
+ SUB R11,R11,#1:AND R11,R11,#127
+ ADD R7,R11,R12,LSL#7:LDRB R7,[R10,R7] ; h4
+
+ SUB R9,R9,R7:MUL R9,R14,R9:ADD R7,R7,R9,ASR#25 ;=hB(h3,h4)
+
+ AND R14,R2,#%11111<<20
+ SUB R7,R7,R8:MUL R7,R14,R7:ADD R8,R8,R7,ASR#25 ;=h
+
+ ADD R5,R8,R8,ASR#1  ; finally put value in output register x1.5
+
+ LDMDB R13!,{R7,R8,R9,R10,R11,R12,PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.landScape_ApproxHeight
+ STMIA R13!,{R2, R14}
+ FNadr(5,myScape)
+ ADD R5,R5,R1,LSR#32-7
+ MOV R2,R2,LSR#32-7
+ LDRB R5,[R5,R2,LSL#7]  ; h
+
+ ADD R5,R5,R5,ASR#1  ; finally put value in output register x1.5
+
+ LDMDB R13!,{R2 ,PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Attack_Angles_FL
+ FNadr(10,virtual_FL)
+
+.Attack_Angles                ; input R10=(cd,x,y,z)=pos to point
+ STMIA R13!,{R0,R1,R2,R3, R11,R12,R14}
+
+ LDR R11,[R10,#12]:MOV R11,R11,LSR#20
+
+ LDMIB R10,{R9,R10}
+ MOV R9,R9,LSR#20
+ MOV R10,R10,LSR#20
+
+ SUB R9,R9,R1,LSR#20  :FNadjustTore(9)
+ SUB R10,R10,R2,LSR#20:FNadjustTore(10)
+ STMIA R13!,{R9,R10}
+
+; inclinaison
+ ;;;;;;;;;;;
+
+ SUBS R11,R11,R3,LSR#20
+
+ MUL R12,R9,R9:MLA R12,R10,R10,R12  ; =x*x+y*y
+ MUL R10,R11,R11:MOV R11,R10,LSL#6  ; =z*z
+                 MOV R12,R12,LSL#6
+
+ MOVPL R9,#0:MVNMI R9,#0   ; to remember the sign
+ BL Divide
+
+ MOV R10,R10,LSR#12
+ ADR R14,tgsqrTab
+ CMP R10,#512
+ LDRMIB R14,[R14,R10]
+ MOVPL R14,#64
+
+ CMP R9,#0:RSBMI R14,R14,#256 ; -beta or +beta ?
+
+ BIC R4,R4,#&00FF00:ORR R4,R4,R14,LSL#8
+
+; rotation
+ ;;;;;;;;;;;
+
+ LDMDB R13!,{R9,R10}                ; load x,y-vector
+
+ MUL R12,R9,R9                      ; =x*x
+ MUL R11,R10,R10:MOV R11,R11,LSL#6  ; =y*y
+                 MOV R12,R12,LSL#6
+
+ CMP R9,#0:MOVPL R9,#0:MOVMI R9,#1  ; set bit 0
+ CMP R10,#0:ADDMI R9,R9,#2          ; set bit 1
+
+ BL Divide
+
+ MOV R10,R10,LSR#12
+ ADR R14,tgsqrTab
+ CMP R10,#512
+ LDRMIB R14,[R14,R10]
+ MOVPL R14,#64
+
+ MOVS R9,R9,LSL#31
+           RSBCS R14,R14,#0
+           RSBMI R14,R14,#128
+
+ AND R14,R14,#&FF:BIC R4,R4,#&FF0000:ORR R4,R4,R14,LSL#16
+
+ LDMDB R13!,{R0,R1,R2,R3, R11,R12,PC}^
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Attack_Angles_smooth_FL
+ FNadr(10,virtual_FL)
+
+.Attack_Angles_smooth         ; input R10=(cd,x,y,z)=pos to point
+ STMIA R13!,{R0,R1,R2,R3, R11,R12,R14}
+
+ LDR R11,[R10,#12]:MOV R11,R11,LSR#20
+
+ LDMIB R10,{R9,R10}
+ MOV R9,R9,LSR#20
+ MOV R10,R10,LSR#20
+
+ SUB R9,R9,R1,LSR#20  :FNadjustTore(9)
+ SUB R10,R10,R2,LSR#20:FNadjustTore(10)
+ STMIA R13!,{R9,R10}
+
+; inclinaison
+ ;;;;;;;;;;;
+
+ SUBS R11,R11,R3,LSR#20
+
+ MUL R12,R9,R9:MLA R12,R10,R10,R12  ; =x*x+y*y
+ MUL R10,R11,R11:MOV R11,R10,LSL#6  ; =z*z
+                 MOV R12,R12,LSL#6
+
+ MOVPL R9,#0:MVNMI R9,#0   ; to remember the sign
+ BL Divide
+
+ MOV R10,R10,LSR#12
+ ADR R14,tgsqrTab
+ CMP R10,#512
+ LDRMIB R14,[R14,R10]
+ MOVPL R14,#64
+
+ CMP R9,#0:RSBMI R14,R14,#256 ; -beta or +beta ?
+
+ AND R9,R4,#&00FF00
+ MOV R9,R9,LSR#8
+ SUB R14,R14,R9
+  AND R14,R14,#&FF
+  CMP R14,#128:RSBPL R14,R14,#256
+  ADDMI R14,R9,R14,LSR#2
+  SUBPL R14,R9,R14,LSR#2
+ AND R14,R14,#&FF
+ BIC R4,R4,#&00FF00
+ ORR R4,R4,R14,LSL#8
+
+; rotation
+ ;;;;;;;;;;;
+
+ LDMDB R13!,{R9,R10}                ; load x,y-vector
+
+ MUL R12,R9,R9                      ; =x*x
+ MUL R11,R10,R10:MOV R11,R11,LSL#6  ; =y*y
+                 MOV R12,R12,LSL#6
+
+ CMP R9,#0:MOVPL R9,#0:MOVMI R9,#1  ; set bit 0
+ CMP R10,#0:ADDMI R9,R9,#2          ; set bit 1
+
+ BL Divide
+
+ MOV R10,R10,LSR#12
+ ADR R14,tgsqrTab
+ CMP R10,#512
+ LDRMIB R14,[R14,R10]
+ MOVPL R14,#64
+
+ MOVS R9,R9,LSL#31
+           RSBCS R14,R14,#0
+           RSBMI R14,R14,#128
+
+ AND R9,R4,#&FF0000
+ MOV R9,R9,LSR#16
+ SUB R14,R14,R9
+  AND R14,R14,#&FF
+  CMP R14,#128:RSBPL R14,R14,#256
+  ADDMI R14,R9,R14,LSR#2
+  SUBPL R14,R9,R14,LSR#2
+ AND R14,R14,#&FF
+ BIC R4,R4,#&FF0000
+ ORR R4,R4,R14,LSL#16
+
+ LDMDB R13!,{R0,R1,R2,R3, R11,R12,PC}^
+
+.tgsqrTab
+]
+FOR x%=0TO 511
+ [OPT PASS : EQUB 64*ATN(SQR(x%/16))*(2/PI) :]
+NEXT
+[OPT PASS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Process_Fire
+ STMIA R13!,{R0,R1,R2,R3,R4, R6-R8, R11,R12,R14}
+ MOV R9,R0,LSR#24:SUB R9,R9,#64
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]:CMP R14,#eod:BEQ quit_Process_Fire ;test if ship visible
+ BL FireMissile
+ CMP R3,#(128*1.5)<<20
+  MOVPL R1,#3:MOVPL R2,#25
+  MOVMI R1,#4:MOVMI R2,#25
+  SWI "Sou_MakeSample"
+.quit_Process_Fire
+ LDMDB R13!,{R0,R1,R2,R3,R4, R6-R8, R11,R12,PC}
+
+.Process_Jet
+ STMIA R13!,{R0,R1,R2,R3,R4, R6-R8, R11,R12,R14}
+ MOV R9,R0,LSR#24:SUB R9,R9,#64
+ BL ReadCurrentAllocation
+ LDR R14,[R5,#-4]:CMP R14,#eod:BLNE ReactorJet      ; test if ship visible
+ LDMDB R13!,{R0,R1,R2,R3,R4, R6-R8, R11,R12,PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Divide ; input R11,R12 ;output R10
+
+ MOV R10,#0
+]
+ FOR a=23 TO 4 STEP -1
+ [OPT PASS
+  MOVS r11,r11,lsl#1
+  CMPCC r11,r12,lsl#8
+  SUBCS r11,r11,r12,lsl#8
+  ADDCS r10,r10,#1<<a
+ ]
+ NEXT
+[OPT PASS
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.FireMissile   ; input obj def = { R1,R2,R3, R5, R6,R7,R8, R9}
+
+               ; R5=allocated address
+               ; R6,R7,R8 = speed ship
+               ; R9=code pntr -64
+FNin
+
+ADD PC,PC,R9,LSL#2
+EQUS "JUMP"
+B Fire_FlashLight
+B quit_FireMissile
+B quit_FireMissile
+B quit_FireMissile
+B Fire_Ebudae
+B quit_FireMissile
+B Fire_Toupy
+B Fire_Eagle
+B Fire_LadyBird
+B Fire_Conca
+B quit_FireMissile
+B Fire_Exaode
+B Fire_Batship
+B quit_FireMissile
+B quit_FireMissile
+B Fire_Reticule
+
+.fire_now
+ MOV R7,R1,LSR#20:ADD R1,R7,R9                  ; pos
+ MOV R8,R2,LSR#20:ADD R2,R8,R11
+ MOV R9,R3,LSR#20:ADD R3,R9,R12
+ BL InsertParticle
+
+.quit_FireMissile
+FNout
+
+.Fire_FlashLight
+ ADD R10,R5,#12                         ; skip light
+
+ LDMIA R10!,{R9,R11,R12}
+ ADD R0,R10,#12*17
+ LDMIA R0,{R0,R4,R14}
+  SUB R5,R11,R4  :ADD R5,R7,R5,LSL#20   ;speed
+  SUB R4,R9,R0   :ADD R4,R6,R4,LSL#20
+  SUB R6,R12,R14 :ADD R6,R8,R6,LSL#20
+
+ MOV R0,#20:ORR R0,R0,#(&FC<<8)+(1<<16) ; counter and type
+
+ MOV R7,R1,LSR#20:ADD R1,R7,R9
+ MOV R8,R2,LSR#20:ADD R2,R8,R11
+ MOV R9,R3,LSR#20:ADD R3,R9,R12
+ BL InsertParticle
+
+ LDMIA R10,{R10,R11,R12}
+
+ ADD R1,R7,R10
+ ADD R2,R8,R11
+ ADD R3,R9,R12
+ BL InsertParticle
+
+B quit_FireMissile
+
+.Fire_Ebudae          FNfire_code(20+(0<<16), 0,5,  19)
+.Fire_Toupy    FNorigin_fire_code(20+(0<<16), 0,    19)
+.Fire_Eagle    FNorigin_fire_code(20+(0<<16), 20,   20)
+.Fire_LadyBird FNorigin_fire_code(20+(0<<16), 0,    20)
+.Fire_Batship  FNorigin_fire_code(20+(0<<16), 0,    20)
+.Fire_Conca    FNorigin_fire_code(20+(1<<16), 0,    20)
+.Fire_Exaode   FNorigin_fire_code(20+(1<<16), 9,    19)
+.Fire_Reticule FNorigin_fire_code(20+(0<<16),17,    20)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.ReactorJet    ; input obj def = { R1,R2,R3, R5, R6,R7,R8, R9}
+
+               ; R6,R7,R8 = speed ship
+               ; R9=code pntr -64
+FNin
+
+ADD PC,PC,R9,LSL#2
+EQUS "JUMP"
+B Jet_FlashLight
+B quit_ReactorJet
+B Jet_Medusa
+B quit_ReactorJet
+B Jet_Ebudae
+B Jet_MiniMine
+B quit_ReactorJet
+B Jet_Eagle
+B Jet_LadyBird
+B quit_ReactorJet
+B quit_ReactorJet
+B Jet_Exaode
+B Jet_Batship
+B quit_ReactorJet
+B quit_ReactorJet
+B Jet_Reticule
+
+.jet_now
+ MOV R7,R1,LSR#20:ADD R1,R7,R9
+ MOV R8,R2,LSR#20:ADD R2,R8,R11
+ MOV R9,R3,LSR#20:ADD R3,R9,R12
+ BL InsertParticle
+
+.quit_ReactorJet
+FNout
+
+.Jet_FlashLight
+ ADD R10,R5,#12+12*6
+
+LDMIA R10,{R9,R11,R12}
+ ADD R0,R10,#12*7
+ LDMIA R0,{R0,R4,R14}
+  RSB R5,R11,R4  :ADD R5,R7,R5,LSL#17   ;speed
+  RSB R4,R9,R0   :ADD R4,R6,R4,LSL#17
+  RSB R6,R12,R14 :ADD R6,R8,R6,LSL#17
+
+ ADD R10,R10,#12*13:LDMIA R10!,{R9,R11,R12} ;19th
+ LDR R0,rnd_Jet:ADD R0,R0,R0,ROR#1:STR R0,rnd_Jet
+ AND R0,R0,#%11:ADD R0,R0,#&D:ORR R0,R0,#(&FB<<8)  ; counter and type
+
+ MOV R7,R1,LSR#20:ADD R1,R7,R9
+ MOV R8,R2,LSR#20:ADD R2,R8,R11
+ MOV R9,R3,LSR#20:ADD R3,R9,R12
+ BL InsertParticle
+
+ LDMIA R10,{R10,R11,R12}   ; 20th
+
+ ADD R1,R7,R10
+ ADD R2,R8,R11
+ ADD R3,R9,R12
+ BL InsertParticle
+
+B quit_ReactorJet
+
+.Jet_Medusa   FNjet_code(0,16,17,17 ,-1)
+.Jet_Ebudae   FNjet_code(1, 5, 0,17 ,+1)
+.Jet_MiniMine FNjet_code(1, 5, 0,17 ,-1)
+.Jet_Eagle    FNjet_code(0,18,20,16 ,+1)
+.Jet_Batship  FNjet_code(1, 7, 0,17 ,+1)
+.Jet_Exaode   FNjet_code(1,19, 9,15 ,+1)
+.Jet_LadyBird FNjet_code(1,16, 0,15 ,+1)
+.Jet_Reticule FNjet_code(1,12,17,16 ,+1)
+
+.rnd_Jet EQUD -TIME*27
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Ufo_initRotatedList       ; !underland=eod for every existing obj
+ FNin                      ; Useful because when outsideViewZone-object
+ BL InitAllocate           ; fires/jets,then abort his operation
+ FNadr(0,flyingObjects)
+ MOV R1,#eod
+.nextFlyInit
+ LDR R5,[R0],#32
+ CMP R5,#eod
+ BLNE AllocateObjMemory
+ STRNE R1,[R5,#-4]
+ BNE nextFlyInit
+FNout
+
+.Ufo_shadows   ; input R0=relative row #
+FNin
+
+ BL InitAllocate
+
+ FNldr(6,PosY):ADD R6,R6,R0:AND R6,R6,#127 ; R6=absolute row =[0..127]
+ FNldr(7,PosX):AND R7,R7,#127              ; R7=left coloumn =[0..127]
+
+ STR R6,memo6:STR R7,memo7
+
+ FNadr(8,flyingObjects)
+.nextFly
+ LDMIA R8,{R0,R1,R2}
+ CMP R0,#eod:FNexitEQ
+ ADD R8,R8,#32 ; move pointer
+ BL  AllocateObjMemory        ; return in R5 a valid buffer address
+
+ CMP R6,R2,LSR#25:BNE nextFly ; ...bad row!
+ SUB R14,R1,R7,LSL#25
+ CMP R14,#26<<25:BCS nextFly  ; out of x range
+
+ SUB R3,R8,#32-12
+ LDMIA R3,{R3,R4}             ; load z pos and angles
+
+ MOV R0,R0,LSR#24             ; select code for graphic pointer
+ BL ReadObjectAddress         ; R0=pointer_object(R0)
+
+ STR R0,memo0
+ STR R8,memo8
+ BL RotateDinamic
+ LDR R0,memo0
+ BL DrawShadow
+
+ BL ReadCurrentAllocation     ; store in the list the !underLand value
+ FNldr(14,underLand)
+ STR R14,[R5,#-4]
+
+ADR R6,memo6:LDMIA R6,{R6,R7,R8}
+
+ CMP R14,#0:BPL nextFly
+ LDR R3,[R8,#-20]:SUB R3,R3,R14,LSL#20:STR R3,[R8,#-20] ;move to z-min
+B nextFly
+
+FNout
+
+.Ufo_draw   ; as for shadow , but draw object instead of shadow
+FNin
+
+ BL InitAllocate
+
+ FNldr(6,PosY):ADD R6,R6,R0:AND R6,R6,#127 ; R6=absolute row =[0..127]
+ FNldr(7,PosX):AND R7,R7,#127              ; R7=left coloumn =[0..127]
+
+ STR R6,memo6:STR R7,memo7
+
+ FNadr(8,flyingObjects)
+.nextFly2
+ LDMIA R8,{R0,R1,R2,R3}
+ CMP R0,#eod:FNexitEQ
+ ADD R8,R8,#32 ; move pointer
+ BL  AllocateObjMemory         ; return in R5 a valid buffer address
+
+ CMP R6,R2,LSR#25:BNE nextFly2 ; ...bad row!
+ SUB R14,R1,R7,LSL#25
+ CMP R14,#26<<25:BCS nextFly2  ; out of x range
+
+ MOV R0,R0,LSR#24              ; select code for graphic pointer
+ BL ReadObjectAddress          ; R0=pointer_object(R0)
+
+ STR R8,memo8
+ BL DrawObject
+ ADR R6,memo6:LDMIA R6,{R6,R7,R8}
+B nextFly2
+
+FNout
+
+ .memo0  EQUD 0
+ .memo6  EQUD 0
+ .memo7  EQUD 0
+ .memo8  EQUD 0
+
+.TstTFCollision
+STMIA R13!,{R1-R4,R6-R9,R11,R12 ,R14}
+
+MOV R5,R12
+.looptstTFcoll
+LDMIA R5,{R9, R10,R11,R14}
+CMP R9,#eod:BEQ quit_TstTF    ; ok,no collisions found
+ADD R5,R5,#32
+MOVS R9,R9,LSR#24
+           BEQ looptstTFcoll  ; dead object...
+CMP R9,#65:BNE looptstTFcoll  ; not a TopFun object
+
+SUBS R10,R10,R1:RSBMI R10,R10,#0:CMP R10,#16<<20:BPL looptstTFcoll
+SUBS R11,R11,R2:RSBMI R11,R11,#0:CMP R11,#16<<20:BPL looptstTFcoll
+SUBS R14,R14,R3:RSBMI R14,R14,#0:CMP R14,#16<<20:BPL looptstTFcoll
+
+;;;;;;;;;;;;;;;;;;;
+; collision found ;
+;;;;;;;;;;;;;;;;;;;
+
+MOV R9,#0:STR R9,[R5,#-32]             ; destroy TopFun
+
+SUB R10,R5,#32:LDMIB R10,{R10-R12}     ; retrieve coords
+
+ ADR R14,memo11:STMIA R14,{R10-R12}    ; store the second object
+ BL BoomDinamic                        ; explode the first
+ ADR R14,memo11:LDMIA R14,{R1-R3}      ; remember the second object
+ BL BoomDinamic                        ; explode it
+ BL new_inject
+ BL more_Shmartz
+ MOV R0,#0                             ; quit and return dead object
+
+.quit_TstTF
+ LDMDB R13!,{R1-R4,R6-R9,R11,R12 ,PC}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.TstFLCollision
+STMIA R13!,{R1-R4,R6-R9,R11,R12 ,R14}
+
+FNadr(5,flyingObjects+32)
+.looptstFLcoll
+LDMIA R5,{R9, R10,R11,R14}
+CMP R9,#eod:BEQ quit_TstFL    ; ok,no collisions found
+ADD R5,R5,#32
+CMP R9,#0:BEQ looptstFLcoll   ; dead object
+
+SUBS R10,R10,R1:RSBMI R10,R10,#0:CMP R10,#20<<20:BPL looptstFLcoll
+SUBS R11,R11,R2:RSBMI R11,R11,#0:CMP R11,#20<<20:BPL looptstFLcoll
+SUBS R14,R14,R3:RSBMI R14,R14,#0:CMP R14,#20<<20:BPL looptstFLcoll
+
+;;;;;;;;;;;;;;;;;;;
+; collision found ;
+;;;;;;;;;;;;;;;;;;;
+
+ STR R0,memo0
+
+ MOV R9,R9,LSR#24
+ CMP R9,#67:BNE no_car_collision
+
+ FNldr(14,FL_curr_wea)
+ CMP R14,#1:BNE profs_destruction
+
+ FNldr(14,FL_wea_1)           ; one less proftaker instance
+ SUBS R14,R14,#1
+ BMI profs_destruction
+ FNstr(14,11,FL_wea_1)
+
+.profs_rescuing
+ FNldr(11,curr_planet)
+ ADD R11,R11,#16
+
+ MOV R9,#14
+.loop_profs_rescuing
+
+ FNldr(10,FL_profs_how_much)
+ CMP R10,#max_profs_on_FL%
+ BPL profs_destruction
+
+ FNadr(14,profs_row+12)
+ LDR R10,[R14,R9,LSL#4]
+ CMP R10,R11               ; put professor on paradise if kidnapped here
+  BNE prof_dont_rescue
+  SUB R10,R10,#16
+  ORR R10,R10,#1<<31
+  STR R10,[R14,R9,LSL#4]
+
+  FNincr(10,14,FL_profs_how_much)
+
+.prof_dont_rescue
+ SUBS R9,R9,#1:BPL loop_profs_rescuing
+
+ B cause_no_damage
+
+.profs_destruction
+ FNldr(11,curr_planet)
+ ADD R11,R11,#16
+ FNadr(14,profs_row+12)
+ MOV R9,#14
+.loop_profs_destruction
+ LDR R10,[R14,R9,LSL#4]
+ CMP R10,R11               ; put professor on paradise if kidnapped here
+  MOVEQ R10,#14
+  STREQ R10,[R14,R9,LSL#4]
+ SUBS R9,R9,#1:BPL loop_profs_destruction
+
+ FNldr(14,FL_curr_wea)
+ CMP R14,#1:BNE no_car_collision
+ FNldr(11,FL_wea_1)
+ CMP R11,#1:BPL cause_no_damage        ; au moins 1 instance de proftaker
+
+.no_car_collision
+ FNldr(14,FL_curr_wea)
+ CMP R14,#3:BNE cause_damage
+ FNldr(14,FL_wea_3)
+ SUBS R14,R14,#1
+ FNsetflag("PL")
+ FNstr(14,9,FL_wea_3)
+ BPL cause_no_damage
+
+.cause_damage
+ FNldr(9,damage_on_FL)                 ; signale collision du FL
+ CMP R9,#75
+  ADDMI R9,R9,#25
+  MOVPL R9,#100
+ FNstr(9,14,damage_on_FL)
+
+ MOVPL R0,#0
+ STRPL R0,memo0
+
+ BLPL set_null_Target
+
+.cause_no_damage
+
+MOV R9,#0:STR R9,[R5,#-32]             ; kill 2nd object
+
+SUB R10,R5,#32:LDMIB R10,{R10-R12}     ; retrieve coords
+
+ ADR R14,memo11:STMIA R14,{R10-R12}    ; store the second object
+ BL BoomDinamic                        ; explode the first
+ ADR R14,memo11:LDMIA R14,{R1-R3}      ; remember the second object
+ BL BoomDinamic                        ; explode it
+
+ BL new_inject
+ BL more_Shmartz
+
+ LDR R0,memo0                          ; quit and return object code
+
+.quit_TstFL
+ LDMDB R13!,{R1-R4,R6-R9,R11,R12 ,PC}
+
+.memo11 EQUD 0
+.memo12 EQUD 0
+.memo13 EQUD 0
+
+FNbin
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.AllocateObjMemory         ; every block should be 8+12*(maxPoints+1) long
+ LDR R5,allocValue
+ ADD R5,R5,#8+12*(maxPoints+1)
+ STR R5,allocValue
+MOV PC,R14
+
+.InitAllocate                         ; returns R5+4 instead of R5
+ FNadr(5,freeMemory - ( 4+12*(maxPoints+1) ))
+ STR R5,allocValue                    ;
+MOV PC,R14                            ; !R5=!underLand
+                                      ; R5+4 = rotatedList
+.ReadCurrentAllocation                ;      = LightVector + { 3D coords }
+ LDR R5,allocValue                    ;
+MOV PC,R14                            ;
+
+.allocValue EQUD 0
+]
+=0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+DEFFNPutRadarRoutine
+REM ##### dimensions du radar : 32 lignes de 32 pixels
+eod=65536
+[OPT PASS
+
+.RadarBackGround
+FNadr(0,Rad_data)
+FNadr(1,myScape)
+
+FNldr(2,curr_planet)
+TST R2,#1:LDREQ R2,kind_of_cols+0
+          LDRNE R2,kind_of_cols+4
+          STR   R2,planet_cols
+          FNstr(2,3,map_planet_cols)   ; for scanner scene
+
+MOV R2,#64
+.lyR
+MOV R3,#64
+.lxR
+ ADD R4,R1,#128*128:LDRB R4,[R4]                ; read color
+ CMP R4,#64:MOVPL R5,#206:BPL baseBackGround    ; if texture then base
+
+  LDRB  R4,[R1]
+  LDRB  R5,[PC,R4,LSR#6]
+  B     fineTune_Intensity
+.planet_cols
+  EQUB  0
+  EQUB  8
+  EQUB  32
+  EQUB  68
+.fineTune_Intensity
+  AND R4,R4,#%00110000
+  ADD R5,R5,R4,LSR#4
+
+.baseBackGround
+ STRB R5,[R0],#1
+ ADD R1,R1,#2
+
+SUBS R3,R3,#1:BNE lxR
+ ADD R1,R1,#1*128
+SUBS R2,R2,#1:BNE lyR
+MOVS PC,R14
+
+.kind_of_cols EQUD &44200800
+              EQUD &34100800
+
+.DamagedRadar
+
+FNldr(4,BASESCR)
+FNadd(4,320*220+260)
+
+LDR R0,rnd_dara
+
+ADR R5,DamagedDatas
+
+MOV R1,#32
+.lyDaRa
+MOV R2,#32
+.lxDaRa
+
+ ADD R0,R0,R0,ROR#1
+ EOR R0,R0,R0,ROR#13
+ LDR R3,[R5,R0,LSR#29]
+ STR R3,[R4],#4
+
+SUBS R2,R2,#4:BNE lxDaRa
+ADD R4,R4,#320-32
+SUBS R1,R1,#1:BNE lyDaRa
+
+STR R0,rnd_dara
+
+MOVS PC,R14
+
+.DamagedHorizon
+
+FNldr(4,BASESCR)
+FNadd(4,320*213+128)
+
+LDR R0,rnd_dara
+
+ADR R5,DamagedDatas
+
+MOV R1,#41
+.lyDaHo
+MOV R2,#64
+.lxDaHo
+
+ ADD R0,R0,R0,ROR#1
+ EOR R0,R0,R0,ROR#13
+ LDR R6,[R5,R0,LSR#29]
+
+ ADD R0,R0,R0,ROR#1
+ EOR R0,R0,R0,ROR#13
+ LDR R7,[R5,R0,LSR#29]
+
+ STMIA R4!,{R6,R7}
+
+SUBS R2,R2,#8:BNE lxDaHo
+ADD R4,R4,#320-64
+SUBS R1,R1,#1:BNE lyDaHo
+
+STR R0,rnd_dara
+
+MOVS PC,R14
+
+.DamagedDatas FNload("ZARCH_TWO.brouillard")
+
+.rnd_dara EQUD -TIME
+
+.ViewRadar
+
+LDR R8,PosX:ADD R8,R8,#13:MOV R8,R8,ASR#1:SUB R8,R8,#16 ; resize
+LDR R9,PosY:ADD R9,R9,#6:MOV R9,R9,ASR#1:SUB R9,R9,#16  ; and centre
+;;;;;;;;;;;;;;;;;
+
+FNldr(4,BASESCR)
+FNadd(4,320*220+260)
+
+MOV R5,R4
+MOV R7,R9
+
+AND R11,R8,#3:MOV R11,R11,LSL#3:RSB R0,R11,#32
+MOV R6,R8,ASR#2:MOV R6,R6,LSL#28
+
+FNadr(13,Rad_data)
+
+MOV R1,#32
+.lyRa
+ AND R7,R7,#63:ADD R10,R13,R7,LSL#6:ADD R7,R7,#1 ; new line
+
+ LDR R2,[R10,R6,LSR#26]:MOV R2,R2,LSR R11
+]
+FOR radar_loop%=0 TO 3
+[OPT PASS
+ ADD R6,R6,#1<<28          ; fill radar screen
+ LDR R12,[R10,R6,LSR#26]
+ ORR R2,R2,R12,LSL R0
+ MOV R3,R12,LSR R11
+
+ ADD R6,R6,#1<<28
+ LDR R12,[R10,R6,LSR#26]
+ ORR R3,R3,R12,LSL R0
+ STMIA R5!,{R2,R3}
+]
+
+IF radar_loop%<>3 THEN
+[OPT PASS
+ MOV R2,R12,LSR R11
+]
+ENDIF
+
+NEXT radar_loop%
+
+[OPT PASS
+
+ADD R5,R5,#320-32
+ADD R6,R6,#8<<28
+SUBS R1,R1,#1:BNE lyRa
+
+   ;;;;;;;;;;;;;;;;;;;;
+;;;; draw radar cross
+   ;;;;;;;;;;;;;;;;;;;;
+
+LDR R1,radar_flasher:ADD R1,R1,#1<<28:STR R1,radar_flasher
+TST R1,#%11<<30:BNE noRadCross
+
+ MOV R1,#255           ; cross colour
+ ADD R5,R4,#320*16      ; move pointer to half radar vertically
+ STRB R1,[R5,#16-3*320]
+ STRB R1,[R5,#16-2*320]
+ STRB R1,[R5,#16+2*320]
+ STRB R1,[R5,#16+3*320]
+ STRB R1,[R5,#16-2]
+ STRB R1,[R5,#16-3]
+ STRB R1,[R5,#16+2]
+ STRB R1,[R5,#16+3]
+.noRadCross
+
+FNadr(0,flyingObjects+32)  ; skip FL datas
+.loopReadFlying2
+LDMIA R0,{R1,R2,R3}     ; read objet volant
+CMP R1,#eod:MOVEQ PC,R14
+ADD R0,R0,#32           ; move pointer to next object
+CMP R1,#0:BEQ loopReadFlying2 ; dead obj?
+
+SUBS   R2,R2,R8,LSL#26  ; dx
+SUBPLS R3,R3,R9,LSL#26  ; dy
+
+ADDPL  R2,R4,R2,LSR#26
+MOVPL  R3,R3,LSR#26
+ADDPL  R2,R2,R3,LSL#6
+STRPLB R1,[R2,R3,LSL#8] ; plot point on radar...
+B loopReadFlying2
+
+.radar_flasher EQUD 0
+
+
+FNbin
+]
+=0
+__________________________________________________________________________
+
+DEFFNalien_ship(pointer_code%,reason_code%,px%,py%,pz%,vx%,vy%,vz%)
+[OPT PASS
+ FNalien_ship_header(pointer_code%,reason_code%)
+ EQUD px%<<20:EQUD py%<<20:EQUD pz%<<20
+ EQUD 0  ; angles
+ EQUD vx%<<20:EQUD vy%<<20:EQUD vz%<<20
+]
+=0
+
+DEFFNalien_ship_header(pointer_code%,reason_code%)
+IF pointer_code%>255 OR pointer_code%<0 ERROR 17," ### ERROR FNalien_ship"
+IF reason_code%>255 OR reason_code%<0 ERROR 17," ### ERROR FNalien_ship"
+[OPT PASS
+ EQUD (pointer_code%<<24) + (reason_code%<<16) + FNradColor(pointer_code%)
+]
+=0
+
+DEFFNradColor(cde%)
+CASE cde% OF
+ WHEN 64: =0      :REM not used for FL
+ WHEN 65: =151
+ WHEN 66: =215
+ WHEN 67: =255
+ WHEN 68: =195
+ WHEN 69: =55
+ WHEN 70: =243
+ WHEN 71: =83
+ WHEN 72: =183
+ WHEN 73: =91
+ WHEN 74: =87
+ WHEN 75: =253
+ WHEN 76: =219
+ WHEN 77: =247
+ WHEN 78: =203
+ WHEN 79: =63
+ OTHERWISE : ERROR 17," ### ERROR : FNradColor("+STR$cde%+") undefined"
+ENDWHEN
+=0
+
+DEFFNadjustTore(r%)
+[OPT PASS
+ CMP   r%,#32*64:SUBPL r%,r%,#32*128
+ CMNMI r%,#32*64:ADDMI r%,r%,#32*128
+]
+=0
+__________________________________________________________________________
+
+DEFFNfire_code(type%, fire_point%, dir_point%, fire_speed%)
+ REM for 1-fire ships only!
+[OPT PASS
+ ADD R10,R5,#12+12*fire_point%   ; skip light and move to fire point
+ LDMIA R10,{R9,R11,R12}
+]
+
+ fire_delta%=12*(dir_point%-fire_point%)
+
+ IF fire_delta%>=0 THEN
+  [OPT PASS : ADD R0,R10,#+fire_delta% :]
+ ELSE
+  [OPT PASS : SUB R0,R10,#-fire_delta% :]
+ ENDIF
+
+[OPT PASS
+ LDMIA R0,{R0,R4,R14}
+  SUB R5,R11,R4  :ADD R5,R7,R5,LSL#fire_speed%  ; speed
+  SUB R4,R9,R0   :ADD R4,R6,R4,LSL#fire_speed%
+  SUB R6,R12,R14 :ADD R6,R8,R6,LSL#fire_speed%
+
+ FNmov(0,type%+&FC00)
+ B fire_now
+
+]
+=0
+
+DEFFNorigin_fire_code(type%, fire_point%,  fire_speed%)
+ REM dir_point% IS origin
+ REM for 1-fire ships only!
+[OPT PASS
+ ADD R10,R5,#12+12*fire_point%   ; skip light and move to fire point
+ LDMIA R10,{R9,R11,R12}
+
+  ADD R5,R7,R11,LSL#fire_speed%                 ; speed
+  ADD R4,R6,R9 ,LSL#fire_speed%
+  ADD R6,R8,R12,LSL#fire_speed%
+
+  FNmov(0,type%+&FC00)
+  B fire_now
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNjet_code(type%, jet_point%, dir_point%, jet_speed%, versus%)
+ REM for 1-fire ships only!
+ REM versus%=+1 or -1 = [ SUB / RSB speed ]
+[OPT PASS
+ ADD R10,R5,#12+12*jet_point%
+ LDMIA R10,{R9,R11,R12}
+]
+ jet_delta%=12*(dir_point%-jet_point%)
+
+ IF jet_delta%>=0 THEN
+  [OPT PASS : ADD R0,R10,#+jet_delta% :]
+ ELSE
+  [OPT PASS : SUB R0,R10,#-jet_delta% :]
+ ENDIF
+
+[OPT PASS
+ LDMIA R0,{R0,R4,R14}
+]
+
+IF versus%=+1 THEN
+ [OPT PASS
+  SUB R5,R11,R4  :ADD R5,R7,R5,LSL#jet_speed%
+  SUB R4,R9,R0   :ADD R4,R6,R4,LSL#jet_speed%
+  SUB R6,R12,R14 :ADD R6,R8,R6,LSL#jet_speed%
+ ]
+  ELSE
+ [OPT PASS
+  RSB R5,R11,R4  :ADD R5,R7,R5,LSL#jet_speed%
+  RSB R4,R9,R0   :ADD R4,R6,R4,LSL#jet_speed%
+  RSB R6,R12,R14 :ADD R6,R8,R6,LSL#jet_speed%
+ ]
+ENDIF
+
+[OPT PASS
+ LDR R0,rnd_Jet:ADD R0,R0,R0,ROR#1:STR R0,rnd_Jet
+ AND R0,R0,#%11:ADD R0,R0,#&D:ORR R0,R0,#(&FB<<8)  ; counter and type
+]
+ IF type%<>0 THEN [OPT PASS : ORR R0,R0,#&10000 :] :REM red/yellow jet
+[OPT PASS
+ B jet_now
+]
+=0
+
+DEFFNmax_speed(reg%,max_v%)
+[OPT PASS
+ CMP reg%,#max_v%<<20:MOVPL reg%,#max_v%<<20
+ CMNMI reg%,#max_v%<<20:MVNMI reg%,#max_v%<<20
+]
+=0

@@ -1,0 +1,41 @@
+REM >MASTER.FNmakeDiv
+END
+__________________________________________________________________________
+
+DEFFNcreate_div_table
+[OPT PASS
+
+.MakeDivs
+FNadr(0,Divis)
+
+MOV R1,#0   ;x
+.lx_dv
+MOV R2,#0   ;y
+.ly_dv
+
+mov r3,#320<<16   ; start value
+mov r4,r2         ; copies
+mov r5,r1
+
+]
+
+FOR a=23 TO 4 STEP -1
+
+[ OPT PASS
+movs r4,r4,lsl#1
+cmpcc r4,r5,lsl#8
+subcs r4,r4,r5,lsl#8
+addcs r3,r3,#1<<a
+]
+
+NEXT
+
+[ OPT PASS
+
+str r3,[r0],#4  ;store value
+
+ADD R2,R2,#1:CMP R2,#128:BMI ly_dv
+ADD R1,R1,#1:CMP R1,#128:BMI lx_dv
+MOV PC,R14
+]
+=0

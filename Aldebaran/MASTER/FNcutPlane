@@ -1,0 +1,533 @@
+REM >MASTER.FNcutPlane
+
+REM **************************
+
+DIM cde 3000
+FOR PASS=0 TO 2 STEP 2
+P%=cde
+[OPT PASS
+
+.BASESCR EQUD &1FD8000
+
+FNcutPlaneRoutine
+
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0 ;buffer routine(never forget!)
+
+.Divis
+]
+NEXT
+END
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+DEFFNcutPlaneRoutine
+[OPT PASS
+
+.PutPlane             ; input R12 = colour ; R13 = background colour
+STR R14,MEMO14p
+
+STR R13,backGroundCol
+
+FNadr(13,Divis)
+
+CMP R2,R4:BMI noSwp1p
+CMPEQ R1,R3:BLE noSwp1p
+                     MOV R9,R2:MOV R2,R4:MOV R4,R9
+                     MOV R9,R1:MOV R1,R3:MOV R3,R9
+.noSwp1p
+CMP R2,R6:BMI noSwp2p
+CMPEQ R1,R5:BLE noSwp2p
+                     MOV R9,R2:MOV R2,R6:MOV R6,R9
+                     MOV R9,R1:MOV R1,R5:MOV R5,R9
+.noSwp2p
+CMP R2,R8:BMI noSwp3p
+CMPEQ R1,R7:BLE noSwp3p
+                     MOV R9,R2:MOV R2,R8:MOV R8,R9
+                     MOV R9,R1:MOV R1,R7:MOV R7,R9
+.noSwp3p
+CMP R6,R4:BPL noSwp4p:MOV R9,R4:MOV R4,R6:MOV R6,R9
+                     MOV R9,R3:MOV R3,R5:MOV R5,R9
+.noSwp4p
+CMP R8,R4:BPL noSwp5p:MOV R9,R4:MOV R4,R8:MOV R8,R9
+                     MOV R9,R3:MOV R3,R7:MOV R7,R9
+.noSwp5p
+CMP R8,R6:BPL noSwp6p:MOV R9,R6:MOV R6,R8:MOV R8,R9
+                     MOV R9,R5:MOV R5,R7:MOV R7,R9
+.noSwp6p
+
+TST R2,#1:MOVEQ R14,R12,ROR#8:MOVNE R14,R12  ; r12=color word
+
+SUBS R11,R3,R1       ; dx AB :STR R11,deltaStartp
+ADDPL R9,R13,R11,LSL#2
+SUBMI R9,R13,R11,LSL#2
+ADD R9,R9,R4,LSL#9  ;dy AB
+LDR R9,[R9,-R2,LSL#9]
+ RSBMI R9,R9,#640<<16
+
+CMP R2,R4:CMPEQ R2,R6:BNE nonop
+SUB R10,R5,R1:CMP R10,R11:STRGT R10,deltaStartp
+.nonop
+
+SUBS R10,R5,R1          ; dx AC
+ADDPL R10,R13,R10,LSL#2
+SUBMI R10,R13,R10,LSL#2
+ADD R10,R10,R6,LSL#9    ; dy AC
+LDR R10,[R10,-R2,LSL#9]
+ RSBMI R10,R10,#640<<16
+
+SUBS R11,R7,R1          ; dx AD
+ADDPL R11,R13,R11,LSL#2
+SUBMI R11,R13,R11,LSL#2
+ADD R11,R11,R8,LSL#9    ; dy AD
+LDR R11,[R11,-R2,LSL#9]
+ RSBMI R11,R11,#640<<16
+
+;;;;;;Test border ;;;;;;;;;;;;;;;;
+
+CMP R2,#208:CMPCC R8,#208
+CMPCC R1,#320:CMPCC R3,#320:CMPCC R5,#320:CMPCC R7,#320
+EORCS R14,R14,#1<<17
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ADD R1,R1,R2,LSL#6:ADD R1,R1,R2,LSL#8
+
+CMP R9,R10
+BMI sel1p
+CMP R9,R11:BMI sel1bp
+           MOV R12,R9
+           SUB R9,R4,R2
+           SUB R0,R6,R4:STR R0,[R13,#-4]
+
+          SUBS R0,R7,R3       ; dx BD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy BD
+          LDR R0,[R0,-R4,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+          SUBS R3,R5,R3       ; dx BC
+          ADDPL R3,R13,R3,LSL#2
+          SUBMI R3,R13,R3,LSL#2
+          ADD R3,R3,R6,LSL#9  ; dy BC
+          LDR R3,[R3,-R4,LSL#9]
+          RSBMI R3,R3,#640<<16
+
+          CMP R0,R3
+
+           BMI sel1fp
+
+   ; middle BD
+
+           STR R0,[R13,#-8]   ; pente R12
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+           STR R0,[R13,#-12-12] ; pente R11 last
+
+         CMP R10,R11:MOVMI R11,R10
+          STR R11,[R13,#-12]
+          BMI startDrawp
+
+           SUB R0,R8,R4:STR R0,[R13,#-4]
+           MOV R0,#0:STR R0,[R13,#-12-4]
+          B startDraw2p
+
+       .sel1fp
+           STR R3,[R13,#-8]   ; pente R12
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+
+         CMP R10,R11:MOVMI R11,R10
+            STR R11,[R13,#-12]
+            STR R11,[R13,#-12-12] ; R11 last
+
+           B startDrawp
+
+.sel1bp
+           MOV R12,R11
+           SUB R9,R6,R2
+           MOV R0,#0:STR R0,[R13,#-4]
+
+           MOV R11,R10
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+           STR R0,[R13,#-12-12]
+           STR R12,[R13,#-8-12]
+
+B startDrawp
+
+.sel1p
+
+CMP R10,R11:BMI minusp:MOV R12,R10
+
+.plusp
+CMP R9,R11:BMI sel1dp
+
+           SUB R9,R6,R2
+           MOV R0,#0:STR R0,[R13,#-4]
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+           STR R11,[R13,#-12-12]
+
+           B startDrawp
+.sel1dp
+           MOV R11,R9
+           SUB R9,R4,R2
+
+           SUB R0,R6,R4:STR R0,[R13,#-4]
+
+          SUBS R0,R7,R3       ; dx BD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy BD
+          LDR R0,[R0,-R4,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+          SUBS R3,R5,R3       ; dx BC
+          ADDPL R3,R13,R3,LSL#2
+          SUBMI R3,R13,R3,LSL#2
+          ADD R3,R3,R6,LSL#9  ; dy BC
+          LDR R3,[R3,-R4,LSL#9]
+          RSBMI R3,R3,#640<<16
+
+          CMP R0,R3
+
+           BMI sel1gp
+
+          STR R3,[R13,#-12]   ; pente R11
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+          STR R0,[R13,#-12-12]   ; pente R11 last
+          STR R12,[R13,#-8-12]   ; pente R12 last
+
+          B sel1ep
+       .sel1gp
+          STR R0,[R13,#-12]         ; pente R11
+
+          STR R0,[R13,#-12-12]      ; pente R11 last
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+          STR R0,[R13,#-8-12]       ; pente R12 last
+
+.sel1ep
+           STR R12,[R13,#-8]
+           B startDrawp
+
+.minusp
+MOV R12,R11
+CMP R9,R11:BMI sel1d2p
+
+           SUB R9,R6,R2
+           MOV R0,#0:STR R0,[R13,#-4]
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+           STR R0,[R13,#-8-12] ; pente R12 last
+           STR R11,[R13,#-12-12]
+
+           B startDrawp
+.sel1d2p
+           MOV R11,R9
+           SUB R9,R4,R2
+                                             ;;;
+          SUBS R0,R7,R3       ; dx BD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy BD
+          LDR R0,[R0,-R4,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+          SUBS R3,R5,R3       ; dx BC
+          ADDPL R3,R13,R3,LSL#2
+          SUBMI R3,R13,R3,LSL#2
+          ADD R3,R3,R6,LSL#9  ; dy BC
+          LDR R3,[R3,-R4,LSL#9]
+          RSBMI R3,R3,#640<<16
+
+          CMP R0,R3
+
+           BMI sel1g2p
+
+          STR R3,[R13,#-12]   ; pente R11
+
+           SUB R0,R6,R4:STR R0,[R13,#-4]     ;;;
+
+          SUBS R0,R7,R5       ; dx CD
+          ADDPL R0,R13,R0,LSL#2
+          SUBMI R0,R13,R0,LSL#2
+          ADD R0,R0,R8,LSL#9  ; dy CD
+          LDR R0,[R0,-R6,LSL#9]
+          RSBMI R0,R0,#640<<16
+
+          STR R0,[R13,#-12-12]   ; pente R11 last
+          STR R12,[R13,#-8-12]   ; pente R12 last
+
+          B sel1e2p
+       .sel1g2p
+          STR R0,[R13,#-12]         ; pente R11
+
+          STR R12,[R13,#-8]         ; pente R12
+
+          SUB R0,R8,R4:STR R0,[R13,#-4]
+          MOV R0,#0:STR R0,[R13,#-4-12]
+          B startDraw2p
+
+.sel1e2p
+           STR R12,[R13,#-8]
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.startDrawp
+           SUB R0,R8,R6:STR R0,[R13,#-4-12]
+.startDraw2p
+
+CMP R14,R14,ROR#16:BNE clippedp
+
+LDR R6,backGroundCol ; for the non-clipped,R6 is used for fine-cut routine
+
+MOV R8,R14,ROR#8
+LDR R3,BASESCR:ADD R10,R3,R1
+
+.noclippedp
+
+MOV R1,#&8000
+MOV R2,#&8000
+
+CMP R9,#0:BNE noNextp
+LDR R5,deltaStartp
+CMP R5,#0
+MOVGT R2,R5,LSL#16
+MOVMI R1,R5,LSL#16
+B nextOnep
+
+.noNextp
+
+SUB R5,PC,#4
+SUBS R9,R9,#1:BPL fillp
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextOnep
+LDR R9,[R13,#-4]!
+CMP R9,#0:BEQ nextTwop
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+SUB R5,PC,#4
+SUBS R9,R9,#1:BPL fillp
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextTwop
+LDR R9,[R13,#-12]!
+CMP R9,#0:BEQ nextp
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+SUB R5,PC,#4
+SUBS R9,R9,#1:BPL fillp
+
+.nextp
+LDR R15,MEMO14p  ; quitDraw
+
+;;;;;;;;;;;; Clipped polygon  ;;;;;;;;;;;;;;;;;
+
+.clippedp
+EOR R14,R14,#1<<17 ;reset the right bit
+
+MOV R8,R14,ROR#8
+LDR R3,BASESCR:ADD R10,R3,R1
+               ADD R6,R3,R2,LSL#8:ADD R6,R6,R2,LSL#6
+
+MOV R1,#&8000
+MOV R2,#&8000
+
+CMP R9,#0:BNE noNextCp
+LDR R5,deltaStartp
+CMP R5,#0
+MOVGT R2,R5,LSL#16
+MOVMI R1,R5,LSL#16
+B nextOneCp
+
+.noNextCp
+
+SUB R5,PC,#4
+SUBS R9,R9,#1:BPL fillClipp
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextOneCp
+LDR R9,[R13,#-4]!
+CMP R9,#0:BEQ nextTwoCp
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+SUB R5,PC,#4
+SUBS R9,R9,#1:BPL fillClipp
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextTwoCp
+LDR R9,[R13,#-12]!
+CMP R9,#0:BEQ nextp
+
+LDMDB R13,{R5,R7}
+CMP R7,R12:MOVNE R12,R7:MOVNE R2,R2,ASR#16:MOVNE R2,R2,ASL#16:ORRNE R2,R2,#&8000
+CMP R5,R11:MOVNE R11,R5:MOVNE R1,R1,ASR#16:MOVNE R1,R1,ASL#16:ORRNE R1,R1,#&8000
+
+SUB R5,PC,#4
+SUBS R9,R9,#1:BPL fillClipp
+
+B nextp
+
+  ; ************ How to fill an hline
+
+.fillp
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ MOV R0,R2,LSR#16
+ SUB R0,R0,R1,LSR#16
+
+ ADD R4,R10,R1,LSR#16 ; start fill
+
+LDRB R7,[R4,#-1]           ; CutPlane!!
+CMP R7,R6,LSR#24:MOVNE R7,R7,LSL#24:CMPNE R7,R6,LSL#24:STREQB R8,[R4,#-1]
+LDRB R7,[R4,R0]
+CMP R7,R6,LSR#24:MOVNE R7,R7,LSL#24:CMPNE R7,R6,LSL#24:STREQB R8,[R4,R0]
+
+RSBS R7,R0,#8:BMI superFillp
+
+.drawLittlep
+MOV R8,R8,ROR#8
+MOV R14,R14,ROR#8
+
+TST R4,#1:ADDNE R7,R7,#10   ; jump into 2nd table(10 instr later)
+
+ADD PC,PC,R7,LSL#2
+MOVNV R0,R0
+STRB R14,[R4,#07]:STRB R8,[R4,#06]:STRB R14,[R4,#05]
+STRB R8,[R4,#04]:STRB R14,[R4,#03]:STRB R8,[R4,#02]
+STRB R14,[R4,#01]:STRB R8,[R4,#00]
+MOV PC,R5
+MOV PC,R5
+
+STRB R8,[R4,#07]:STRB R14,[R4,#06]:STRB R8,[R4,#05]
+STRB R14,[R4,#04]:STRB R8,[R4,#03]:STRB R14,[R4,#02]
+STRB R8,[R4,#01]:STRB R14,[R4,#00]
+MOV PC,R5
+MOV PC,R5
+
+.fillClipp
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ MOV R0,R2,LSR#16
+ SUB R0,R0,R1,LSR#16
+
+ ADD R6,R6,#320
+
+ ADD R4,R10,R1,LSR#16 ; start fill
+
+ SUBS R7,R4,R6:BPL noLeftp    ; left margin
+ ADDS R0,R0,R7:MOVGT R4,R6
+ B okMarginp
+.noLeftp
+ ADD R7,R7,R0
+ RSBS R7,R7,#320  ; right margin
+ ADDLES R0,R0,R7
+.okMarginp
+ MOVLE PC,R5      ; out of border
+
+ SUBS R7,R4,R3:MOVMI PC,R5    ; out of Vborder UP
+ CMP R7,#65*1024:BPL nextp    ; out of Vborder DOWN >> end of work
+
+RSBS R7,R0,#8:BPL drawLittlep
+
+.superFillp
+
+MOVS R7,R4,LSL#30:BEQ noBoundp
+
+EORS R7,R7,R7,LSL#1
+SUB R0,R0,R7,LSR#30
+
+STRCCB R8,[R4],#1
+STRMIB R14,[R4],#1
+STRB   R8,[R4],#1
+.noBoundp
+
+MOV R8,R8,ROR#8
+
+RSB R7,R0,#15*8+7
+ADD PC,PC,R7,LSR#1
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+
+MOV R14,R14,ROR#8
+
+TEQP PC,R0,LSL#29
+ STRMI R8,[R4],#4
+ STREQB R8,[R4],#1
+ STREQB R14,[R4],#1
+ STRCSB R8,[R4]
+MOV PC,R5
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.MEMO14p EQUD 0
+.deltaStartp EQUD 0
+.backGroundCol EQUD 0
+]
+=0
+

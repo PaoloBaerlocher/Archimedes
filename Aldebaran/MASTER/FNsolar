@@ -1,0 +1,1342 @@
+REM >MASTER.FNsolar
+END
+__________________________________________________________________________
+
+DEFFNsolar
+limit_dist%=92       :REM unreachable planet?
+dclick_delay%=10
+[OPT PASS
+
+.plustime_key        ; if "+" key pressed then loose time
+ MOV R0,#&81
+ MVN R1,#93
+ MOV R2,#&FF
+ SWI "OS_Byte"
+ CMP R1,#&FF:CMPEQ R2,#&FF:MOVNES PC,R14
+ MOV R2,#60
+B add_time
+
+.prepare_sunlight
+FNin
+
+ BL init_sunlight_vars
+ BL prepare_sunlight_instance
+ BL SwapScreens
+ BL prepare_sunlight_instance
+ BL SwapScreens
+
+FNout
+
+.prepare_sunlight_instance
+FNin
+ BL clear_scr
+ MOV R0,#0:MOV R1,#0:MOV R2,#118:MOV R3,#39:BL draw_window
+ BL PutPlanetList
+ FNldr(0,BASESCR):BL sun_cde
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.solar_main_routine
+FNin
+ BL exec_solar_mouse
+.end_exec
+ BL plustime_key
+ BL put_galaxy
+ BL solar_set_virtual_time
+
+ LDR R2,virtual_time
+ BL solar_put_timer
+ BL solar_timer_message
+
+ BL Put_InDis
+ BL put_movetime
+ BL Put_BothSelectRow
+ BL trajectoire_trace
+
+ LDR R14,presentation_system
+ TST R14,#1<<7:BNE sys3
+ CMP R14,#2
+  BEQ sys2
+.sys1
+ BL create_sunlight_list
+ BL transform_sunlight_list
+ BL sort_sunlight_list
+ BL draw_sunlight_list
+ FNexit
+.sys2
+ BL PutAllBars
+ FNexit
+.sys3
+ BL hyperdrive_message
+
+FNout
+
+FNbin
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.exec_solar_mouse
+
+ LDR R0,hdrive_go    ; hyperdrive preparation in progress
+ CMP R0,#0           ; (dont execute mouse)
+ SUBMI R0,R0,#1
+ STRMI R0,hdrive_go
+ MOVMI PC,R14
+
+ LDR R0,solar_mouse_type
+ CMP R0,#0:BLEQ mouse_norm_step
+           BLNE mouse_hori_step
+
+ ADR R14,end_exec
+
+ MOV R0,#0
+ STR R0,solar_mouse_type
+
+ FNmouse
+
+ LDR R3,presentation_system
+ TST R3,#1<<7
+ BEQ no_menuhyperdrive
+ CMP R0,#392+48+24
+ SUBCC R4,R1,#232
+ CMPCC R4,#616
+ BICCS R3,R3,#1<<7
+ STRCS R3,presentation_system
+.no_menuhyperdrive
+
+ CMP R2,#4:BEQ solar_mouse_SEL
+ CMP R2,#2:BEQ solar_mouse_MEN
+ CMP R2,#1:BEQ solar_mouse_ADJ
+
+ LDR R0,hdrive_dclick
+ SUB R0,R0,#1
+ CMN R0,#1
+ STRPL R0,hdrive_dclick
+
+ MOV R0,#0:STR R0,graph_adjust_value   ; reinit some variables
+           STR R0,plan1_adjust_value
+           STR R0,plan2_adjust_value
+           STR R0,prese_menu_value
+MOV PC,R14
+
+.solar_mouse_SEL
+ SUB R2,R0,#392
+ CMP R2,#24
+ SUBCC R2,R1,#232
+ CMPCC R2,#616
+ ADDCC R2,R2,R2,LSL#1 ; /11
+ RSBCC R2,R2,R2,LSL#5 ;
+ MOVCC R2,R2,LSR#10+2 ; /4
+ RSBCC R2,R2,#13
+ STRCC R2,left_selected_planet
+ BCC init_trajectoire_trace
+
+ SUB R2,R0,#392+48
+ CMP R2,#24
+ SUBCC R2,R1,#232
+ CMPCC R2,#616
+ ADDCC R2,R2,R2,LSL#1 ; /11
+ RSBCC R2,R2,R2,LSL#5 ;
+ MOVCC R2,R2,LSR#10+2 ; /4
+ RSBCC R2,R2,#13
+ STRCC R2,right_selected_planet
+
+ CMP R0,#372                  ; hyperdrive presentation
+ SUBCC R2,R1,#232
+ CMPCC R2,#616
+ BCS no_hdrive_pres
+
+ ADD R2,R2,R2,LSL#1 ; /11
+ RSB R2,R2,R2,LSL#5 ;
+ MOV R2,R2,LSR#10+2 ; /4
+ RSB R2,R2,#13
+ STR R2,hyperdrive_to
+ LDR R4,presentation_system
+ ORR R4,R4,#1<<7
+ STR R4,presentation_system
+ MVN R4,#0
+ STR R4,hdrive_search
+ MOV R4,#0
+ STR R4,hdrive_go
+
+ LDR R3,hdrive_sel
+ CMP R2,R3:LDREQ R3,hdrive_okflag:MOVNE R3,#0
+
+ LDR R4,hdrive_dclick         ; control dclick for hyperdrive
+ CMP R4,#dclick_delay%
+ MOVCS R4,#dclick_delay%
+ STRCS R2,hdrive_sel
+ STRCC R3,hdrive_go
+ STR R4,hdrive_dclick
+
+.no_hdrive_pres
+ SUB R2,R1,#872               ; move cursor
+ CMP R2,#32
+ SUBCC R2,R0,#392+96+16
+ CMPCC R2,#1260-(392+96+16)
+ MOVCC R2,R2,LSR#2
+ STRCC R2,movetime_position
+ MOVCC R2,#1
+ STRCC R2,solar_mouse_type
+
+ SUB R2,R1,#888               ; reset time and left_selected_planet
+ CMP R2,#1004-888
+ SUBCC R2,R0,#20
+ CMPCC R2,#440
+ MOVCC R2,#0
+ STRCC R2,movetime_position
+ STRCC R2,delta_time
+ LDRCC R2,curr_planet
+ STRCC R2,left_selected_planet
+
+ LDR R2,presentation_system   ; change zoom (in 3D mode only)
+ CMP R2,#3:MOVNE PC,R14
+ SUB R2,R0,#392+96
+ CMP R2,#1280-(392+96)
+ SUBCC R2,R1,#232
+ CMPCC R2,#616
+ SUBCC R2,R0,#876
+ SUBCC R3,R1,#540
+ MULCC R0,R2,R2
+ MLACC R0,R3,R3,R0
+ FNsetflag("CC")
+ FNstr(0,2,viewer_distance)
+
+MOV PC,R14
+
+.solar_mouse_MEN
+ SUB R2,R0,#392+96
+ CMP R2,#1280-(392+96)
+ SUBCC R2,R1,#232
+ CMPCC R2,#616
+ LDRCC R2,prese_menu_value
+ CMPCC R2,#2
+ MVNCC R2,#0
+ STRCC R2,prese_menu_value
+ LDRCC R2,presentation_system
+ RSBCC R2,R2,#5
+ STRCC R2,presentation_system
+MOV PC,R14
+
+.solar_mouse_ADJ
+
+ SUB R2,R1,#236
+ CMP R2,#846-234
+ SUBCC R2,R0,#500
+ CMPCC R2,#1260-500
+ BCC set_view_planets
+
+ SUB R2,R1,#912
+ CMP R2,#1025-912
+ SUBCC R2,R0,#392+96
+ CMPCC R2,#1284-(392+96)
+MOVCS PC,R14
+
+ LDR R2,graph_adjust_value
+ STR R0,graph_adjust_value
+
+ CMP R2,#0:MOVEQ R0,R2  ; at first "adjust" press no move
+
+ RSB R0,R0,R2
+  LDR R2,delta_time
+  ADDS R2,R2,R0,LSL#7
+  MOVMI R2,#0
+  STR R2,delta_time
+MOV PC,R14
+
+.set_view_planets
+
+ LDR R2,plan1_adjust_value
+ STR R0,plan1_adjust_value
+
+ CMP R2,#0:MOVEQ R0,R2   ; at first "adjust" press no move
+
+ FNadr(3,sunlight_angle1)
+
+ RSB R0,R0,R2
+  LDRB R2,[R3,#0]
+  ADD R2,R2,R0,ASR#1
+  STRB R2,[R3,#0]
+
+ LDR R2,plan2_adjust_value
+ STR R1,plan2_adjust_value
+
+ CMP R2,#0:MOVEQ R1,R2   ; at first "adjust" press no move
+
+ RSB R1,R1,R2
+  LDRB R2,[R3,#1]
+  ADD R2,R2,R1,ASR#1
+  STRB R2,[R3,#1]
+
+MOV PC,R14
+
+.graph_adjust_value EQUD 0
+.plan1_adjust_value EQUD 0
+.plan2_adjust_value EQUD 0
+.prese_menu_value   EQUD 0
+
+.solar_mouse_type EQUD 0   ; kind of possible moves for the mouse
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.solar_put_timer  ; input R2=time to write(in half seconds)
+FNin
+
+ FNldr(1,BASESCR)
+ FNadd(1,320*10+16)
+
+ MOV R4,#0:MOV R5,#0:MOV R6,#0:MOV R7,#0
+ MOV R3,#20
+.loop_clear_clock_window
+ STMIA R1!,{R4-R7}:STMIA R1!,{R4-R7}:STMIA R1!,{R4-R7}
+ STMIA R1!,{R4-R7}:STMIA R1!,{R4-R7}:STMIA R1!,{R4-R5}
+ ADD R1,R1,#320-22*4
+SUBS R3,R3,#1:BNE loop_clear_clock_window
+
+ FNmov(1,320*22+16)
+ BL draw_time
+
+FNout
+
+.base_counter        ; count with R3=base ; return R0
+ MOV R0,#91          ; base for numbers
+.base_counter_loop
+ SUBS R2,R2,R3
+ ADDPL R0,R0,#1
+ BPL base_counter_loop
+ ADD R2,R2,R3
+MOVS PC,R14
+
+.Ascii_base_counter  ; count with R3=base ; return R0
+ MOV R0,#48          ; base for numbers
+.Ascii_base_counter_loop
+ SUBS R2,R2,R3
+ ADDPL R0,R0,#1
+ BPL Ascii_base_counter_loop
+ ADD R2,R2,R3
+MOVS PC,R14
+
+.timer_unit_1 EQUD 60*60*24*10*2
+.timer_unit_2 EQUD 60*60*24   *2
+.timer_unit_3 EQUD 60*60*10   *2
+.timer_unit_4 EQUD 60*60      *2
+
+.solar_timer_message
+ MOV R2,#10    ; Y position of the message
+ MOV R3,#248   ; the color
+
+ LDR R0,virtual_time
+ LDR R1,solar_time
+ CMP R0,R1
+ BNE simu_putmessage
+
+.real_putmessage
+ ADR R0,solar_timer_messREAL
+ MOV R1,#24
+ B PutMiniString
+
+.simu_putmessage
+ ADR R0,solar_timer_messSIMU
+ MOV R1,#24
+ B PutMiniString
+
+.solar_timer_messREAL FNstring("REAL TIME")
+.solar_timer_messSIMU FNstring("SIMULATED")
+
+.solar_set_virtual_time
+ LDR R0,movetime_position  ; if !movetime_position=0 THEN real_time
+ LDR R1,solar_time         ;                         ELSE virtual_time
+ ADD R1,R1,R0,LSL#9
+ LDR R0,delta_time
+ ADD R1,R1,R0
+ STR R1,virtual_time
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CALCULATION ROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.planets_distance       ; between planets # R0 and # R1 ; return R0=dist
+FNin                    ; input R2 = time
+
+ MOV R10,R1
+ MOV R11,R2
+ BL planet_position
+ MOV R7,R0,ASR#8   ; remember the position
+ MOV R8,R1,ASR#8
+ MOV R9,R2,ASR#8
+ MOV R0,R10
+ MOV R2,R11
+ BL planet_position
+ SUB R7,R7,R0,ASR#8
+ SUB R8,R8,R1,ASR#8
+ SUB R9,R9,R2,ASR#8
+
+ MUL R0,R7,R7:MLA R0,R8,R8,R0:MLA R0,R9,R9,R0
+
+ BL sqrt
+
+FNout
+
+.planet_position        ; input R0 = planet # ; R2 = time
+                        ; return (R0,R1,R2) = coords
+ ADR R1,planets_def
+ ADD R1,R1,R0,LSL#5     ; R1=planet address
+ LDMIA R1!,{R0,R3}      ; (R0,R3)=to,speed
+
+ MUL R2,R3,R2
+ ADD R0,R0,R2,ASR#14
+ AND R0,R0,#255         ; = t
+
+ FNadr(3,sinus)
+ LDR R2,[R3,R0,LSL#2]!:LDR R3,[R3,#64*4]  ; load sin(t),cos(t)
+
+ LDMIA R1!,{R4,R5}      ; load first two constants
+ MUL R5,R3,R5:RSB R5,R5,#0:MLA R0,R2,R4,R5
+ LDMIA R1 ,{R4,R5,R6}   ; load last three constants
+ MUL R5,R3,R5:             MLA R1,R2,R4,R5
+                           MUL R2,R6,R2
+ MOV R0,R0,ASR#8
+ MOV R1,R1,ASR#8
+ MOV R2,R2,ASR#8
+MOV PC,R14
+
+.solar_time   EQUD 0    ; (time in half seconds)  (real time)
+.virtual_time EQUD 0    ; can be solar_time if simulation NOT activated
+.delta_time   EQUD 0    ; delta from the graph translation
+
+.curr_planet           EQUD 1 ; valid values FROM 1 TO 12
+.left_selected_planet  EQUD 4
+.right_selected_planet EQUD 8
+.movetime_position     EQUD 0
+.presentation_system   EQUD 2 ; 2 or 3 (2D or 3D) and bit 7 set if hdrive
+
+.planets_def   ;precision 15 bits ;angles en degres (stockes sur 16 bits)
+ FNdef_planet(0,0,0,0,0)      ; the star
+]
+FOR PL%=1 TO 13
+[OPT PASS
+ FNdef_planet(750+PL%*0000,360*ABSSIN(PL%),360*ABSCOS(PL%*121.34),360*ABSSIN(PL%*45.1),256*SIN(PL%*9.1))
+]
+NEXT
+[OPT PASS
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.init_planets_movement
+ ADR R0,planets_def+32
+
+ LDR R11,rnd_planets
+
+ MOV R1,#1
+.loop_init_planets_movement
+
+ ADD R11,R11,R11,ASR#1
+ EOR R11,R11,R11,ROR#11
+
+ MOV R2,R11,LSR#24      ;=to
+ MOV R3,R11,LSL#8
+ MOV R3,R3,LSR#23
+ SUB R3,R3,#256
+ ORR R3,R3,#8           ;=speed
+
+ MOV R10,#768
+ ADD R10,R10,R1,LSL#10
+ ADD R10,R10,R1,LSL#8   ;=rayon
+
+ AND R4,R11,#255
+ FNadr(13,sinus)
+ LDR R12,[R13,R4,LSL#2]!   ; sin(alfa)
+ LDR R13,[R13,#64*4]       ; cos(alfa)
+
+ AND R4,R11,#255<<8
+ FNadr(9,sinus)
+ LDR R8,[R9,R4,LSR#8-2]!   ; sin(beta)
+ LDR R9,[R9,#64*4]         ; cos(beta)
+
+ MUL R4,R10,R9:MUL R4,R13,R4:MOV R4,R4,ASR#16
+ MUL R5,R10,R12             :MOV R5,R5,ASR#8
+ MUL R6,R10,R9:MUL R6,R12,R6:MOV R6,R6,ASR#16
+ MUL R7,R10,R13             :MOV R7,R7,ASR#8
+ MUL R8,R10,R8              :MOV R8,R8,ASR#8
+
+ STMIA R0!,{R2-R9}
+
+ ADD R1,R1,#1:CMP R1,#14:BNE loop_init_planets_movement
+
+ STR R11,rnd_planets
+
+MOVS PC,R14
+
+.rnd_planets EQUD -TIME EOR &3628123B
+
+; CALCULE LA RACINE CARREE = SQUARE ROOT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.sqrt
+ MOVS R0,R0,LSL #7:MOVEQ PC,R14
+ MOV R1,#0
+.loopsqrt
+ CMP R0,#256:BLE oksqrt
+ ADD R1,R1,#1
+ MOV R0,R0,LSR #2
+ B loopsqrt
+.oksqrt
+ SUB R0,R0,#128
+ MOV R2,#128
+ ADD R2,R2,R0,ASR #1
+ MOV R0,R2,LSL R1
+MOV PC,R14
+
+; DIVISION DE DEUX NOMBRES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FNdivide_routine
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GRAPHIC ROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.PutAllBars
+FNin
+
+ MOV R13,#13
+.loop_PutAllBars
+
+ LDR R0,left_selected_planet
+ MOV R1,R13
+ LDR R2,virtual_time
+ BL planets_distance
+
+ LDR R14,right_selected_planet
+ CMP R13,R14
+  ADR R3,bar_green_data ; normal
+  ADDEQ R3,R3,#16*4     ; highlighted
+
+ MOV R2,R0,LSR#6
+ RSB R0,R13,R13,LSL#3
+ ADD R1,R0,R13,LSL#2  ;x11
+ ADD R1,R1,#45        ;Y-centre
+ MOV R0,#124
+ BL PutBar
+
+ SUBS R13,R13,#1
+ BPL loop_PutAllBars
+
+FNout
+
+.PutBar           ; input (A%,B%)=(x,y) ; C%=length=[0..] ;D%=bar pointer
+
+MOV R11,#limit_dist%   ; counter for change colour (green/red)
+
+FNldr(12,BASESCR)
+ADD R12,R12,R0
+ADD R12,R12,R1,LSL#8
+ADD R12,R12,R1,LSL#6
+
+CMP R2,#191:MOVGT R2,#191     ; dont overflow
+
+MOV R0,R3:LDMIA R0!,{R3-R10}  ; load green and move pointer
+
+.draw_bars_word
+ SUBS R2,R2,#4:BMI quit_draw_bars_word
+
+ STR R3 ,[R12],#4
+ STR R4 ,[R12,#1*320-4]
+ STR R5 ,[R12,#2*320-4]
+ STR R6 ,[R12,#3*320-4]
+ STR R7 ,[R12,#4*320-4]
+ STR R8 ,[R12,#5*320-4]
+ STR R9 ,[R12,#6*320-4]
+ STR R10,[R12,#7*320-4]
+
+ SUBS R11,R11,#4:LDMEQIA R0,{R3-R10}
+B draw_bars_word
+
+.quit_draw_bars_word
+ ADD R2,R2,#4
+.draw_bars_byte
+ SUBS R2,R2,#1:MOVMI PC,R14
+
+ STRB R3 ,[R12],#1
+ STRB R4 ,[R12,#1*320-1]
+ STRB R5 ,[R12,#2*320-1]
+ STRB R6 ,[R12,#3*320-1]
+ STRB R7 ,[R12,#4*320-1]
+ STRB R8 ,[R12,#5*320-1]
+ STRB R9 ,[R12,#6*320-1]
+ STRB R10,[R12,#7*320-1]
+B draw_bars_byte
+
+.bar_green_data
+ FNword(065)
+ FNword(105)
+ FNword(067)
+ FNword(067)
+ FNword(067)
+ FNword(066)
+ FNword(066)
+ FNword(033)
+
+.bar_red_data
+ FNword(018)
+ FNword(030)
+ FNword(028)
+ FNword(028)
+ FNword(028)
+ FNword(019)
+ FNword(019)
+ FNword(006)
+
+.newbar_green_data
+ FNword(081)
+ FNword(245)
+ FNword(083)
+ FNword(083)
+ FNword(083)
+ FNword(082)
+ FNword(082)
+ FNword(037)
+
+.newbar_red_data
+ FNword(081)
+ FNword(245)
+ FNword(083)
+ FNword(083)
+ FNword(083)
+ FNword(082)
+ FNword(082)
+ FNword(037)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.PutPlanetList
+FNin
+
+ MOV R2,#44       ; first line Y
+ MOV R13,#0
+
+.nextPlanetList
+ ADR R0,PlanetNames
+ ADD R0,R0,R13,LSL#3
+ ADD R0,R0,R13    ; R0 = pointer to string
+
+ MOV R1,#0        ; X position
+
+ LDR R14,curr_planet
+ CMP R13,R14
+
+ MOVNE R3,#17     ; colour
+ MOVEQ R3,#47
+
+ BL PutString
+ ADD R2,R2,#11    ; next line
+
+ ADD R13,R13,#1
+ CMP R13,#14
+ BMI nextPlanetList
+FNout
+
+.PlanetNames
+ EQUS "THE STAR"+CHR$13
+ EQUS "  NUBIUM"+CHR$13
+ EQUS "    VELA"+CHR$13
+ EQUS " IMBRIUM"+CHR$13
+ EQUS " UMBRIEL"+CHR$13
+ EQUS "  BOREAS"+CHR$13
+ EQUS "ZEPHRYUS"+CHR$13
+ EQUS " AFRICUS"+CHR$13
+ EQUS " UNDARUM"+CHR$13
+ EQUS "   ASTRA"+CHR$13
+ EQUS " PHOEBUS"+CHR$13
+ EQUS " ROSETUM"+CHR$13
+ EQUS " ETERNUM"+CHR$13
+ EQUS "   ALGOL"+CHR$13
+
+ALIGN
+
+.Put_InDis
+FNin
+
+MVN R12,#0
+.loop_Put_InDis
+
+LDR R0,left_selected_planet
+LDR R1,right_selected_planet
+LDR R2,solar_time
+LDR R3,delta_time
+ADD R2,R2,R3
+ADD R2,R2,R12,LSL#11
+BL planets_distance
+
+MOV R2,R0,LSR#9
+MOV R0,R12,LSL#2:ADD R0,R0,#124
+MOV R1,#28
+
+CMP R2,R1:MOVGT R2,R1   ; dont overflow
+BL Put_InDis_Bar
+
+ADD R12,R12,#1:CMP R12,#49:BNE loop_Put_InDis
+
+FNout
+
+.Put_InDis_Bar ; input (R0,R1)=x,y ; R2 = height
+               ; draw a 28-pixels bar
+
+LDR R3,movetime_position
+ADD R3,R3,#126
+MOV R3,R3,LSR#2
+CMP R3,R0,LSR#2
+
+  MOVNE R4,#&DA
+  MOVEQ R4,#247
+ ORR R4,R4,R4,LSL#8  ; graph-colour (2 cols)
+
+ FNldr(3,BASESCR)
+ ADD R3,R3,R0
+ ADD R3,R3,R1,LSL#8
+ ADD R3,R3,R1,LSL#6
+
+ TST R0,#%100
+ LDRNE R5,InDis_green1
+ LDREQ R5,InDis_green2
+
+ MOV R7,#11
+.nextBitBar_ph1
+ SUBS R2,R2,#1                   ; change colour?
+  STRPL R4,[R3],#-320
+  STRMI R5,[R3],#-320
+ SUBS R7,R7,#1:BNE nextBitBar_ph1
+
+ MOV R5,#0                       ; replace green by black
+
+ MOV R7,#17
+.nextBitBar_ph2
+ SUBS R2,R2,#1                   ; change colour?
+  STRPL R4,[R3],#-320
+  STRMI R5,[R3],#-320
+ SUBS R7,R7,#1:BNE nextBitBar_ph2
+MOV PC,R14
+
+.InDis_green1 EQUD &20212223
+.InDis_green2 EQUD &40414240
+
+FNbin
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.init_sunlight_vars
+ MOV R0,#2:STR R0,presentation_system
+ MOV R0,#0:STR R0,hdrive_go
+           STR R0,hdrive_okflag
+ MVN R0,#0:STR R0,hdrive_dclick
+           STR R0,hdrive_search
+ LDR R1,curr_planet:STR R1,left_selected_planet
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.test_hdrive_timer
+ SWI "OS_ReadMonotonicTime"
+ TST R0,#%110000
+MOV PC,R14
+
+.hdrive_dclick EQUD -1
+.hdrive_go     EQUD 0   ; 0=waiting ; 1=searching ; -1<=prepare hyperdrive
+.hyperdrive_to EQUD 0
+.hdrive_sel    EQUD 0
+.hdrive_okflag EQUD 0   ; 1=impossible , -1=ready to go
+.hdrive_search EQUD -1  ; =time of search ; if -1 then suspended
+.hdrive_seconds EQUD 0  ; needed to calc new time after hyperdrive
+
+.hyperdrive_message
+FNin
+
+ LDR R0,hyperdrive_to
+ BL hdrive_planetName
+ ADR R0,hyp_mes1:MOV R1,#220:MOV R2,#060:MOV R3,#40:BL GenCentredString
+ ADR R0,hyp_mes2:MOV R1,#220:MOV R2,#072:           BL GenCentredString
+
+ LDR R0,hdrive_go
+ CMP R0,#0:BMI hyperdrive_now
+
+ LDR R0,hyperdrive_to
+ FNldr(1,curr_planet)
+
+ CMP R0,#0:BEQ hyperdrive_no_because_star
+ CMP R0,R1:BEQ hyperdrive_no_because_already
+
+ FNldr(2,solar_time)
+ BL planets_distance
+ CMP R0,#64*limit_dist%:BMI hyperdrive_yes
+
+  LDR R0,hdrive_go
+  CMP R0,#1:BNE hyperdrive_no
+
+  LDR R0,hdrive_search
+  CMP R0,#0
+  FNsetflag("MI")
+  FNldr(0,solar_time)
+  STRMI R0,hdrive_search
+
+ B hyperdrive_no  ; too far
+
+.hyperdrive_yes
+ STR R0,hdrive_seconds  ; useful after hyperdrive
+ BL hdrive_writeLen
+
+ ADR R0,hyp_mesA:MOV R1,#220:MOV R2,#104:MOV R3,#00:BL GenCentredString
+ ADR R0,hyp_mesB:MOV R1,#220:MOV R2,#116:           BL GenCentredString
+
+ BL test_hdrive_timer
+ BEQ quit_hyperdrive_message
+
+ ADR R0,hyp_mes8:MOV R1,#220:MOV R2,#160:MOV R3,#14:BL GenCentredString
+ ADR R0,hyp_mes9:MOV R1,#220:MOV R2,#172:           BL GenCentredString
+
+ MVN R0,#0:STR R0,hdrive_okflag
+.quit_hyperdrive_message
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.hyperdrive_no_because_already
+ ADR R0,hyp_mesD:MOV R1,#220:MOV R2,#160:MOV R3,#37:BL GenCentredString
+ ADR R0,hyp_mesE:MOV R1,#220:MOV R2,#172:           BL GenCentredString
+ B hyperdrive_no
+.hyperdrive_no_because_star
+ ADR R0,hyp_mes5:MOV R1,#220:MOV R2,#160:MOV R3,#37:BL GenCentredString
+ ADR R0,hyp_mes6:MOV R1,#220:MOV R2,#172:           BL GenCentredString
+.hyperdrive_no
+ BL test_hdrive_timer
+ ADR R0,hyp_mes7:MOV R1,#220:MOV R2,#110:MOV R3,#01:BLNE GenCentredString
+
+ MOV R0,#1:STR R0,hdrive_okflag
+
+ LDR R0,hdrive_search
+ CMN R0,#1:BLNE hdrive_searching
+
+B quit_hyperdrive_message
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.hyperdrive_now
+ FNldr(2,solar_time)
+ BL hdrive_writeTime
+
+ ADR R0,hyp_mes3:MOV R1,#220:MOV R2,#108:MOV R3,#47:BL GenCentredString
+ ADR R0,hyp_mes4:MOV R1,#220:MOV R2,#120:MOV R3,#36:BL GenCentredString
+
+ BL test_hdrive_timer
+ ADR R0,hyp_mesC:MOV R1,#220:MOV R2,#172:MOV R3,#23:BLNE GenCentredString
+
+B quit_hyperdrive_message
+
+.hdrive_planetName
+ FNadr(2,PlanetNames)
+ ADD R1,R0,R0,LSL#3  ;x9
+ ADD R2,R2,R1
+
+.hdrive_loop1
+ LDRB R1,[R2],#1
+ CMP R1,#32:BEQ hdrive_loop1
+
+ ADR R3,hyp_mes2+4
+ ADR R4,hyp_mesE:ADD R4,R4,#7
+
+.hdrive_loop2
+ STRB R1,[R3],#1           ; write it 2 times
+ STRB R1,[R4],#1
+ LDRB R1,[R2],#1
+ CMP R1,#13:BNE hdrive_loop2
+ STRB R1,[R3]:STRB R1,[R4] ; write sentinel (CODE 13)
+MOV PC,R14
+
+.hdrive_writeTime ; input R2=time
+FNin
+
+ LDR R3,timer_unit_1:BL base_counter:STRB R0,hyp_mes4+0
+ LDR R3,timer_unit_2:BL base_counter:STRB R0,hyp_mes4+1
+ LDR R3,timer_unit_3:BL base_counter:STRB R0,hyp_mes4+4
+ LDR R3,timer_unit_4:BL base_counter:STRB R0,hyp_mes4+5
+ MOV R3,#60*10*2    :BL base_counter:STRB R0,hyp_mes4+7
+ MOV R3,#60   *2    :BL base_counter:STRB R0,hyp_mes4+8
+ MOV R3,#10   *2    :BL base_counter:STRB R0,hyp_mes4+10
+ MOV R3,#1    *2    :BL base_counter:STRB R0,hyp_mes4+11
+
+FNout
+
+.hdrive_writeLen
+FNin
+ MOV R2,R0,ASR#6
+ CMP R2,#10:MOVMI R2,#10
+
+ MOV R3,#10         :BL base_counter:STRB R0,hyp_mesB+0
+ MOV R3,#1          :BL base_counter:STRB R0,hyp_mesB+1
+FNout
+
+.hyp_mes1 FNstring(  "HYPERDRIVE"   )
+.hyp_mes2 FNstring( "FOR xxxxxxxx"  )
+.hyp_mes3 FNstring( "ACTIVATED AT"  )
+.hyp_mes4 FNstring( "xx  xxgxx xx"  )
+.hyp_mes5 FNstring(  "YOU CANNOT"   )
+.hyp_mes6 FNstring("GO TO ALDEBARAN")
+.hyp_mes7 FNstring(  "IMPOSSIBLE"   )
+.hyp_mes8 FNstring( "DOUBLE CLICK"  )
+.hyp_mes9 FNstring(  "WHEN READY"   )
+
+.hyp_mesA FNstring( "TUNNEL LENGTH" )
+.hyp_mesB FNstring(  "xx MINUTES"   )
+.hyp_mesC FNstring("READY TO ENTER" )
+.hyp_mesD FNstring( "YOU ALREADY"   )
+.hyp_mesE FNstring("ARE ON xxxxxxxx")
+
+.hyp_mesF FNstring( "SEARCHING FOR" )
+.hyp_mesG FNstring("NEXT VALID TIME")
+.hyp_mesH FNstring(    "FOUND"      )
+
+.hdrive_searching
+FNin
+ LDR R2,hdrive_search
+ BL hdrive_writeTime
+ LDR R0,hdrive_search
+
+ BL hdrive_return_distance
+ CMP R0,#64*limit_dist%:BMI hdrive_time_found
+ BL hdrive_next_minute
+
+ BL hdrive_return_distance
+ CMP R0,#64*limit_dist%:BMI hdrive_time_found
+ BL hdrive_next_minute
+
+ BL hdrive_return_distance
+ CMP R0,#64*limit_dist%:BMI hdrive_time_found
+ BL hdrive_next_minute
+
+ BL hdrive_return_distance
+ CMP R0,#64*limit_dist%:BMI hdrive_time_found
+ BL hdrive_next_minute
+
+.hdrive_time_not_found
+ ADR R0,hyp_mesF:MOV R1,#220:MOV R2,#140:MOV R3,#26:BL GenCentredString
+ ADR R0,hyp_mesG:MOV R1,#220:MOV R2,#152:           BL GenCentredString
+ ADR R0,hyp_mes4:MOV R1,#220:MOV R2,#172:MOV R3,#36:BL GenCentredString
+FNexit
+
+.hdrive_time_found
+ ADR R0,hyp_mesG:MOV R1,#220:MOV R2,#140:MOV R3,#23:BL GenCentredString
+ ADR R0,hyp_mesH:MOV R1,#220:MOV R2,#152:           BL GenCentredString
+ ADR R0,hyp_mes4:MOV R1,#220:MOV R2,#172:MOV R3,#47:BL GenCentredString
+
+FNout
+
+.hdrive_next_minute
+ LDR R0,hdrive_search
+ LDR R1,solar_time
+ RSB R1,R1,R0
+ CMP R1,#&128000:MVNPL R0,#0     ; if search after 1 week,then abort it...
+                 ADDMI R0,R0,#60*2+1
+ STR R0,hdrive_search
+ MOVPL R0,#0:STRPL R0,hdrive_go  ; ...and dont forget to reset this var
+ BPL hdrive_time_not_found
+MOV PC,R14
+
+.hdrive_return_distance
+ MOV R2,R0
+ LDR R0,hyperdrive_to
+ FNldr(1,curr_planet)
+ B planets_distance
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Put_SelectButton          ; input (R0,R1)=button Pos ; R2=phase
+ FNldr(3,BASESCR)
+ ADD R3,R3,R0
+ ADD R3,R3,R1,LSL#8
+ ADD R3,R3,R1,LSL#6
+
+ ADR R8,SelectButtons_grf
+ ADD R8,R8,R2,LSL#6        ; select right phase
+
+ LDMIA R8!,{R4,R5, R6,R7}  ; load 2 lines
+ STMIA R3 ,{R4,R5}:ADD R3,R3,#320
+ STMIA R3 ,{R6,R7}:ADD R3,R3,#320
+
+ LDMIA R8!,{R4,R5, R6,R7}  ; load 2 lines
+ STMIA R3 ,{R4,R5}:ADD R3,R3,#320
+ STMIA R3 ,{R6,R7}:ADD R3,R3,#320
+
+ LDMIA R8!,{R4,R5, R6,R7}  ; load 2 lines
+ STMIA R3 ,{R4,R5}:ADD R3,R3,#320
+ STMIA R3 ,{R6,R7}:ADD R3,R3,#320
+
+ LDMIA R8 ,{R4,R5, R6,R7}  ; load 2 lines
+ STMIA R3 ,{R4,R5}:ADD R3,R3,#320
+ STMIA R3 ,{R6,R7}
+
+MOV PC,R14
+
+.Put_SelectRow    ; input R0=[0,1]=which row ; R1=activated button
+FNin
+
+CMP R0,#0
+
+MOVEQ R0,#96      ; right X Pos  =f(row #)
+MOVNE R0,#108
+
+MOV R11,R1        ; copy activated button in R11
+
+ADREQ R12,Buttons_Status      ; pointer to right buffer
+ADRNE R12,Buttons_Status+14
+
+MOV R1,#45+11*13  ; bottom Y
+
+MOV R9,#13
+.loopPSelRow
+
+LDRB R2,[R12,R9]
+
+CMP R9,R11:ADDEQ R2,R2,#1:SUBNE R2,R2,#1  ; change phase
+
+CMP   R2,#09:MOVPL R2,#09                 ; attention overflow
+CMPMI R2,#00:MOVMI R2,#0
+
+STRB R2,[R12,R9]  ; = [0..9]
+MOV R2,R2,LSR#1   ; = [0..4]
+
+BL Put_SelectButton
+
+SUB R1,R1,#11     ; pred Y
+
+SUBS R9,R9,#1:BPL loopPSelRow
+
+FNout
+
+.Put_BothSelectRow
+FNin
+ MOV R0,#0:LDR R1,left_selected_planet :BL Put_SelectRow
+ MOV R0,#1:LDR R1,right_selected_planet:BL Put_SelectRow
+FNout
+
+FNbin
+
+.Buttons_Status
+EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0
+EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0
+EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0
+EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0:EQUB 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.SelectButtons_grf
+FNload("ZARCH_TWO.greenRed")
+
+.put_movetime
+ FNldr(0,movetime_position)
+ FNldr(1,BASESCR)
+ ADD R1,R1,R0
+ ADD R1,R1,#320*30
+ ADD R1,R1,#118
+
+ ADR R0,movetime_grf
+
+ MOV R2,#8
+.loop_put_movetime_Y
+  MOV R3,#13
+.loop_put_movetime_X
+   LDRB R4,[R0],#1
+   STRB R4,[R1,R3]
+  SUBS R3,R3,#1:BNE loop_put_movetime_X
+  ADD R1,R1,#320
+ SUBS R2,R2,#1:BNE loop_put_movetime_Y
+MOV PC,R14
+
+.movetime_grf
+FNload("ZARCH_TWO.move_time")
+
+.put_galaxy
+ ADR R0,galax_grf
+
+ FNldr(1,BASESCR)
+ ADD R1,R1,#320*29
+ ADD R1,R1,#116
+
+ MOV R2,#174    ; lines #
+.loop_put_galax
+ LDMIA R0!,{R3-R13}:STMIA R1!,{R3-R13}
+ LDMIA R0!,{R3-R13}:STMIA R1!,{R3-R13}
+ LDMIA R0!,{R3-R13}:STMIA R1!,{R3-R13}
+ LDMIA R0!,{R3-R11}:STMIA R1!,{R3-R11}
+ LDMIA R0!,{R3-R11}:STMIA R1!,{R3-R11}
+ ADD R1,R1,#320-204
+
+ SUBS R2,R2,#1:BNE loop_put_galax
+MOV PC,R14
+
+.galax_grf
+FNload("ZARCH_TWO.galaxy")
+]
+=0
+__________________________________________________________________________
+
+DEFFNdef_planet(rayon,alfa,beta,to,speed)
+IF PASS=PASSone THEN
+ IF rayon>32767   THEN ERROR 1," ### ABORT : overflow in FNdef_planet"
+ IF ABS speed>256 THEN ERROR 2," ### ABORT : overflow in FNdef_planet"
+ IF ABS speed<8   THEN PRINT " ### WARNING : planet too slow"
+ENDIF
+
+alfa=RAD(alfa)
+beta=RAD(beta)
+
+[OPT PASS
+
+ EQUD to                         ; =[0..255]
+ EQUD speed                      ; =[-256..+255]
+ EQUD rayon*COS(beta)*COS(alfa)  ; constantes definissant le deplacement
+ EQUD rayon          *SIN(alfa)
+ EQUD rayon*COS(beta)*SIN(alfa)
+ EQUD rayon          *COS(alfa)
+ EQUD rayon*SIN(beta)
+ EQUD 0                          ; reserved for future expansions...
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNsunLight_calc
+const_3D_sunlight=256
+[OPT PASS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CALCUL DES PLANETES EN 3D ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.sunlight_viewer  EQUD 0:EQUD 0:EQUD 0
+.sunlight_angle1  EQUB 0
+.sunlight_angle2  EQUB 0
+.sunlight_flasher EQUB 0
+ALIGN
+.viewer_distance  EQUD 0
+.sunlight_sun     EQUD 0:EQUD 0:EQUD 0
+
+.create_sunlight_list
+FNin
+
+ ADR R7,sorting_sunlight
+
+ MOV R8,#13          ; 14 planets
+.loop_sunlight_list
+
+ MOV R0,R8
+ FNldr(2,virtual_time)
+ BL planet_position
+
+ TST R8,#1
+ MOVNE R3,#01:MOVEQ R3,#16   ; select colours (default)
+
+ FNldr(4,curr_planet)
+ CMP R8,R4   :MOVEQ R3,#47   ;                (current)
+
+ FNldr(4,right_selected_planet)
+ LDRB R5,sunlight_flasher
+ ADD  R5,R5,#1
+ STRB R5,sunlight_flasher
+ TST  R5,#%10000000
+ CMPEQ R8,R4:MOVEQ R3,#43
+
+ CMP R8,#0   :MOVEQ R3,#42   ;                (sun)
+
+ STMIA R7!,{R0,R1,R2, R3}    ; store (x,y,z,col)
+
+ SUBS R8,R8,#1:BPL loop_sunlight_list
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.transform_sunlight_list
+
+ LDRB R0,sunlight_angle1
+ LDRB R1,sunlight_angle2
+
+ FNadr(8,sinus)
+
+ LDR R5,[R8,R0,LSL#2]   ; sin alfa
+ LDR R7,[R8,R1,LSL#2]   ; sin beta
+
+ ADD R8,R8,#64*4
+
+ LDR R6,[R8,R0,LSL#2]   ; cos alfa
+ LDR R8,[R8,R1,LSL#2]   ; cos beta
+
+ ADR R10,sunlight_viewer
+ LDMIA R10,{R10,R11,R12}
+
+ ADR R0,sorting_sunlight
+ MOV R1,#14
+.loop_transform_sunlight
+ LDMIA R0,{R2,R3,R4}    ;load (x,y,z)
+
+ SUB R2,R2,R10    ; translation
+ SUB R3,R3,R11
+ SUB R4,R4,R12
+
+ MUL R9,R5,R4:RSB R9,R9,#0:MLA R9,R6,R2,R9      ; rotation #1
+ MUL R4,R6,R4:MLA R4,R5,R2,R4
+ MOV R2,R9,ASR#8
+ MOV R4,R4,ASR#8
+
+ MUL R9,R7,R4:RSB R9,R9,#0:MLA R9,R8,R3,R9      ; rotation #2
+ MUL R4,R8,R4:MLA R4,R7,R3,R4
+ MOV R3,R9,ASR#8
+ MOV R4,R4,ASR#8
+
+ LDR R9,viewer_distance
+ ADD R4,R4,R9
+
+ STMIA R0,{R2,R3,R4}
+ ADD R0,R0,#16
+ SUBS R1,R1,#1:BNE loop_transform_sunlight
+
+ ADR R1,sunlight_sun  ; save the coords of the sun
+ STMIA R1,{R2,R3,R4}  ; just to calc the light vector
+
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.sort_sunlight_list
+ ADR R4,sorting_sunlight
+ ADD R6,R4,#14*16
+
+ MOV R5,#0
+.sort_loop1
+ CMP R5,#14-1:MOVEQ PC,R14
+
+ ADD R7,R4,R5,LSL#4
+ ADD R8,R7,#16
+.sort_loop2
+
+ LDMMIIA R7,{R0,R1,R2,R3}
+ LDMIA R8!,{R9,R10,R11,R12}
+
+ CMP R2,R11                   ; swap?
+ STMMIIA R7,{R9,R10,R11,R12}
+ STMMIDB R8,{R0,R1,R2,R3}
+
+ CMP R8,R6:BMI sort_loop2
+ ADD R5,R5,#1
+B sort_loop1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.draw_sunlight_list
+FNin
+ MOV R13,#0
+.loop_draw_sunlight_list
+
+ ADR R14,sorting_sunlight
+ ADD R14,R14,R13,LSL#4
+ LDMIA R14,{R3,R4,R5,R6}
+
+ MOV R1,#const_3D_sunlight
+ ADD R2,R1,R5,ASR#8
+ BL  divide
+
+ MOV R7,R4,ASR#4     ; calc light vector
+ MOV R8,R3,ASR#4
+ MOV R9,R5,ASR#4
+
+ MUL R3,R12,R8       ; 3D perspective
+ MUL R4,R12,R7
+ MOV R3,R3,ASR#18
+ MOV R4,R4,ASR#18
+
+ ADD R3,R3,#95       ; recenter
+ ADD R4,R4,#75
+
+ CMP R6,#42
+ MOVNE R5,#12        ; rayon
+ MOVEQ R5,#18
+
+ MUL R5,R12,R5
+ MOV R5,R5,ASR#16    ; resize rayon
+
+ MOVEQ R0,#0         ; sun light special vector
+ MOVEQ R1,#0
+ MOVEQ R2,#48
+ BEQ skip_calc_sunlight
+
+ ADR R10,sunlight_sun      ; correction pour le calcul de la lumiere
+ LDMIA R10,{R10,R11,R12}   ; car soleil n'est plus a' l'origine
+                           ;
+ SUB R7,R7,R11,ASR#4       ;
+ SUB R8,R8,R10,ASR#4       ;
+ SUB R9,R9,R12,ASR#4       ;
+
+ MUL R0,R7,R7        ; x^2+y^2+z^2
+ MLA R0,R8,R8,R0
+ MLA R0,R9,R9,R0
+ MOV R0,R0,LSR#1
+ BL sqrt
+ MOV R2,R0,LSR#3
+
+ MOVS R1,R7:RSBMI R1,R1,#0:BL divide:MOVPL R7,R12:RSBMI R7,R12,#0
+ MOVS R1,R8:RSBMI R1,R1,#0:BL divide:MOVPL R8,R12:RSBMI R8,R12,#0
+ MOVS R1,R9:RSBMI R1,R1,#0:BL divide:MOVPL R9,R12:RSBMI R9,R12,#0
+
+ MOV R0,R7,ASR#8      ; resize light vector
+ MOV R1,R8,ASR#8
+ MOV R2,R9,ASR#8
+
+.skip_calc_sunlight
+ BL draw_sunlight
+
+ ADD R13,R13,#1
+ CMP R13,#14:BMI loop_draw_sunlight_list
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.trajectoire_timer EQUD -1
+.trajectoire_start EQUD 0  ; (x,y,z)
+                   EQUD 0
+                   EQUD 0
+
+.trajectoire_trace
+FNin
+
+ FNldr(0,left_selected_planet)
+ FNldr(2,virtual_time)
+ BL planet_position
+
+ LDR R3,trajectoire_timer
+ ADDS R3,R3,#1
+ STRMI R3,trajectoire_timer
+
+ ADR R10,trajectoire_start
+ LDMIA R10,{R10,R11,R12}
+
+ SUB R10,R0,R10:MUL R10,R3,R10
+ SUB R11,R1,R11:MUL R11,R3,R11
+ SUB R12,R2,R12:MUL R12,R3,R12
+
+ ADD R0,R0,R10,ASR#5
+ ADD R1,R1,R11,ASR#5
+ ADD R2,R2,R12,ASR#5
+
+ ADR R14,sunlight_viewer   ; store viewers position
+ STMIA R14,{R0,R1,R2}
+FNout
+
+.init_trajectoire_trace
+ MVN R0,#32:STR R0,trajectoire_timer
+ ADR R3,sunlight_viewer  :LDMIA R3,{R0,R1,R2}
+ ADR R3,trajectoire_start:STMIA R3,{R0,R1,R2}
+MOV PC,R14
+
+FNbin
+
+.sorting_sunlight    ;structure = x,y,z,col ;col -> rayon (TOTAL 16 bytes)
+FNram(14*16)         ;14 planets
+]
+=0

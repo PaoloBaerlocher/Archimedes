@@ -1,0 +1,149 @@
+REM >MASTER.FNdatasave
+END
+__________________________________________________________________________
+
+DEFFNdatasave
+[OPT PASS
+
+.encode_datasave_block
+
+ FNadr(0,start_mainbuffer)
+ FNadr(7,datasave_definition)
+ FNadr(2,end_datasave_definition)
+
+ LDR R12,null_code
+
+.loop_encode_datasave_block
+ CMP R7,R2:STREQ R0,saveblock_end:MOVEQ PC,R14
+
+ LDMIA R7!,{R3,R4}
+ MOVS R5,R4,ASR#24   ; =step%
+ BIC R4,R4,#&FF<<24  ; =length%
+ BMI encode_projects
+.loop_copy_words
+ SUBS R4,R4,#1:BMI loop_encode_datasave_block
+
+ LDR R6,[R3],R5,LSL#2
+ STR R6,[R0],#4
+B loop_copy_words
+
+.encode_projects
+ SUBS R4,R4,#1:BMI loop_encode_datasave_block
+ LDR R8,[R3,#Idea_stat%]
+ CMN R8,#1
+  STREQ R12,[R0],#4        ; inexistant% project -> crunch
+  ADDEQ R3,R3,#32
+  LDMNEIA R3!,{R8-R11}:STMNEIA R0!,{R8-R11}
+  LDMNEIA R3!,{R8-R11}:STMNEIA R0!,{R8-R11}
+B encode_projects
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.decode_datasave_block
+ FNadr(0,start_mainbuffer)
+ FNadr(7,datasave_definition)
+ FNadr(2,end_datasave_definition)
+
+ LDR R12,null_code
+
+.loop_decode_datasave_block
+ CMP R7,R2:MOVEQ PC,R14
+
+ LDMIA R7!,{R3,R4}
+ MOVS R5,R4,ASR#24   ; =step%
+ BIC R4,R4,#&FF<<24  ; =length%
+ BMI decode_projects
+.loop_copy_words_2
+ SUBS R4,R4,#1:BMI loop_decode_datasave_block
+
+ LDR R6,[R0],#4
+ STR R6,[R3],R5,LSL#2
+B loop_copy_words_2
+
+.decode_projects
+ SUBS R4,R4,#1:BMI loop_decode_datasave_block
+ LDR R8,[R0],#4
+ CMP R8,R12
+  MVNEQ R8,#0
+  STREQ R8,[R3,#Idea_stat%]
+  ADDEQ R3,R3,#32
+  LDMNEIA R0!,{R9-R11}:STMNEIA R3!,{R8-R11}
+  LDMNEIA R0!,{R8-R11}:STMNEIA R3!,{R8-R11}
+B decode_projects
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;DATASAVE BLOCK DEFINITION ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.datasave_definition
+ FNsave_blk(profs_row+08,15,4)
+ FNsave_blk(profs_row+12,15,4)
+
+ FNsave_projects_blk(ideas_row,       48)
+ FNsave_projects_blk(taurus_ideas_row,16)
+ FNsave_projects_blk(FL_ideas_row,    02)
+
+ FNsave_blk(rawmat_matrix+4,12*8,2)
+ FNsave_blk(base_resources ,12*8,1)
+
+ FNsave_word(taurus_idea_number)
+ FNsave_word(FL_curr_wea)
+ FNsave_word(FL_wea_1)
+ FNsave_word(FL_wea_2)
+ FNsave_word(FL_wea_3)
+ FNsave_word(FL_wea_4)
+ FNsave_word(damage_on_FL)
+ FNsave_word(FL_profs_how_much)
+ FNsave_word(FL_ideas_how_much)
+ FNsave_blk(FL_resources,8,1)
+ FNsave_blk(taurus_resources,8,1)
+
+ FNsave_blk(planets_def+32,13*8,1)
+
+ FNsave_word(sound_status)
+ FNsave_word(FL_ctrl_instruction)
+ FNsave_word(frozen_time)
+ FNsave_word(tunnel_status)
+ FNsave_word(curr_planet)
+
+ FNsave_blk(sun_diagram,160/4,1)
+ FNsave_word(sun_diagram_pntr)
+
+ FNsave_word(SUN_radius)
+ FNsave_word(ALGOL_power)
+ FNsave_word(ALGOL_effect)
+ FNsave_word(last_update)
+
+ FNsave_blk(list_of_sun_events,2*48,1)
+
+ FNsave_word(invaders_scanner_card)
+ FNsave_word(algol_missile_ready)
+ FNsave_word(algol_diamonds_number)
+
+ FNsave_word(already_executed_table)
+
+.end_datasave_definition
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.saveblock_end EQUD 0
+.null_code     EQUS "NULL"
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNsave_blk(start%,words_number%,words_step%)
+[OPT PASS
+ EQUD start%:EQUD words_number% OR (words_step%<<24)
+]
+=0
+
+DEFFNsave_word(start%)
+ =FNsave_blk(start%,1,0)
+
+DEFFNsave_projects_blk(start%,inst_num%)
+[OPT PASS
+ EQUD start%:EQUD inst_num% OR (&FF<<24)
+]
+=0

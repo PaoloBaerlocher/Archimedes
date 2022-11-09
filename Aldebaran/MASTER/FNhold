@@ -1,0 +1,733 @@
+REM >MASTER.FNhold
+END
+_________________________________________________________________________
+
+DEFFNhold
+[OPT PASS
+
+.hold_main_routine
+FNin
+
+ LDR R0,hold_ticker     ; hold clock
+  ADD R0,R0,#1
+ STR R0,hold_ticker
+
+ BL clear_scr
+
+  MOV R0,#0
+  MOV R1,#68
+  MOV R2,#320
+  MOV R3,#128+7
+  BL draw_window
+
+  FNadr(14,galax_grf+169*204+24)       ; put small black border around sun
+  FNldr(12,BASESCR)
+  FNadd(12,198*320+140)
+  LDMIA R14,{R0-R9}:ADD R14,R14,#204
+  STMIA R12,{R0-R9}:ADD R12,R12,#320
+  LDMIA R14,{R0-R9}:ADD R14,R14,#204
+  STMIA R12,{R0-R9}:ADD R12,R12,#320
+  LDMIA R14,{R0-R9}:ADD R14,R14,#204
+  STMIA R12,{R0-R9}:ADD R12,R12,#320
+  LDMIA R14,{R0-R9}:ADD R14,R14,#204
+  STMIA R12,{R0-R9}:ADD R12,R12,#320
+  LDMIA R14,{R0-R9}
+  STMIA R12,{R0-R9}
+
+  ADR R0,hold_str1
+  MOV R2,#4
+  MOV R3,#41
+  BL CentredString
+
+  ADR R0,hold_str2
+  MOV R2,#28
+  MOV R3,#14
+  BL  CentredString
+
+  ADR R0,hold_str3
+  MOV R2,#28+12
+  BL  CentredString
+
+  ADR R0,hold_str4
+  MOV R2,#28+24
+  BL  CentredString
+
+  LDR R9,hold_what_cde
+
+  MOV R0,#88               ; draw the 3 red/green buttons
+  MOV R1,#28+1
+  CMP R9,#1:MOVEQ R2,#4
+            MOVNE R2,#0
+  BL Put_SelectButton
+   ADD R0,R0,#336-2*100
+  BL Put_SelectButton
+
+  MOV R1,#28+12+1
+  CMP R9,#2:MOVEQ R2,#4
+            MOVNE R2,#0
+  BL Put_SelectButton
+   SUB R0,R0,#336-2*100
+  BL Put_SelectButton
+
+  MOV R1,#28+24+1
+  CMP R9,#3:MOVEQ R2,#4
+            MOVNE R2,#0
+  BL Put_SelectButton
+   ADD R0,R0,#336-2*100
+  BL Put_SelectButton
+
+  BL hold_read_mouse
+
+  CMP R9,#1:BMI hold_introduction
+            BEQ hold_view_profs
+  CMP R9,#2:BEQ hold_view_ideas
+            BGT hold_view_resources
+.hold_return_from_view
+
+ FNcheck_checksum(mouse_flush)
+
+ FNldr(0,BASESCR)
+ BL sun_cde
+
+FNout
+
+.hold_str1  FNstring("TAURUS CARGO")
+.hold_str2  FNstring("PROFESSORS")
+.hold_str3  FNstring("PROJECTS")
+.hold_str4  FNstring("RESOURCES")
+
+.hold_read_mouse
+ MVN R0,#0:STR R0,hold_view_num           ; reset parameters
+
+ FNmouse
+ CMP R2,#2:MOVEQ R0,#0:STREQ R0,hold_what_cde
+ CMP R2,#4:MOVNE PC,R14
+
+ SUB R3,R0,#88*4
+  CMP R3,#4*144:MOVCS PC,R14
+
+  SUB R3,R1,#4*(256-38)
+  CMP R3,#4*10:MOVCC R3,#1:STRCC R3,hold_what_cde
+
+  SUB R3,R1,#4*(256-38-12)
+  CMP R3,#4*10:MOVCC R3,#2:STRCC R3,hold_what_cde
+
+  SUB R3,R1,#4*(256-38-24)
+  CMP R3,#4*10:MOVCC R3,#3:STRCC R3,hold_what_cde
+MOV PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.hold_mouse_for_profs
+ SUB R3,R1,#4*92
+  CMP R3,#4*32
+ SUBCC R3,R0,#4*32-8
+  CMPCC R3,#4*36*7:BCS hold_no_prof_down
+
+  RSB R3,R3,R3,LSL#3 ; /36
+  ADD R3,R3,R3,LSR#6
+  MOV R3,R3,LSR#2+8
+  ADD R3,R3,#8
+  STR R3,hold_view_num
+  CMP R2,#0:BNE set_prof_cargo
+ MOVS PC,R14
+
+.hold_no_prof_down
+ SUB R3,R1,#4*140
+  CMP R3,#4*32
+ SUBCC R3,R0,#4*16-8
+  CMPCC R3,#4*36*8:MOVCS PC,R14
+
+  RSB R3,R3,R3,LSL#3 ; /36
+  ADD R3,R3,R3,LSR#6
+  MOV R3,R3,LSR#2+8
+  STR R3,hold_view_num
+  CMP R2,#0:BNE set_prof_cargo
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+]: first_line%=78 : second_line%=78+32 : third_line%=78+32+40 :[OPT PASS
+
+.hold_mouse_for_ideas
+FNin
+
+ SUB R0,R0,#4*36  ; translate x
+ AND R3,R0,#127
+ CMP R3,#128*24/32:BPL quit_hold_mouse_for_ideas
+ MOV R0,R0,LSR#7
+ CMP R0,#8:BCS quit_hold_mouse_for_ideas
+
+ SUB R3,R1,#4*(256-first_line%-24)
+  CMP R3,#4*24:BCC inside_first_line
+ SUB R3,R1,#4*(256-second_line%-24)
+  CMP R3,#4*24:BCC inside_second_line
+ SUB R3,R1,#4*(256-third_line%-24)
+  CMP R3,#4*24:BCC inside_third_line
+
+.quit_hold_mouse_for_ideas
+FNout
+
+.inside_second_line
+ ADD R0,R0,#8              ; = # of pointed project
+.inside_first_line
+ MOV R3,R0
+ BL access_taurus_idea:BEQ quit_hold_mouse_for_ideas
+ MOV R0,R3
+ CMP R2,#4:STRNE R0,hold_view_num:BLEQ set_idea_cargo
+B quit_hold_mouse_for_ideas
+
+.inside_third_line
+ CMP R0,#1
+  CMPNE R0,#6
+   BNE quit_hold_mouse_for_ideas
+ CMP R0,#1:MOVEQ R0,#16:MOVNE R0,#17
+
+ MOV R3,R0
+ AND R0,R0,#1
+ BL access_FL_idea:BEQ quit_hold_mouse_for_ideas
+ MOV R0,R3
+ CMP R2,#4:STRNE R0,hold_view_num:BLEQ set_idea_cargo
+B quit_hold_mouse_for_ideas
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.hold_mouse_for_raw
+ SUB R3,R1,#4*154
+  CMP R3,#4*24
+ SUBCC R3,R0,#4*12
+  CMPCC R3,#4*(32*7+24):MOVCSS PC,R14
+
+  AND R4,R3,#127
+  CMP R4,#96:MOVPLS PC,R14
+  MOV R0,R3,LSR#2+5
+  STR R0,hold_view_num
+
+  LDR R1,hold_raw_set
+  CMP R0,R1
+  MVNNE R1,#0
+  STRNE R1,hold_raw_set
+  CMP R2,#4
+  STREQ R0,hold_raw_set
+
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.set_prof_cargo
+FNin
+ FNldr(1,FL_profs_how_much)
+ FNadr(4,profs_row+12)
+ LDR R0,[R4,R3,LSL#4]            ; load where%
+ TST R0,#&FF:FNexitNE            ; on Taurus?
+  CMP R2,#4:BLEQ select_instance
+  CMP R2,#1:BLEQ deselect_instance
+ STR R0,[R4,R3,LSL#4]            ; save where%
+ FNstr(1,14,FL_profs_how_much)
+FNout
+
+.set_idea_cargo                  ; input R0=project #=[0..15] + [16..17]
+ CMP R0,#16:BPL cargo_from_FL
+
+.cargo_from_taurus
+FNin
+ BL access_taurus_idea
+ FNexitEQ
+ BL taurus_unload_instance
+FNout
+
+.cargo_from_FL
+FNin
+ AND R0,R0,#1
+ BL access_FL_idea
+ FNexitEQ
+ BL taurus_load_instance
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.hold_raw_str0   FNstring("xxxx UNITS OF")
+.hold_raw_str2   FNstring("NO")
+
+.hold_intro_str1 FNstring("CARGO STATUS")
+.hold_intro_str2 FNstring("TAURUS CARGO")
+.hold_intro_str3 FNstring("FL SELECTION")
+.hold_temp_str   FNstring("    ")
+
+.hold_strip_str  FNstring("BRE CLO COS KRE SHM TEC THO ZOR   TOT")
+
+.hold_ticker     EQUD 0
+
+.init_hold_routine
+ MOV R0,#0
+ STR R0,hold_what_cde
+MOVS PC,R14
+
+.hold_what_cde       EQUD 0   ;0=nothing ; 1=profs ; 2=ideas ; 3=resources
+
+.hold_view_num       EQUD 0
+.hold_raw_set        EQUD -1
+
+.hold_introduction
+
+ ADR R0,hold_intro_str1
+ MOV R2,#80
+ MOV R3,#23
+ BL CentredString
+
+ ADR R0,hold_intro_str2
+ MOV R1,#12
+ MOV R2,#144
+ MOV R3,#47
+ BL PutString
+
+ ADR R0,hold_intro_str3
+ MOV R1,#12
+ MOV R2,#144+20
+ MOV R3,#34
+ BL PutString
+
+ MOV R0,#02:FNmov(1,320*108+176+00):BL draw_idea
+ MOV R0,#03:FNmov(1,320*108+176+48):BL draw_idea
+ MOV R0,#14:FNmov(1,320*108+176+96):BL draw_idea
+
+
+ MOV R3,#0  ; =profs in taurus
+
+ MOV R0,#14
+.count_taurus_profs
+ BL access_prof
+  LDR R2,[R2,#12] ;=where%
+  TST R2,#&FF:ADDEQ R3,R3,#1
+ SUBS R0,R0,#1:BPL count_taurus_profs
+
+ ADR R0,hold_temp_str
+ MOV R2,R3
+ BL set_num_in_str
+ MOV R1,#176+12
+ MOV R2,#144
+ MOV R3,#47
+ BL GenCentredString
+
+ ADR R0,hold_temp_str
+ FNldr(2,FL_profs_how_much)
+ BL set_num_in_str
+ MOV R1,#176+12
+ MOV R2,#144+20
+ MOV R3,#34
+ BL GenCentredString
+
+ ADR R0,hold_temp_str
+ FNldr(2,taurus_idea_number)  ; = # of projects on Taurus (excl. FL)
+ FNldr(3,FL_ideas_how_much)
+ ADD R2,R2,R3                 ; = # of projects on Taurus (incl. FL)
+ BL set_num_in_str
+ MOV R1,#176+12+48
+ MOV R2,#144
+ MOV R3,#47
+ BL GenCentredString
+
+ ADR R0,hold_temp_str
+ FNldr(2,FL_ideas_how_much)
+ BL set_num_in_str
+ MOV R1,#176+12+48
+ MOV R2,#144+20
+ MOV R3,#34
+ BL GenCentredString
+
+ MOV R3,#0  ; =units in Taurus
+
+ MOV R0,#7
+.count_taurus_res
+ BL access_taurus_resources
+  LDR R2,[R2]
+  ADD R3,R3,R2
+ SUBS R0,R0,#1:BPL count_taurus_res
+
+ ADR R0,hold_temp_str
+ MOV R2,R3
+ BL set_num_in_str
+ MOV R1,#176+12+96
+ MOV R2,#144
+ MOV R3,#47
+ BL GenCentredString
+
+ BL FL_cargo_value
+ MOV R2,R0
+
+ ADR R0,hold_temp_str
+ BL set_num_in_str
+ MOV R1,#176+12+96
+ MOV R2,#144+20
+ MOV R3,#34
+ BL GenCentredString
+
+B hold_return_from_view
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.hold_view_profs
+
+  BL hold_mouse_for_profs
+
+ FNadr(11,profs_row+12)
+ MOV R12,#0
+ LDR R13,hold_ticker
+
+.loop_hold_view_profs
+
+  LDR R14,[R11,R12,LSL#4]
+  TST R14,#1<<31        ; some flashing heads
+  TSTNE R13,#%11000
+  BICNE R14,R14,#1<<31
+
+  CMP R12,#8
+
+  MOV R0,R12
+  MOV R1,R12,LSL#5
+  ADD R1,R1,R12,LSL#2
+  ADD R1,R1,#320*84
+  ADDMI R1,R1,#16
+  ADDPL R1,R1,#320*48-36*8+32
+  CMP R14,#0
+  BLNE draw_half_prof
+  BLEQ draw_prof
+
+ ADD R12,R12,#1:CMP R12,#15:BNE loop_hold_view_profs
+
+ LDR R0,hold_view_num
+ CMN R0,#1:BEQ hold_return_from_view
+
+ BL access_prof
+ LDR R0,[R2,#12]
+ BICS R0,R0,#1<<31
+ LDR R0,[R2,#04]  ; =who%
+ LDR R0,[R0,#04]  ; =data text
+ MOV R2,#180
+ MOVEQ R3,#35
+ MOVNE R3,#36     ; low intesity if professor not in Taurus
+ BL CentredString
+B hold_return_from_view
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.hold_view_ideas
+
+ BL hold_mouse_for_ideas
+
+ FNmov(13,320*first_line%+32+4)
+  MOV R11,#0:BL hold_paint_projects_row
+ FNmov(13,320*second_line%+32+4)
+  MOV R11,#1:BL hold_paint_projects_row
+
+ MOV R0,#0:BL access_FL_idea           ; first instance
+ MOVEQ R0,#33
+ LDRNE R0,[R1,#Idea_type%]
+ MOVNE R0,R0,LSR#4
+ ADDNE R0,R0,#7
+ FNmov(1,320*third_line%+32+4+32)
+ BL draw_idea
+
+ MOV R0,#1:BL access_FL_idea           ; second instance
+ MOVEQ R0,#33
+ LDRNE R0,[R1,#Idea_type%]
+ MOVNE R0,R0,LSR#4
+ ADDNE R0,R0,#7
+ FNmov(1,320*third_line%+32+4+256-32-32)
+ BL draw_idea
+
+ MOV R0,#4                             ; 2 x FlashLight icon
+ FNmov(1,320*third_line%+32+4)
+ BL draw_idea
+ FNmov(1,320*third_line%+32+4+256-32)
+ BL draw_idea
+
+ FNldr(2,taurus_idea_number)  ; = # of projects on Taurus (excl. FL)
+ FNldr(3,FL_ideas_how_much)
+ ADDS R2,R2,R3                ; = # of projects on Taurus (incl. FL)
+ BEQ hold_empty_ideas_cargo
+
+ LDR R0,hold_view_num                  ; =[0..15] + [16..17] (FL)
+ CMN R0,#1:BEQ hold_return_from_view
+
+ CMP R0,#16:BPL thirdcase
+ BL access_taurus_idea
+ B end_thirdcase
+.thirdcase
+ AND R0,R0,#1
+ BL access_FL_idea
+.end_thirdcase
+
+ MOV R13,R1
+ LDR R0,[R13,#Idea_stat%]
+ CMP R0,#executable%
+  ADREQ R0,hold_exe_proj
+  ADRNE R0,hold_dev_proj
+  MOV R2,#180-12
+  MOV R3,#36
+  BL CentredString
+
+ LDR R0,[R13,#Idea_type%]
+ BL idea_type_pointer
+ LDR R0,[R2,#Data_ptr%]
+ MOV R2,#180
+ MOV R3,#35
+ BL CentredString
+
+B hold_return_from_view
+
+.hold_empty_ideas_cargo
+ ADR R0,hold_empty
+ MOV R2,#180-12
+ MOV R3,#36
+ BL CentredString
+B hold_return_from_view
+
+.hold_paint_projects_row   ; input R11=which row=[0..1]
+FNin
+  MOV R12,#7
+.loop_hold_view_ideas
+  ADD R0,R12,R11,LSL#3
+  BL access_taurus_idea
+  MOVEQ R0,#33
+  LDRNE R0,[R1,#Idea_type%]
+  MOVNE R0,R0,LSR#4
+  ADDNE R0,R0,#7     ; right icon
+  ADD R1,R13,R12,LSL#5
+  BL draw_idea
+ SUBS R12,R12,#1:BPL loop_hold_view_ideas
+FNout
+
+.hold_exe_proj FNstring("FINISHED")
+.hold_dev_proj FNstring("UNDERTAKEN")
+.hold_empty    FNstring("EMPTY")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.hold_view_resources
+ BL hold_mouse_for_raw
+
+ MOV R12,#8
+.loop_hold_view_raw
+
+  FNmov(1,320*78+4-24)
+  ADD R1,R1,R12,LSL#5
+
+  ADD R0,R12,#32-8    ; raw icons
+  BL draw_idea
+
+  SUB R0,R12,#1
+  BL access_FL_resources
+  LDR R2,[R2]
+  CMP R2,#0:BEQ no_hold_strip
+
+  FNldr(1,BASESCR)
+  FNadd(1,320*(82+24+3+8)+4-24+12-8)
+  ADD R1,R1,R12,LSL#5
+
+  LDR R3,hold_raw_set
+  CMP R0,R3
+   MOVEQ R4,#252     ; select base colour
+   MOVNE R4,#252-8
+
+  ADD R5,R4,#1:ADD R6,R4,#2:ADD R7,R4,#3
+
+  MOV R3,#10:BL base_counter
+             BL draw_char
+             ADD R1,R1,#8
+  MOV R3,#01:BL base_counter
+             BL draw_char
+
+.no_hold_strip
+ SUBS R12,R12,#1:BNE loop_hold_view_raw
+
+
+  FNmov(1,320*78+320-24-8-4)           ; affiche FL cargo icon and total
+  MOV R0,#4
+  BL draw_idea
+
+  BL FL_cargo_value
+  MOV R2,R0
+
+  FNldr(1,BASESCR)
+  FNadd(1,320*(82+24+3+8)+320-24-8+12-8-4)
+
+  MOV R4,#20
+  ADD R5,R4,#1:ADD R6,R4,#2:ADD R7,R4,#3
+
+  MOV R3,#10:BL base_counter
+             BL draw_char
+             ADD R1,R1,#8
+  MOV R3,#01:BL base_counter
+             BL draw_char
+
+  FNadr(0,hold_strip_str)
+  MOV R1,#12
+  MOV R2,#78+24+2
+  MOV R3,#200
+  BL PutMiniString
+
+ LDR R0,hold_raw_set
+ CMN R0,#1
+ LDREQ R0,hold_view_num
+ CMNEQ R0,#1:BEQ hold_return_from_view
+
+ MOV R13,R0
+ BL access_rawmat
+ LDR R0,[R2,#00]  ; =what%
+ LDR R0,[R0,#04]  ; =data text
+ MOV R2,#180
+ MOV R3,#35
+ BL CentredString
+
+ MOV R0,R13
+ BL  access_taurus_resources
+ LDR R2,[R2]
+ CMP R2,#0
+  MVNEQ R14,#0:STREQ R14,hold_raw_set  ; no bar when NO resource
+  FNsetflag("EQ")
+  FNadr(0,hold_raw_str2)
+  FNsetflag("NE")
+  FNadr(0,hold_raw_str0)
+  BLNE set_num_in_str
+
+ MOV R2,#180-14
+ MOV R3,#35
+ BL CentredString
+
+ LDR R0,hold_raw_set
+ CMN R0,#1:BEQ hold_return_from_view
+
+ LDR R0,hold_raw_set
+ BL paint_taurus_rawbar
+
+ BL mouse_norm_step
+ BL mouse_normal_box
+
+ LDR R0,hold_raw_set
+ BL access_taurus_resources
+ LDR R6,[R2]
+ MOV R5,R6                 ; R5(block units) used to calc x-start of bar
+ CMP R5,#72:MOVGT R5,#72
+ MOV R5,R5,LSR#1
+ RSB R5,R5,#40
+
+ FNmouse
+ CMP R2,#4:BNE hold_return_from_view
+
+ SUB R1,R1,#4*104
+  CMP R1,#4*16
+   SUBCC R3,R0,R5,LSL#2+2
+   MOVCC R4,#4*256
+   ADDCC R4,R4,#2
+    CMPCC R3,R4
+     BCS hold_return_from_view
+
+ MOV R1,R3,LSR#4
+ CMP R1,R6
+  MOVGT R1,R6           ; dont select more than existing units
+
+ LDR R0,hold_raw_set
+ BL access_FL_resources
+ LDR R3,[R2]
+ BL FL_cargo_value
+ SUB R0,R0,R3
+ RSB R0,R0,#cargo_max%  ; = max value for this resource
+ CMP R1,R0:MOVGT R1,R0
+ STR R1,[R2]
+
+ BL mouse_hori_step
+ BL mouse_hori_mini_box
+B hold_return_from_view
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\CONTROL OF TAURUS CARGO \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.access_taurus_resources   ; input R0=raw #
+ ADD R2,PC,R0,LSL#2
+MOVS PC,R14
+
+.taurus_resources          ; how much of every raw
+ EQUD 0300
+ EQUD 0110
+ EQUD 0070
+ EQUD 0055
+ EQUD 0120
+ EQUD 0090
+ EQUD 0206
+ EQUD 0088
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\ A very useful function that fills a string with a number \
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.set_num_in_str   ; Input R0=str addr ; R2=number=[0..9999]
+FNin
+
+ MOV R1,R0
+
+ MOV R3,#1000:BL base_counter
+             STRB R0,[R1,#0]
+ MOV R3,#0100:BL base_counter
+             STRB R0,[R1,#1]
+ MOV R3,#0010:BL base_counter
+             STRB R0,[R1,#2]
+ MOV R3,#0001:BL base_counter
+             STRB R0,[R1,#3]
+
+ MOV R0,R1
+ BL leftcut_zeros
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.paint_taurus_rawbar    ; input R0=rawmat code=[0..7]
+FNin
+ BL access_FL_resources
+ LDR R3,[R2]
+ BL access_taurus_resources
+ LDR R4,[R2]
+
+ CMP R4,#72:MOVGT R4,#72
+
+ FNldr(1,BASESCR)
+ FNadd(1,136*320+156)
+ ADD R1,R1,R4,LSL#1
+
+.loop_paint_taurus_rawbar
+ CMP R3,R4
+  ADRMI R0,rawbar_taurus_grf
+  ADRPL R0,rawbar_taurus_grf+16*4
+
+  LDMIA R0!,{R5-R12}
+ STR  R5,[R1],#320
+ STR  R6,[R1],#320
+ STR  R7,[R1],#320
+ STR  R8,[R1],#320
+ STR  R9,[R1],#320
+ STR R10,[R1],#320
+ STR R11,[R1],#320
+ STR R12,[R1],#320
+  LDMIA R0 ,{R5-R12}
+ STR  R5,[R1],#320
+ STR  R6,[R1],#320
+ STR  R7,[R1],#320
+ STR  R8,[R1],#320
+ STR  R9,[R1],#320
+ STR R10,[R1],#320
+ STR R11,[R1],#320
+ STR R12,[R1],#320-4
+
+ SUB R1,R1,#320*16   ; move to left
+
+ SUBS R4,R4,#1:BNE loop_paint_taurus_rawbar
+FNout
+
+.rawbar_taurus_grf FNload("ZARCH_TWO.raw_bars2")
+
+FNbin
+
+]
+=0

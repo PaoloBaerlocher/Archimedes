@@ -1,0 +1,1073 @@
+REM >MASTER.ALGOL.FNalgol_16
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNfunction"
+LIBRARY "MASTER.ALGOL.FNdrawCube"
+LIBRARY "MASTER.ALGOL.FNrocket"
+LIBRARY "MASTER.ALGOL.FNpenetre2"
+LIBRARY "MASTER.FNline"
+LIBRARY "MASTER.FNBigQuad_"
+LIBRARY "MASTER.FNgraf_lib"
+
+MODE 15:MODE 13:OFF
+
+*SCREENLOAD GR*.SC*.2
+SYS 6,112,2
+*SCREENLOAD GR*.SC*.2
+SYS 6,112,0
+
+DIM SPACE 90000
+FOR PASS=4 TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.sun_cde FNload("ZARCH_TWO.sun_cde")
+
+.sinus FNlookup_sin
+
+.buf2Dobj FNram(12*128)
+
+FNpenetre
+
+FNrocket
+
+FNcubeObjects
+
+FNalgol_zone
+
+FNlineRoutine
+
+FNgraf_lib
+
+FNBigQuadraRoutine
+
+FNuni_div_table
+
+.algolSide
+FNram(6* 256*8)      ; 8 niveaux 256 lignes de 8 "cubes"
+
+.MegaShades FNload("ZARCH_TWO.MEGASHADES")
+]
+PROCendinout
+NEXT
+
+CALL Init_StartScr
+
+
+MOUSE TO 640,256
+
+CALL enter_algol
+
+RUN
+END
+________________________________________________________________________
+
+DEFFNalgol_zone
+[OPT PASS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                 MAIN ROUTINE FOR ALGOL STAGE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.enter_algol
+FNin
+
+BL mouse_pos_quarter
+BL genAlgolSide
+BL initAlgolVar
+
+.gogo_loop
+
+BL newPosition
+BL SwapScreens
+BL readMouse
+
+BL drawSol
+BL algolStars
+
+LDR R13,algolAtom                   ; test if display normal screen
+CMP R13,#243*64:BMI playing_Stage   ; or solid tunnel (at the end)
+LDR R13,flashTun:ADD R13,R13,#1:STR R13,flashTun
+CMP R13,#224:BMI alfa_Stage
+CMP R13,#256:BLPL whatAboutRocket   ; ici controle si rocket est OK
+             BLPL performRocketOp
+B flashing_Tun
+.alfa_Stage
+TST R13,#%1000:BEQ playing_Stage
+.flashing_Tun
+ BL drawAllFrames
+ BL putDog
+ BL putRock
+ B infiltration
+
+.playing_Stage
+ BL drawAlgolSide
+ BL drawBullets
+
+.infiltration
+
+FNldr(0,BASESCR)
+BL sun_cde
+
+SWI "OS_EnterOS"
+ MOV R0,#&3200000    ; test flyback
+.tst_fb_algol
+ LDR R1,[R0]
+ TST R1,#&80
+  BEQ tst_fb_algol
+ TEQP PC,#0
+ MOVNV R0,R0
+
+BL ViewScreen
+
+LDR R14,endOfPlay
+CMP R14,#0:BEQ gogo_loop
+
+FNout
+
+         ;;;;;;;;;;;;;;;
+;;;;;;;;;; sub routines
+         ;;;;;;;;;;;;;;;
+
+.putRock
+FNin
+
+ BL updateRocket
+
+ LDRB R0,boomPhase
+ CMP R0,#1:BGT destroyPhase
+           BEQ explosPhase
+.normalPhase
+ FNadr(0,objBlock):LDMIA R0,{R0-R5} :BL DrawRocketShadow
+ FNadr(0,objBlock):LDMIA R0,{R0-R5} :BL DrawRocket
+
+ BL calcCollisions
+
+ LDR R0,short_c
+ SUBS R0,R0,#1
+ BMI exitPutRock
+ STR R0,short_c
+
+ FNadr(1,sinus)
+ MOV R0,R0,LSL#4
+ AND R0,R0,#&FF
+ LDR R1,[R1,R0,LSL#2]
+ LDR R0,rockSpeed
+ SUB R0,R0,R1,LSL#1
+ STR R0,rockSpeed
+
+ FNadr(0,objBlock+4):LDMIA R0,{R1-R5} :FNadr(0,Short_Circuit)
+ EOR R4,R4,R4,ROR#13  ; pseudo-rnd angles
+ BL DrawRocketShadow
+ FNadr(0,objBlock+4):LDMIA R0,{R1-R5} :FNadr(0,Short_Circuit)
+ BL DrawRocket
+
+.exitPutRock
+FNout
+
+.updateRocket
+ LDR R0,tourniquet
+  ADD R0,R0,#3<<24
+ STR R0,tourniquet
+
+ LDR R1,flashTun
+ CMP R1,#0:BNE enough_rockspeed
+
+ LDR R1,rockSpeed ; incr speed sometimes
+ CMP R1,#18<<8:BPL enough_rockspeed
+ TST R0,#%1111110<<24
+ ADDEQ R1,R1,#1<<8
+ STREQ R1,rockSpeed
+
+.enough_rockspeed
+ MOV R0,R0,LSR#24
+
+ LDR R1,rota_rock
+ MOV R1,R1,ASR#1
+ ADD R1,R1,#64
+ AND R1,R1,#&FF
+ ORR R0,R0,R1,LSL#16
+
+ LDR R1,nuta_rock
+ MOV R1,R1,ASR#1
+ AND R1,R1,#&FF
+ ORR R0,R0,R1,LSL#8
+
+ STR R0,objBlock+16
+
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;
+
+.putDog
+FNin
+
+ BL updateDog
+
+ ADR R0,dogBlock:LDMIA R0,{R0-R5} :BL DrawRocketShadow
+ ADR R0,dogBlock:LDMIA R0,{R0-R5} :BL DrawRocket
+
+FNout
+
+.updateDog
+ LDR R0,dogBlock+16
+ ADD R0,R0,#&0104
+ ADD R0,R0,#&060000
+ STR R0,dogBlock+16
+
+ ADR R0,dogBlock+4
+ LDMIA R0,{R1,R2,R3}
+ ADR R4,dogSpeed
+ LDMIA R4,{R5,R6,R7}
+
+ ADD R1,R1,R5,ASR#1
+ ADD R2,R2,R6,ASR#1
+ ADD R3,R3,R7,ASL#2
+
+ STMIA R0,{R1,R2,R3} ; new position
+
+ LDR R8,boomPhase
+ CMP R8,#0
+ LDREQ R8,flashTun
+ CMPEQ R8,#0
+ BNE no_hunt ; nothing to destroy!
+
+ ADR R8,objBlock+4
+ LDMIA R8,{R8,R9,R10}
+
+ SUBS R8,R8,R1
+  ADDPL R5,R5,#1
+  SUBMI R5,R5,#1
+ SUBS R9,R9,R2
+  ADDPL R6,R6,#1
+  SUBMI R6,R6,#1
+ SUBS R10,R10,R3
+  ADDPL R7,R7,#1
+  SUBMI R7,R7,#1
+
+ CMP R5,#8:MOVGT R5,#8:CMNMI R5,#8:MVNMI R5,#7
+ CMP R6,#8:MOVGT R6,#8:CMNMI R6,#8:MVNMI R6,#7
+ CMP R7,#8:MOVGT R7,#8:CMNMI R7,#8:MVNMI R7,#7
+
+.no_hunt
+ CMP R3,#96:MOVMI R3,#96:RSBMI R7,R7,#0
+
+ CMP R1,#224 :BPL no_legal
+ CMN R1,#224 :BMI no_legal
+ CMP R3,#3840:BPL no_legal
+  CMP R7,#0:RSBMI R7,R7,#0:ADD R7,R7,#1
+.no_legal
+ STMIA R4,{R5,R6,R7} ; new speed
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;
+
+.explosPhase
+
+ FNbeep(0,15)
+
+ MOV R0,#2:STRB R0,boomPhase
+ LDRB R0,bzzt:AND R0,R0,#15:STRB R0,bzzt     ; abort bzzt
+
+ ADR R0,objBlock:LDMIA R0,{R0-R5} :BL DrawRocketShadow
+ ADR R0,objBlock:LDMIA R0,{R0-R5} :BL DrawRocket
+
+ ADR R0,objBlock+4:LDMIA R0,{R1-R5} : BL genExplList
+B exitPutRock
+
+.destroyPhase
+ ADD R0,R0,#1:STRB R0,boomPhase
+ CMP R0,#255:STREQ R0,endOfPlay  ; apres explosion le jeu se termine
+
+ BL drawExplShadow:BL drawExpl
+B exitPutRock
+
+.calcCollisions
+FNldr(0,underRock):CMP R0,#0:MOVNE R0,#1:STRNEB R0,boomPhase:MOVNE PC,R14
+
+ADR R0,dogBlock+4:LDMIA R0,{R0,R1,R2}
+ADR R3,objBlock+4:LDMIA R3,{R3,R4,R5}
+SUB R0,R0,R3
+SUB R1,R1,R4
+SUB R2,R2,R5
+MUL R3,R0,R0:MLA R3,R1,R1,R3:MLA R3,R2,R2,R3
+CMP R3,#32^2:MOVMI R0,#1:STRMIB R0,boomPhase:MOVMI PC,R14
+
+FNin
+
+ADR R1,objBlock+4:LDMIA R1,{R1,R2,R3}  ; load position to test it
+
+BL ctrlBullets:CMP R0,#0:BPL activateBoom
+BL returnAlgolCode
+
+ANDS R14,R0,#%111    ; mask code
+ADDNE PC,PC,R14,LSL#2
+ B exitcalcColl
+ B exitcalcColl ;0
+ B activateBoom ;1
+ B exitcalcColl ;2
+ B demultiSpeed ;3
+ B activateBoom ;4
+ B activateBzzt ;5
+ B activateBoom ;6
+ B multiSpeed   ;7
+
+.activateBoom
+ MOV R0,#1:STRB R0,boomPhase
+
+.exitcalcColl
+ LDR R0,blocker:SUBS R0,R0,#1:STRPL R0,blocker ; count for block effect
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPERATIONS EN FONCTION DE L'OBJET
+
+.multiSpeed
+ FNtestBlocker
+ MOV R0,#128:STR R0,short_c
+ FNsetBlocker
+B exitcalcColl
+
+.demultiSpeed
+ FNtestBlocker
+ LDR R0,rockSpeed:MOVS R0,R0,ASR#1:MOVEQ R0,#1<<8:STR R0,rockSpeed
+ FNsetBlocker
+B exitcalcColl
+
+.activateBzzt
+ MOV R0,#257-32:STR R0,bzzt
+ FNsetBlocker
+B exitcalcColl
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.readMouse
+ FNmouse
+ SUB R0,R0,#640:SUB R1,R1,#256
+
+ LDR R2,bzzt
+ SUBS R2,R2,#1
+ BMI nobzzt
+ STR R2,bzzt
+ AND R3,R2,#15
+ SUBS R3,R3,#8
+ RSBMI R3,R3,#0
+ SUB R3,R3,#8
+ ADD R0,R0,R3,LSL#3
+.nobzzt
+
+ MVN R2,R0,ASR#2:SUB R2,R2,R0,ASR#4:STR R2,algolDeltaX
+
+ MOV R3,R1
+ CMP R3,#604:MOVGT R3,#604
+ CMP R3,#0:MOVMI R3,#0
+           MOVPL R3,R3,LSL#3
+
+ ADD R3,R3,#4*96:STR R3,algolHigh  ; minimum high
+
+ LDR R2,objBlock+4
+ LDR R3,objBlock+12
+
+ MOV R0,R0,ASR#1:STR R0,objBlock+4  ; x Rocket
+ MOV R1,R1,LSL#3:ADD R1,R1,#6*96:STR R1,objBlock+12 ; z Rocket
+
+ SUB R2,R2,R0 ; dx
+ SUB R3,R3,R1 ; dy
+
+ LDR R0,rota_rock
+ SUB R0,R0,R0,ASR#2  ; amort
+ SUB R0,R0,R2,LSL#1
+ STR R0,rota_rock
+
+ LDR R0,nuta_rock
+ SUB R0,R0,R0,ASR#2  ; amort
+ ADD R0,R0,R3,ASR#3
+ STR R0,nuta_rock
+
+MOV PC,R14
+
+.newPosition
+ LDR R0,algolAtom
+ LDR R1,rockSpeed
+ ADD R0,R0,R1,ASR#8
+ MOV R2,R0,ASR#6:RSBS R2,R2,#247
+ SUBMI R0,R0,#64*4:ADDMI R2,R2,#4 ; reset travelling
+ STR R0,algolAtom
+ STR R2,algolPos
+MOV PC,R14
+
+.whatAboutRocket
+ LDRB R0,boomPhase
+  CMP R0,#0:MOVNES PC,R14  ; rocket a deja explose
+
+LDR R1,objBlock+4       ; mauvaise position x ?
+ ADD R1,R1,#16
+ CMP R1,#32
+
+LDRCC R1,objBlock+12    ; mauvaise altitude   ?
+ CMPCC R1,#512
+               MOVCS R0,#0:MVNCC R0,#0
+STR R0,finalRock
+
+ MOVCS R0,#1:STRCSB R0,boomPhase ; mauvaise position -> explose rocket
+MOVS PC,R14
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Variables
+;;;;;;;;;;;;;;;;;
+
+.dogBlock   EQUD Algol_dog     ; pointer to object
+            EQUD 0             ; x
+            EQUD 0             ; y
+            EQUD 8000          ; z
+            EQUD 128<<16       ; rotation
+.freeSpace2 EQUD buf2Dobj+264
+
+.dogSpeed  EQUD 0
+           EQUD 0
+           EQUD 0
+
+.objBlock  EQUD RocketRoll    ; pointer to object
+           EQUD 0             ; x
+           EQUD 416           ; y
+           EQUD 6*96          ; z
+           EQUD 128<<16       ; rotation
+.freeSpace EQUD buf2Dobj+264  ; une addresse ou on peut sauver des valeurs
+
+.rockSpeed EQUD 256 ; vitesse du missile ( ASL#8 )
+.blocker   EQUD 0   ; to avoid multiple block effects at one time
+.flashTun  EQUD 0   ; compteur pour faire flasher le tunnel a' la fin
+.boomPhase EQUD 0
+.finalRock EQUD 0   ; 0 if rocket is out of tunnel,-1 otherwise = OK!
+.endOfPlay EQUD 0   ; <>0 si la partie est finie
+.cubeLight EQUD 0   ; cube's address to highlight
+.tourniquet EQUD 0  ; angle de rotation du missile
+.rota_rock EQUD 0   ; memoire pour direction du rocket
+.nuta_rock EQUD 0
+
+.bzzt      EQUD 0
+.short_c   EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.performRocketOp
+ LDR R0,boomPhase
+ CMP R0,#0:MOVNE PC,R14
+
+ TST R13,#%100           ; reduce viewer's velocity
+ LDRNE R13,rockSpeed
+ SUBNE R13,R13,#1<<8:MOVNES R0,R13,ASR#8  ; just to have a speed<>0
+ STRGT R13,rockSpeed
+
+ LDR R13,objBlock+8:SUBS R13,R13,#4:STRPL R13,objBlock+8
+                    STRMI R13,endOfPlay   ; rocket a atteint fin du
+                                          ; voyage.Donc fin du jeu
+MOV PC,R14
+
+.initAlgolVar
+ MOV R0,#0
+
+  STR R0,algolPos
+  STR R0,algolAtom
+  STR R0,algolHigh
+
+  STR R0,bzzt:STR R0,boomPhase:STR R0,flashTun:STR R0,finalRock
+  STR R0,short_c
+  STR R0,endOfPlay
+  STR R0,objBlock+4
+  STR R0,dogBlock+8
+ MOV R0,#1<<8
+  STR R0,rockSpeed
+ MOV R0,#416
+  STR R0,objBlock+8
+ MOV R0,#6*96
+  STR R0,objBlock+12
+B algol_choose_cols
+
+;;; variables pour le voyage sur Algol ;;;
+
+.algolPos EQUD 0        ; = [ 0..(256-9)]
+.algolAtom EQUD 0       ; = position precise suivant axe Y = 0..63 + 64*r%
+.algolHigh EQUD 0       ; = hauteur    [128..]
+.algolDeltaX EQUD 0     ; deplacement horizontal de l'observateur
+
+.drawAlgolSide
+FNin
+
+MOV R2,#0:BL algolStrip
+MOV R2,#1:BL algolStrip
+MOV R2,#2:BL algolStrip
+MOV R2,#3:BL algolStrip
+MOV R2,#4:BL algolStrip
+MOV R2,#5:BL algolStrip
+MOV R2,#6:BL algolStrip
+ BL putDog
+ BL putRock             ; put the rocket here
+MOV R2,#7:BL algolStrip
+MOV R2,#8:BL algolStrip
+
+FNout
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.algolStrip
+FNin
+
+LDR R14,algolDeltaX
+ CMP R14,#64*1.5:BPL cas2
+ CMN R14,#64*1.5:BMI cas3
+
+.cas1
+ MOV R1,#6:BL algolRow  ; from right to middle
+ MOV R1,#5:BL algolRow
+ MOV R1,#4:BL algolRow
+ MOV R1,#0:BL algolRow  ; from left to middle
+ MOV R1,#1:BL algolRow
+ MOV R1,#2:BL algolRow
+ MOV R1,#3:BL algolRow
+FNexit
+
+.cas2
+ MOV R1,#6:BL algolRow
+ MOV R1,#5:BL algolRow
+ MOV R1,#4:BL algolRow
+ MOV R1,#3:BL algolRow
+ MOV R1,#2:BL algolRow
+ MOV R1,#1:BL algolRow
+ MOV R1,#0:BL algolRow
+FNexit
+
+.cas3
+ MOV R1,#0:BL algolRow
+ MOV R1,#1:BL algolRow
+ MOV R1,#2:BL algolRow
+ MOV R1,#3:BL algolRow
+ MOV R1,#4:BL algolRow
+ MOV R1,#5:BL algolRow
+ MOV R1,#6:BL algolRow
+
+FNout
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.algolRow
+FNin
+
+MOV R3,#0:BL algolCube
+MOV R3,#1:BL algolCube
+MOV R3,#2:BL algolCube
+MOV R3,#3:BL algolCube
+MOV R3,#4:BL algolCube
+MOV R3,#5:BL algolCube
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.algolCube  ; input R1,R2,R3=position
+
+FNadr(12,algolSide):ADD R12,R12,R3,LSL#11:ADD R12,R12,R1:ADD R12,R12,R2,LSL#3
+LDR R11,algolPos:LDRB R11,[R12,R11,LSL#3]!
+CMP R11,#0:MOVEQ PC,R14
+
+ADD R11,R11,#%00001000:STRB R11,[R12]   ; save object with new phase
+
+FNin
+
+STR R1,mee1:STR R2,mee2
+
+SUB R1,R1,#3.0                   ; centre X
+MOV R1,R1,LSL#6                  ; expand X
+
+MOV R2,R2,LSL#6:ADD R2,R2,#32    ; expand Y  and translate it forwards
+LDR R13,algolAtom:AND R13,R13,#63:ADD R2,R2,R13
+
+MOV R3,R3,LSL#9    ; expand Z
+ADD R3,R3,#256
+
+AND R10,R11,#%111    ; this is the code
+MOV R11,R11,LSR#3    ; and this is the phase
+
+LDR R0,[PC,R10,LSL#2]
+B objFound
+ EQUD 0              ; 0 =no obj
+ EQUD WireCube
+ EQUD WireCube2
+ EQUD Russian
+ EQUD Pyr4
+ EQUD Target
+ EQUD Net
+ EQUD Flashion
+.objFound
+
+ADD PC,PC,R10,LSL#2
+EQUS "JUMP"
+ B objChanged
+ B chCube
+ B objChanged
+ B chRussian
+ B chPyr4
+ B chTarget
+ B chNet
+ B chFlashion
+.objChanged
+
+LDR R14,algolDeltaX:ADD R1,R1,R14
+LDR R14,algolHigh:RSB R3,R3,R14
+
+MOV R4,#0                                          ; highlight ON or OFF?
+LDR R14,blocker:TST R14,#%10000:BEQ nohighlight    ;
+LDR R14,cubeLight:CMP R12,R14:MVNEQ R4,#0          ; test if right address
+.nohighlight
+
+BL drawCube
+
+LDR R1,mee1:LDR R2,mee2
+
+FNout
+
+.mee1 EQUD 0
+.mee2 EQUD 0
+
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;; HERE ARE THE DEFINITIONS FOR THE DIFFERENT PHASES ;;;;;
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.chCube
+FNadr(10,sinus)
+LDR R10,[R10,R11,LSL#5]:MOV R10,R10,ASR#2
+
+STR R10,[R0,#8+(0*12+8)]       ; move points
+STR R10,[R0,#8+(1*12+8)]
+STR R10,[R0,#8+(2*12+8)]
+STR R10,[R0,#8+(3*12+8)]
+
+B objChanged
+
+.chFlashion
+
+ FNadr(10,sinus)
+ LDR R11,[R10,R11,LSL#4]      ; modulation
+
+ LDR R10,flash_bzzt
+
+ MOV R14,#7*12
+.loop_chFlash
+ ADDS R10,R10,R10,ROR#1
+ EORCC R10,R10,R10,ROR#7
+
+ AND R4,R10,#127
+ SUB R4,R4,#64
+ MUL R4,R11,R4
+ MOV R4,R4,ASR#8
+ ADD R13,R0,R14
+ STR R4,[R13,#88+24]
+
+ SUBS R14,R14,#12:BPL loop_chFlash
+
+ STR R10,flash_bzzt
+
+B objChanged
+
+.chPyr4
+FNadr(10,sinus)
+TST R11,#%111
+
+AND R11,R11,#15
+LDR R11,[R10,R11,LSL#6]:MUL R10,R11,R11:MOV R10,R10,ASR#10:SUB R10,R10,#64
+
+STR R10,[R0,#8+(0*12+8)]
+
+RSB R4,R1,#0:MOV R4,R4,ASR#2
+STR R4,[R0,#8+(0*12+0)]
+
+BNE objChanged
+
+LDR R13,algolAtom:RSB R2,R13,R2
+MOV R4,R4,ASR#3:MOV R5,#0:MOV R6,#64:ADD R3,R3,#140
+BL insertBullet
+               ADD R2,R2,R13  :SUB R3,R3,#140
+
+B objChanged
+
+.chRussian
+FNadr(10,sinus)
+LDR R10,[R10,R11,LSL#5]:MOV R10,R10,ASR#2
+
+STR R10,[R0,#8+(4*12+0)]
+STR R10,[R0,#8+(7*12+8)]
+RSB R10,R10,#0
+STR R10,[R0,#8+(5*12+8)]
+STR R10,[R0,#8+(6*12+0)]
+
+B objChanged
+
+.chNet
+TST R11,#%1000:MOVEQ R10,#3*42:MOVNE R10,#3*43
+ORR R10,R10,#%1<<30
+
+STR R10,[R0,#8+12*12+8+12*4]
+STR R10,[R0,#8+12*12+8+12*5]
+STR R10,[R0,#8+12*12+8+12*6]
+STR R10,[R0,#8+12*12+8+12*7]
+B objChanged
+
+.chStar
+B objChanged
+
+.chTarget
+FNadr(10,sinus)
+LDR R10,[R10,R11,LSL#5]:MOVS R10,R10,ASR#3:RSBMI R10,R10,#0
+
+STR R10,[R0,#8+(2*12+8)]
+STR R10,[R0,#8+(5*12+0)]
+STR R10,[R0,#8+(6*12+0)]
+STR R10,[R0,#8+(6*12+8)]
+ RSB R10,R10,#0
+STR R10,[R0,#8+(1*12+0)]
+STR R10,[R0,#8+(1*12+8)]
+STR R10,[R0,#8+(2*12+0)]
+STR R10,[R0,#8+(5*12+8)]
+
+B objChanged
+
+.flash_bzzt EQUD -TIME EOR &A2416913
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.algolStars
+
+FNldr(0,BASESCR)
+ADR R1,algolStarsDef
+FNldr(4,algolHigh):MOV R4,R4,ASR#6:ADD R4,R4,R4,LSL#2:MOV R4,R4,LSL#6
+
+.lopStar
+ LDR R3,[R1],#4
+ ADDS R5,R4,R3,ASR#8
+ STRPLB R3,[R0,R5]
+BPL lopStar
+MOV PC,R14
+
+.algolStarsDef
+]
+H%=60*1024
+FOR s%=0TO 31              : REM 32 stars
+H%-=48*1024/32-RND(319)
+
+CASE s% OF
+ WHEN 0,1,2,3,4                              : col%=44+s%/2
+ WHEN 5,6,7,8,9,10,11,12,13,14,15,16,17      : col%=208+(s%-5)/4
+ WHEN 18,19,20,21,22,23,24,25,26,27,28,29,30 : col%=252+(s%-18)/4
+ OTHERWISE :col%=255
+ENDCASE
+
+[OPT PASS : EQUD ((H%-40*1024)<<8)+col% :]
+NEXT
+[OPT PASS
+            EQUD (-131072<<8)       ; this is the sentinel star = end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+               ;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;; SYSTEME DE POINTS ;;;;;;;;;;;;;;
+               ;;;;;;;;;;;;;;;;;;;;;
+
+.drawBullets
+FNin
+
+ ADR R0,memoBullets
+ MOV R1,R0
+ LDR R2,bulletsPntr
+
+ FNadr(9,threeD_algol)
+ LDR R10,algolHigh
+ FNldr(11,BASESCR)
+ LDR R13,algolAtom
+ LDR R14,algolDeltaX
+
+.loopBullets
+ CMP R0,R2:BEQ exitBullets
+
+ LDMIA R0!,{R3,R4,R5 , R6,R7,R8}    ; load old bullet
+
+ ADD R5,R5,R8        ; new z
+
+   CMP R5,#6*1024:BCS loopBullets   ; abort bullet because out of range
+
+ ADD R4,R4,R7        ; new y
+  ADD R12,R4,R13     ; relative position in land,just to test if ...
+  CMP R12,#640:BCS loopBullets      ; ...out of perspective range
+
+ ADD R3,R3,R6        ; new x
+
+ STMIA R1!,{R3,R4,R5, R6,R7,R8}     ; save new bullet
+
+ ADD R3,R3,R14       ; add deltaX
+ SUB R5,R5,R10       ; add high to the z coord
+
+ LDR R8,[R9,R12,LSL#2]              ; load 3D factor (y)
+ MUL R5,R8,R5:RSB R5,R5,#72<<12     ; proj z
+ CMP R5,#207<<12:BCS loopBullets:MOV R5,R5,ASR#12
+ MUL R3,R8,R3:ADD R3,R3,#160<<08    ; proj x
+ CMP R3,#316<<08:BCS loopBullets:MOV R3,R3,ASR#08
+
+ FNadr(7,MegaShades+96*47)
+ CMP R12,#4*92:LDRMI R12,[R7,R12,LSR#2]:MOVPL R12,#255
+
+ ADD R3,R3,R5,LSL#8:ADD R3,R3,R5,LSL#6  ; plot bullet
+ STRB R12,[R3,R11]!
+ STRB R12,[R3,#1]
+ STRB R12,[R3,#320]
+ STRB R12,[R3,#321]
+B loopBullets
+
+.exitBullets
+ STR R1,bulletsPntr
+FNout
+
+FNbin
+
+.insertBullet        ; IN   R1,R2,R3, R4,R5,R6 = coords,speed
+ LDR R7,bulletsPntr
+ FNadr(8,endOfBullets)
+ CMP R7,R8
+  STMMIIA R7!,{R1-R6}
+  STRMI R7,bulletsPntr
+MOV PC,R14
+
+.ctrlBullets         ; IN R1,R2,R3=coords ship  ; output R0
+ ADR R10,memoBullets
+ LDR R11,bulletsPntr
+ LDR R12,algolAtom
+.fastLoop
+ CMP R10,R11:MVNEQ R0,#0:MOVEQ PC,R14
+ LDMIA R10,{R4,R5,R6}:ADD R10,R10,#24  ; load bullet and go to next one
+ ADD R5,R5,R12
+
+ SUB R4,R4,R1:SUB R5,R5,R2:SUB R6,R6,R3
+ MUL R0,R4,R4:MLA R0,R5,R5,R0:MLA R0,R6,R6,R0   ; distance ^ 2
+ CMP R0,#24^2:BPL fastLoop
+MOV PC,R14
+
+.bulletsPntr EQUD memoBullets
+
+.memoBullets
+FNram(48*24)         ;maximum 48 particles (x,y,z,vx,vy,vz)
+
+.endOfBullets
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; calc the collision between rocket and objects
+
+.returnAlgolCode     ; input R1,R2,R3=relative position
+
+ MOV R0,#0           ; ctrl si ship dans interstices...
+ ADD R4,R1,#16:ANDS R4,R4,#%100000:MOVNE PC,R14 ; yes!
+ LDR R4,algolAtom
+ RSB  R4,R2,R4
+ ANDS R4,R4,#%100000:MOVEQ PC,R14               ; yes! exit now
+
+ CMP R1,#4*64:MOVPL PC,R14       ; out of X range
+ CMN R1,#3*64:MOVMI PC,R14
+
+ FNadr(0,algolSide)
+ FNldr(4,algolPos)
+
+ MOV R3,R3,ASR#9                   ; unexpand Z
+ CMP R3,#6:MOVCS R0,#0:MOVCS PC,R14 ; pas d'objets dans stratosphere
+
+ SUB R2,R2,#32:ADD R2,R4,R2,ASR#6  ; unexpand Y
+ ADD R1,R1,#3.5*64:MOV R1,R1,ASR#6 ; unexpand X
+
+ ADD R0,R0,R3,LSL#11             ; find the right place in the array
+ ADD R0,R0,R2,LSL#3
+ LDRB R0,[R1,R0]!                ; return obj code(R0) and address(R1)
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.choose_cols_counter EQUD 0
+
+.choice EQUB 3*28:EQUB 3*23
+        EQUB 3*05:EQUB 3*10
+        EQUB 3*31:EQUB 3*27
+        EQUB 3*04:EQUB 3*40
+        EQUB 3*16:EQUB 3*20
+        EQUB 3*38:EQUB 3*06
+        EQUB 3*42:EQUB 3*18
+        EQUB 3*45:EQUB 3*47
+
+.algol_choose_cols
+ LDR R0,choose_cols_counter
+ ADD R0,R0,#1<<29
+ STR R0,choose_cols_counter
+ MOV R0,R0,LSR#29
+ ADR R1,choice
+ LDRB R0,[R1,R0,LSL#1]! ; load both colours
+ LDRB R1,[R1,#1]
+ FNadr(2,MegaShades)
+ ADD R0,R2,R0,LSL#5
+ ADD R1,R2,R1,LSL#5
+ STR R0,algol_col1
+ STR R1,algol_col2
+
+ SWI "OS_ReadMonotonicTime"
+ AND R0,R0,#%11110
+ FNstr(0,1,penet_col1)
+ MOV R0,R0,LSR#5
+ AND R0,R0,#%11110
+ ORR R0,R0,#1
+ FNstr(0,1,penet_col2)
+MOVS PC,R14
+
+.algol_col1 EQUD 0
+.algol_col2 EQUD 0
+
+.colSol EQUD 0
+
+.drawSol
+FNin
+
+FNldr(9,algolHigh):CMP R9,#0:BLE quit_drawSol
+
+LDR R12,algolAtom
+MOV R12,R12,LSL#32-6:STR R12,colSol
+AND R12,R12,#31<<(32-6)
+ADR R13,threeD_algol
+LDR R10,[R13,R12,LSR#32-6-2]!:MUL R10,R9,R10
+
+FNldr(11,BASESCR)
+ADD R14,R11,#320*72
+
+  ;;;;;;;;;;;;;;;;;;;;
+;;;; Erase dark sky ;;;;
+  ;;;;;;;;;;;;;;;;;;;;
+
+MOV R0,R10,LSR#12:ADD R0,R0,R0,LSL#2:ADD R0,R14,R0,LSL#6 ; x5x64=x320
+
+MOV R1,#0:MOV R2,#0:MOV R3,#0:MOV R4,#0:MOV R5,#0:MOV R6,#0:MOV R7,#0:MOV R8,#0:MOV R12,#0:MOV R14,#0
+
+.eraseUpSide
+ STMDB R0!,{R1-R8,R12,R14}:STMDB R0!,{R1-R8,R12,R14}
+ STMDB R0!,{R1-R8,R12,R14}:STMDB R0!,{R1-R8,R12,R14}
+ STMDB R0!,{R1-R8,R12,R14}:STMDB R0!,{R1-R8,R12,R14}
+ STMDB R0!,{R1-R8,R12,R14}:STMDB R0!,{R1-R8,R12,R14}
+CMP R0,R11:BNE eraseUpSide
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ADD R12,R11,#65*1024 ; end of screen (halt !)
+ADD R14,R11,#320*72  ; horizon
+
+.repeat_drawSol
+ MOV R11,R10,LSR#12:ADD R0,R14,R11,LSL#8:ADD R0,R0,R11,LSL#6 ;start line
+
+ LDR R11,[R13,#32*4]!
+ MUL R11,R9,R11:SUB R10,R11,R10
+
+ LDR R1,colSol:EORS R1,R1,#32<<(32-6):STR R1,colSol
+
+ LDRMI R3,algol_col1
+ LDRPL R3,algol_col2
+
+ ADR R4,threeD_algol:SUB R4,R13,R4
+ LDR R1,[R3,R4,LSR#5]
+
+ CMP R1,R1,ROR#8:BNE drawLine_dith
+
+ MOV R2,R1:MOV R3,R1:MOV R4,R1:MOV R5,R1:MOV R6,R1:MOV R7,R1:MOV R8,R1
+.drawLine
+ CMP R0,R12:BPL quit_drawSol
+
+ STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}
+ STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}
+ STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}
+
+ SUBS R10,R10,#16*256
+ BPL drawLine:MOV R10,R11:B repeat_drawSol
+
+.drawLine_dith
+ CMP R0,R12:BPL quit_drawSol
+
+ MOV R2,R1:MOV R3,R1:MOV R4,R1:MOV R5,R1:MOV R6,R1:MOV R7,R1:MOV R8,R1
+ STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}
+ STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}
+ STMIA R0!,{R1-R8}:STMIA R0!,{R1-R8}
+
+ SUBS R10,R10,#16*256
+ MOVPL R1,R1,ROR#8:BPL drawLine_dith:MOV R10,R11:B repeat_drawSol
+
+.quit_drawSol
+FNout
+
+FNbin
+
+.genAlgolSide
+ SWI "OS_ReadMonotonicTime"
+ EOR R0,R0,R0,ROR#13
+ ADD R0,R0,#&A700
+ FNadr(1,algolSide)
+
+ MOV R2,#0
+.Aloop_C
+ MOV R3,#0
+.Aloop_R
+ MOV R4,#0
+.Aloop_E
+
+  ADD R0,R0,R0,ASR#1
+
+ CMP R3,#255-10:MOVGT R5,#0:BGT set_algol_blk
+
+ CMP R3,#11:BGT A_cas1
+.A_cas2                                ; tunnel description
+
+ CMP R4,#3:CMPEQ R2,#0:MOVEQ R5,#2:MOVNE R5,#0
+ B set_algol_blk
+
+.A_cas1
+ AND R6,R0,#%11111
+ CMP R6,#3:MOVPL R5,#0:BPL set_algol_blk
+
+.A_cas1loop
+ ADD R0,R0,R0,ASR#2
+ EOR R0,R0,R0,ROR#11
+ ADD R0,R0,#1
+ ANDS R5,R0,#%111
+ CMPNE R5,#2:BEQ A_cas1loop
+
+ ADD R5,R5,R6,LSL#3
+
+.set_algol_blk
+ STRB R5,[R1],#1
+
+ ADD R4,R4,#1:CMP R4,#008:BNE Aloop_E
+ ADD R3,R3,#1:CMP R3,#256:BNE Aloop_R
+ ADD R2,R2,#1:CMP R2,#006:BNE Aloop_C
+
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.threeD_algol
+]
+FOR Z=0 TO 319.5 STEP .5:!O%=128*256/(320-Z):P%+=4:O%+=4:NEXT
+
+=0
+
+DEFFNtestBlocker
+[OPT PASS
+ LDR R0,blocker:CMP R0,#0:BNE exitcalcColl
+]
+=0
+
+DEFFNsetBlocker
+[OPT PASS
+ MOV R0,#32:STR R0,blocker ; bloque cubes pour un certain temps
+ STR R1,cubeLight ; adresse du cube a' faire en blanc
+]
+=0
+
+REM definition d'un cube &ab:
+    REM     &a : phase (5 bits)
+    REM     &b : kind of cube (3 bits)

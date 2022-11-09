@@ -1,0 +1,434 @@
+REM >MASTER.ALGOL.FNrocket
+END
+_____________________________________________________________________________
+
+DEFFNrocket
+
+Static=0:Dinamic=1:Shadow=1:NoShadow=0          :REM const
+eod=65536                                       :REM EndOfData sentinel
+maxPoints=22
+maxPoints2=128
+
+REM you just can use lines for "rocket"
+
+e=48
+
+[OPT PASS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;  Si l'objet est statique et avec ombre,il doit pointer a' un objet
+;  ombre.
+;  Si l'objet est dinamique,l'ombre est dessinee a partir de lui-meme
+
+.RocketRoll
+FNdefine(RocketRoll,Dinamic,Shadow,0)
+
+FNxyz(-e*1.5,0,0)
+]
+ray2%=e*SQR(3/4)
+ray1%=ray2%*0.4
+
+FOR L%=0 TO 4
+ [OPT PASS :FNxyz(-e/2,COS(L%*2*PI/5)*ray1%,SIN(L%*2*PI/5)*ray1%) :]
+NEXT
+FOR L%=0 TO 4
+ [OPT PASS :FNxyz(e/2,COS(L%*2*PI/5+PI/5)*ray2%,SIN(L%*2*PI/5+PI/5)*ray2%) :]
+NEXT
+[OPT PASS
+FNxyz(e*1.25,0,0)
+
+EQUD eod
+FNhidden(roc,0)
+.roc
+
+FNline(40,1, 0,1)
+FNline(40,1, 0,2)
+FNline(40,1, 0,3)
+FNline(40,1, 0,4)
+FNline(40,1, 0,5)
+
+FNline(41,1, 1,2)
+FNline(41,1, 2,3)
+FNline(41,1, 3,4)
+FNline(41,1, 4,5)
+FNline(41,1, 5,1)
+
+FNline(40,1, 1,6)
+FNline(41,1, 1,10)
+FNline(40,1, 2,7)
+FNline(41,1, 2,6)
+FNline(40,1, 3,8)
+FNline(41,1, 3,7)
+FNline(40,1, 4,9)
+FNline(41,1, 4,8)
+FNline(40,1, 5,10)
+FNline(41,1, 5,9)
+
+FNline(41,1, 6,7)
+FNline(41,1, 7,8)
+FNline(41,1, 8,9)
+FNline(41,1, 9,10)
+FNline(41,1, 10,6)
+
+FNline(40,1, 6,11)
+FNline(40,1, 7,11)
+FNline(40,1, 8,11)
+FNline(40,1, 9,11)
+FNline(40,1, 10,11)
+
+EQUD eod
+
+.Algol_dog
+FNdefine(Algol_dog,Dinamic,Shadow,0)
+ FNxyz(0,0,48)
+ FNxyz(32*COS(0),32*SIN(0),0)
+ FNxyz(32*COS(2*PI/3),32*SIN(2*PI/3),0)
+ FNxyz(32*COS(4*PI/3),32*COS(4*PI/3),0)
+EQUD eod
+FNhidden(dog,0)
+.dog
+ FNline(8,1, 0,1)   ; tetraedre
+ FNline(8,1, 0,2)
+ FNline(8,1, 0,3)
+ FNline(8,1, 1,2)
+ FNline(8,1, 2,3)
+ FNline(8,1, 3,1)
+EQUD eod
+
+.Short_Circuit
+FNdefine(Short_Circuit,Dinamic,Shadow,0)
+]
+FOR Z%=0TO 15
+ RAY%=48+RND(40)*SIN(Z%*PI/16)
+ [OPT PASS
+  FNxyz(0,RAY%*SIN(Z%*PI/16),RAY%*COS(Z%*PI/16))
+ ]
+NEXT
+
+[OPT PASS
+EQUD eod
+FNhidden(sho,0)
+.sho
+ FNline(34,0, 0,1)
+ FNline(34,0, 1,2)
+ FNline(34,0, 2,3)
+ FNline(34,0, 3,4)
+ FNline(34,0, 4,5)
+ FNline(34,0, 5,6)
+ FNline(34,0, 6,7)
+ FNline(34,0, 7,8)
+ FNline(34,0, 8,9)
+ FNline(34,0, 9,10)
+ FNline(34,0,10,11)
+ FNline(34,0,11,12)
+ FNline(34,0,12,13)
+ FNline(34,0,13,14)
+ FNline(34,0,14,15)
+
+EQUD eod
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.DrawRocket            ; IN  R0=Obj pointer,(R1,R2)=(posX,posY)
+FNin                   ;     R3=posZ for dinamic;R5=input list for dinamic
+                       ; R13 unaltered
+
+FNadr(7,buf2Dobj)
+
+LDR R6,[R0],#8
+TST R6,#2:BEQ quitRocket
+
+.dinamicRock
+
+MOVS R9,R2,ASR#4:MOVMI R9,#0
+CMPGT R9,#23:MOVGT R9,#23
+STR R9,strip3D_algol ;useful for the colour
+
+ADD R5,R5,#12  ; skip light vector
+
+ FNldr(10,algolHigh)
+ FNldr(11,algolDeltaX)
+  ADD R1,R1,R11
+
+.dinamicRockLoop
+LDMIA R5!,{R12,R13,R14}
+ADD R0,R0,#12:CMP R12,#eod:BEQ testHidden_algol
+
+ADD R12,R1,R12,ASR#2 ; in atom coords
+ADD R13,R2,R13,ASR#2
+ADD R14,R3,R14,LSL#2:RSB R14,R14,R10
+
+CMP R13,#640:BCS quitRocket  ; out of perspective bounds
+FNadr(6,threeD_algol):LDR R6,[R6,R13,LSL#2]   ;read perspective
+
+MUL R13,R6,R14:MOV R13,R13,ASR#12:ADD R13,R13,#72  ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#08:ADD R12,R12,#160  ; X projection
+
+STMIA R7!,{R12,R13,R14}     ; R14 is "hauteur du point"
+B dinamicRockLoop
+
+.testHidden_algol ; no test hidden!
+SUB R0,R0,#4
+.drawRockNow
+LDR R9,[R0]
+CMP R9,#eod:BEQ quitRocket
+TST R9,#1<<30:ADDEQ R0,R0,#8*4:ADDNE R0,R0,#3*4 ; move to end of surf def
+              BEQ drawRockNow    ; no quadra option
+
+.lineDinRock
+
+LDR R13,strip3D_algol
+ BL readCol  ;en fonction de R9(real color) et de R13=!strip3D_algol
+
+ LDMDB R0,{R1,R2}
+ LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}   ;load coords
+
+ BL PutLine   ; draw line  .R0 unaltered
+B drawRockNow
+
+.quitRocket
+FNout
+
+.strip3D_algol EQUD 0
+
+.DrawRocketShadow      ; IN   R0=Obj pointer,(R1,R2)=(posX,posY) in land
+                       ;      R3=posZ if dinamic (to ctrl crash)
+FNin                   ;      R4=(alfa,beta,gamma)
+                       ;      R5=output 3D (rotated) list for dinamic
+
+LDR R6,[R0],#8                ;load header and skip ShadowObj
+TST R6,#1:BEQ quitRockShadow
+TST R6,#2:BEQ quitRockShadow  ; static -> quit
+
+FNadr(10,sinus):ADD R11,R10,#64*4  ; R11=cosTable
+
+ AND R12,R4,#&FF0000  ;mask alfa
+LDR R6,[R10,R12,LSR#16-2]:LDR R7,[R11,R12,LSR#16-2]   ;sin(alfa),cos(alfa)
+ AND R12,R4,#&00FF00  ;mask beta
+LDR R8,[R10,R12,LSR#08-2]:LDR R9,[R11,R12,LSR#08-2]   ;sin(beta),cos(beta)
+ AND R12,R4,#&0000FF  ;mask gamma
+LDR R10,[R10,R12,LSL#2  ]:LDR R11,[R11,R12,LSL#2  ] ;sin(gamma),cos(gamma)
+
+STR R5,memoR5_a   ; conserve R5
+
+ADD R5,R5,#12 ; no light vector ( but skip the 12 reserved bytes)
+
+.rotatePoints_algol
+LDMIA R0!,{R12,R13,R14}:CMP R12,#eod:BEQ dinamicRockShadow
+
+MUL R4,R14,R10:RSB R4,R4,#0:MLA R4,R13,R11,R4
+MUL R14,R11,R14:MLA R14,R13,R10,R14:MOV R14,R14,ASR#8:MOV R13,R4,ASR#8
+
+MUL R4,R14,R8:RSB R4,R4,#0:MLA R4,R12,R9,R4
+MUL R14,R9,R14:MLA R14,R12,R8,R14:MOV R14,R14,ASR#8:MOV R12,R4,ASR#8
+
+MUL R4,R13,R6:RSB R4,R4,#0:MLA R4,R12,R7,R4
+MUL R13,R7,R13:MLA R13,R12,R6,R13:MOV R13,R13,ASR#8:MOV R12,R4,ASR#8
+
+STMIA R5!,{R12,R13,R14}
+B rotatePoints_algol
+
+.dinamicRockShadow               ; R13 is the 'FNhidden' value!
+MOV R0,R13,LSR#8:STR R0,memoR0_a ;save the pointer to a surface definition
+MOV R0,#eod:STR R0,[R5] ;end of 3D rotated points
+LDR R5,memoR5_a   ;recupere R5,pointeur a' la liste des rotated points
+ADD R0,R5,#12     ;move pointer after light vector(now R0)
+
+MOV R5,#0:STR R5,underRock  ;init underRock value(0=ship en l'air)
+
+FNadr(7,buf2Dobj)
+
+FNldr(10,algolHigh)
+FNldr(11,algolDeltaX)
+ ADD R1,R1,R11
+
+.dinamicRShadowLoop
+LDMIA R0!,{R12,R13,R14}:CMP R12,#eod:LDREQ R0,memoR0_a:BEQ readRShadowList
+
+FNcalcShadowRocket    ;and save them at R7!
+B dinamicRShadowLoop
+
+.underRock EQUD 0 ; si le ship est sous la terre,on store ici son delta z
+                  ; utile pour calculer collision ship-land
+
+.readRShadowList
+MOV R12,#0        ; this is the color for the shadow
+
+.nextRockSurface
+LDR R1,[R0]
+CMP R1,#eod:BEQ quitRockShadow   ;end of work!
+TST R1,#1<<30:ADDEQ R0,R0,#8*4:ADDNE R0,R0,#3*4 ; move to end of surf def
+TSTNE R1,#1<<29:BEQ nextRockSurface
+
+.lineRockShadow
+ LDMDB R0,{R1,R2}
+ LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}   ;load coords
+
+ BL PutLine   ; finally draw a black line ;R0 unaltered by "PutLine"
+B nextRockSurface
+
+.quitRockShadow
+FNout
+
+.memoR0_a EQUD 0
+.memoR5_a EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;; COMPLICATED ROUTINES FOR EXPLOSION ROCKET ;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.genExplList            ; input (R1,R2,R3)=rel pos;R5=rotated points
+
+FNadr(11,buf2Dobj):SUB R11,R11,#12  ; -12 is to skip light vector
+SUB R11,R5,R11
+
+FNadr(12,explList)
+
+LDR R13,rndBoom
+
+FNadr(0,roc)      ; here begins the list of lines for rocket
+.loopReadRoc
+ LDMIA R0!,{R4,R5,R6} ; read line def
+ CMP R4,#eod:STREQ R4,[R12]:STREQ R13,rndBoom:MOVEQ PC,R14
+ ADD R5,R5,R11:ADD R8,R6,R11  ; +R5-buf2Dobj_algol
+ LDMIA R5,{R5,R6,R7}          ; load point P
+
+ ADD R5,R1,R5,ASR#2
+ ADD R6,R2,R6,ASR#2
+ ADD R7,R3,R7,ASL#2
+
+ STMIA R12!,{R4, R5,R6,R7}    ; store point P
+
+ LDMIA R8,{R5,R6,R7}          ; load point Q
+
+ ADD R5,R1,R5,ASR#2
+ ADD R6,R2,R6,ASR#2
+ ADD R7,R3,R7,ASL#2
+
+ EORS R9,R13,R13,ROR#17        ; mic-mac pour nice rnd values
+ ADD R10,R9,R9,ROR#1
+ EOR R13,R10,R10,ROR#13
+
+ AND R8,R13,#7:SUB R8,R8,#4
+ AND R9,R9,#3:ADD R9,R9,#1:RSBMI R9,R9,#0
+ AND R10,R10,#15:SUB R10,R10,#8
+
+ STMIA R12!,{R5,R6,R7, R8,R9,R10}    ; store point Q and speed
+B loopReadRoc
+
+.rndBoom EQUD -TIME
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.drawExplShadow
+FNin
+
+MOV R12,#0     ; this is the colour for the lines
+
+FNadr(0,explList)
+.explShLoop
+LDMIA R0!,{R1, R2,R3,R4, R5,R6,R7, R8,R9,R10}
+CMP R1,#eod:FNexitEQ
+ ADD R2,R2,R8           ; move both points
+ ADD R3,R3,R9
+ ADD R4,R4,R10
+
+ ADD R5,R5,R8
+ ADD R6,R6,R9
+ ADDS R7,R7,R10
+
+             MOVMI R7,R4:MOVMI R4,#0:BMI okForceG
+   CMP R4,#0:MOVMI R4,R7:MOVMI R7,#0
+
+   SUBPL R10,R10,#1         ; force G
+.okForceG
+   RSBMI R10,R10,#0         ; inverse vitesse si ligne rebondit
+
+ STMDB R0,{R2,R3,R4, R5,R6,R7, R8,R9,R10}
+
+ CMP R3,#640:CMPCC R6,#640:BCS explShLoop ; out of perspective range
+
+ FNldr(11,algolDeltaX)
+   ADD R2,R2,R11        ; move viewer horizontally
+   ADD R5,R5,R11
+
+ FNldr(11,algolHigh)
+
+ FNadr(10,threeD_algol)
+       LDR R3,[R10,R3,LSL#2]
+ MUL R1,R3,R2: MOV R1,R1,ASR#08:ADD R1,R1,#160
+ MUL R2,R3,R11:MOV R2,R2,ASR#12:ADD R2,R2,#72
+       LDR R6,[R10,R6,LSL#2]
+ MUL R3,R6,R5: MOV R3,R3,ASR#08:ADD R3,R3,#160
+ MUL R4,R6,R11:MOV R4,R4,ASR#12:ADD R4,R4,#72
+
+ BL PutLine
+B explShLoop
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.drawExpl
+FNin
+
+FNadr(0,explList)
+.explLoop
+LDMIA R0!,{R1, R2,R3,R4, R5,R6,R7, R8,R9,R10}
+CMP R1,#eod:FNexitEQ
+
+ CMP R3,#640:CMPCC R6,#640:BCS explLoop ; out of perspective range
+
+ CMP R3,#4*92
+ FNadr(12,MegaShades):ADDMI R12,R12,R3,LSR#2:ADDPL R12,R12,#92
+ LDR R12,[R12,R1,LSL#5]  ;load colour
+
+ FNldr(11,algolDeltaX)
+   ADD R2,R2,R11        ; move viewer horizontally
+   ADD R5,R5,R11
+
+ FNldr(11,algolHigh)
+  RSB R4,R4,R11   ; add high to the points
+  RSB R7,R7,R11
+
+ FNadr(10,threeD_algol)
+       LDR R3,[R10,R3,LSL#2]
+ MUL R1,R3,R2:MOV R1,R1,ASR#08:ADD R1,R1,#160
+ MUL R2,R3,R4:MOV R2,R2,ASR#12:ADD R2,R2,#72
+       LDR R6,[R10,R6,LSL#2]
+ MUL R3,R6,R5:MOV R3,R3,ASR#08:ADD R3,R3,#160
+ MUL R4,R6,R7:MOV R4,R4,ASR#12:ADD R4,R4,#72
+
+ BL PutLine
+B explLoop
+
+FNout
+
+FNbin
+
+]
+
+=0
+
+REM *********** END OF MAIN ROUTINE *********************************
+
+DEFFNcalcShadowRocket
+[OPT PASS               ; input R10=!algolHigh
+
+ADD R12,R1,R12,ASR#2    ; in atom squares
+ADD R13,R2,R13,ASR#2
+ADDS R14,R3,R14,ASL#2
+
+              STRMI R14,underRock      ; if z<0 then !!!UNDERrock!!!
+
+CMP R13,#640:BCS quitRockShadow  ; out of perspective bounds
+
+FNadr(6,threeD_algol):LDR R6,[R6,R13,LSL#2]   ;read perspective
+
+MUL R14,R6,R10:MOV R14,R14,ASR#12:ADD R14,R14,#072 ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#08:ADD R12,R12,#160 ; X projection
+
+STMIA R7!,{R12,R14,PC}     ; the last one is useless!
+]
+=0

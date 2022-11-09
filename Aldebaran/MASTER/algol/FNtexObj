@@ -1,0 +1,206 @@
+REM >MASTER.ALGOL.FNtexObj
+REM texure coding : like colour,but with code>=64
+END
+________________________________________________________________________
+
+DEFFNtexturedObjects
+
+Static=0:Dinamic=1:Shadow=1:NoShadow=0          :REM const
+eod=65536                                       :REM EndOfData sentinel
+maxPoints =22
+maxPoints2=128
+
+[OPT PASS
+
+.readCol
+FNadr (12,MegaShades)
+ADD R12,R12,R13,LSL#2
+LDR R12,[R12,R9,LSL#5]   ; color x 96 bytes
+MOV PC,R14
+
+.fill_with_texture
+
+ FNadr(12,light_textures)
+ SUB R9,R9,#64*3
+ ADD R12,R12,R9,LSL#10    ; select the right texture (x 3 Kb) ...
+ MOV R13,R13,ASR#1:ADD R12,R12,R13,LSL#8 ; ...with the right intensity
+
+ CMP R5,R7:CMPEQ R6,R8:BNE noreverse ; car triangle!!!
+ MOV R14,R1:MOV R1,R5:MOV R5,R14 ; reverse order of the 4 points
+ MOV R14,R2:MOV R2,R6:MOV R6,R14 ; otherwise illegal texture parameters!
+
+.noreverse
+BL PutGeneralTexture
+B end_fill
+
+.draw3DTexObject       ; IN  R0=Obj pointer,(R1,R2)=(posX,posY)
+FNin                   ;     R3=posZ for dinamic;R5=input list for dinamic
+
+FNadr(7,buf2Dobj)
+
+LDR R6,[R0],#8
+TST R6,#2:BEQ quitDraw3DTexObj
+
+.dinamicTexObj
+MOVS R9,R2,ASR#5:MOVMI R9,#0
+CMPGT R9,#23:MOVGT R9,#23
+STR R9,strip3Dt ;useful for the colour
+
+ADR R11,theLightt
+LDMIA R5!,{R12,R13,R14}    ;load light vector
+STMIA R11,{R12,R13,R14}    ;and store it
+
+.dinamicTexObjLoop
+LDMIA R5!,{R12,R13,R14}
+ADD R0,R0,#12:CMP R12,#eod:BEQ testTexHidden
+
+ADD R12,R1,R12
+ADD R13,R2,R13
+ADD R14,R3,R14
+
+CMP R13,#636:BCS quitDraw3DTexObj ; out of perspective bounds
+FNadr(6,threeD_algol+4*636):LDR R6,[R6,-R13,LSL#2]   ;read perspective
+
+MUL R13,R6,R14:MOV R13,R13,ASR#09:RSB R13,R13,#104 ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#09:ADD R12,R12,#160  ; X    "
+
+STMIA R7!,{R12,R13,R14}     ; R14 is "NIL"
+B dinamicTexObjLoop
+
+.testTexHidden    ; R13 contains 'hidden' value
+LDR R12,[R0,#-8]:SUB R0,R0,#4
+ANDS R12,R12,#&FF:BEQ drawDinTexNow    ; no hidden tests!
+MOV R8,#0               ;init counter
+.nxtTexHidden
+LDMIA R0!,{R1,R3,R5}    ;load hplane
+
+ LDMIA R1,{R1,R2}       ;load plane coords
+ LDMIA R3,{R3,R4}
+ LDMIA R5,{R5,R6}
+
+ FNBackFace
+ ORRPL R8,R8,R12        ; set the counter if right half-space
+
+MOVS R12,R12,LSR#1:BNE nxtTexHidden
+LDR R0,[R0,R8,LSL#2]   ; and finally load the right obj address!
+
+.drawDinTexNow
+LDR R9,[R0]
+CMP R9,#eod:BEQ quitDraw3DTexObj
+TST R9,#1<<30:ADDEQ R0,R0,#8*4:ADDNE R0,R0,#3*4 ; move to end of surf def
+                                 BNE lineDinTexObj
+.quadDinTexObj
+
+ SUB R13,R0,#3*4:LDMDB R13,{R5,R6,R7,R8}  ;read the four points
+
+ LDMIA R5,{R1,R2,R10}
+ LDMIA R6,{R3,R4,R11}
+ LDMIA R7,{R5,R6,R12}   ; load the first three (x,y) coords
+
+  FNBackFace:BMI drawDinTexNow
+
+ STR R0,memoR0
+
+  SUB R13,R0,#3*4:LDMIA R13,{R7,R13,R14}      ;load normal surface vector
+  LDR R0,theLightt:  MUL R0,R7,R0
+  LDR R7,theLightt+4:MLA R0,R13,R7,R0
+  LDR R7,theLightt+8:MLA R0,R14,R7,R0
+  LDR R13,strip3Dt
+   RSBS R13,R13,R0,ASR#19:MOVMI R13,#0
+   CMPGT R13,#23:MOVGT R13,#23
+
+ LDMIA R8,{R7,R8,R14}   ;load the fourth point
+
+  AND R9,R9,#&FF:CMP R9,#64*3:BPL fill_with_texture
+
+   BL readCol
+   BL PutQuadra
+ .end_fill
+ LDR R0,memoR0
+B drawDinTexNow
+
+.lineDinTexObj
+
+LDR R13,strip3Dt
+ BL readCol  ;en fonction de R9(real color) et de R13=!strip3Dt
+
+ LDMDB R0,{R1,R2}
+ LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}   ;load coords
+
+ ADD R2,R2,#1:ADD R4,R4,#1 ;to make things going
+
+ BL PutLine   ; draw line  .R0 unaltered
+B drawDinTexNow
+
+.quitDraw3DTexObj
+FNout
+
+.strip3Dt EQUD 0
+.theLightt EQUD 0:EQUD 0:EQUD 0
+
+.rotateTexPoints       ; IN   R0=Obj pointer,(R1,R2)=(posX,posY) in land
+                       ;      R3=posZ if dinamic
+FNin                   ;      R4=(alfa,beta,gamma)
+                       ;      R5=output 3D (rotated) list for dinamic
+
+LDR R6,[R0],#8               ;load header and skip ShadowObj
+TST R6,#1:BEQ quitTexRotat
+TST R6,#2:BEQ quitTexRotat
+
+FNadr(10,sinus):ADD R11,R10,#64*4  ; R11=cosTable
+
+ AND R12,R4,#&FF0000  ;mask alfa
+LDR R6,[R10,R12,LSR#16-2]:LDR R7,[R11,R12,LSR#16-2]   ;sin(alfa),cos(alfa)
+ AND R12,R4,#&00FF00  ;mask beta
+LDR R8,[R10,R12,LSR#08-2]:LDR R9,[R11,R12,LSR#08-2]   ;sin(beta),cos(beta)
+ AND R12,R4,#&0000FF  ;mask gamma
+LDR R10,[R10,R12,LSL#2  ]:LDR R11,[R11,R12,LSL#2  ] ;sin(gamma),cos(gamma)
+
+;MOV R12,R8,LSL#8:;MUL R13,R9,R10:;MUL R14,R11,R9
+
+MOV R12,#0:MVN R13,#200*256:MOV R14,#155*256     ; front light
+
+MUL R4,R13,R6:;MLA R4,R12,R7,R4                       ; special code
+;MUL R12,R6,R12:;RSB R12,R12,#0:MLA R13,R7,R13,R12    ; to rotate
+MOV R13,R13,ASR#8:MOV R12,R4,ASR#8                    ; light vector
+                                                      ;
+MUL R4,R14,R8:MLA R4,R12,R9,R4                        ;
+MUL R12,R8,R12:RSB R12,R12,#0:MLA R14,R9,R14,R12      ;
+MOV R14,R14,ASR#8:MOV R12,R4,ASR#8                    ;
+                                                      ;
+MUL R4,R14,R10:MLA R4,R13,R11,R4                      ;
+MUL R13,R10,R13:RSB R13,R13,#0:MLA R14,R11,R14,R13    ;
+MOV R14,R14,ASR#8:MOV R13,R4,ASR#8                    ;
+
+STMIA R5!,{R12,R13,R14} ; the light vector
+
+.rotationsTex
+LDMIA R0!,{R12,R13,R14}:CMP R12,#eod:BEQ quitTexRotat
+
+MUL R4,R14,R10:RSB R4,R4,#0:MLA R4,R13,R11,R4
+MUL R14,R11,R14:MLA R14,R13,R10,R14:MOV R14,R14,ASR#8:MOV R13,R4,ASR#8
+
+MUL R4,R14,R8:RSB R4,R4,#0:MLA R4,R12,R9,R4
+MUL R14,R9,R14:MLA R14,R12,R8,R14:MOV R14,R14,ASR#8:MOV R12,R4,ASR#8
+
+MUL R4,R13,R6:RSB R4,R4,#0:MLA R4,R12,R7,R4
+MUL R13,R7,R13:MLA R13,R12,R6,R13:MOV R13,R13,ASR#8:MOV R12,R4,ASR#8
+
+STMIA R5!,{R12,R13,R14}
+B rotationsTex
+
+.quitTexRotat
+STR R12,[R5]    ;store sentinel and say "good bye!"
+
+FNout
+
+FNbin
+
+.memoR0 EQUD 0
+
+]
+=0
+
+REM *********** END OF MAIN ROUTINE **********************
+
+DEFFNq(A,B,C,D,E) =FNquad(A,1,1,B,C,D,E)  :REM quadra with BackFace,Shadow

@@ -1,0 +1,94 @@
+REM >MASTER.FNtimer
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+
+DIM cde 800
+FOR PASS=4 TO 6 STEP 2
+P%=cde
+O%=cde
+PROCinitinout
+[OPT PASS
+ FNtimer
+]
+PROCendinout
+NEXT
+
+ TIME=99* 100* 24*3600
+ REPEAT
+  PRINTTAB(0,0)USR read_time
+  PRINTTAB(1,1)INT(TIME/50)
+ UNTIL FALSE
+
+END
+________________________________________________________________________
+
+DEFFNtimer
+[OPT PASS
+
+.reset_time
+ MOV R0,#0
+.set_time
+ ADD R0,R0,R0,LSL#2  ;x50
+ ADD R0,R0,R0,LSL#2
+ MOV R0,R0,LSL#1
+ STR R0,time_block
+
+ MOV R0,#&02
+ ADR R1,time_block
+ SWI "OS_Word"
+MOVS PC,R14
+
+.read_time          ; output in half seconds
+ MOV R0,#&01
+ ADR R1,time_block
+ SWI "OS_Word"
+ LDR R1,time_block
+
+ MOV R1,R1,LSR#1    ; divide by 50
+ ADD R0,R1,R1,LSL#2 ;
+ ADD R0,R0,R1,LSR#4 ;
+ ADD R0,R0,R1,LSR#5 ;
+ ADD R0,R0,R1,LSR#6 ;
+ ADD R0,R0,R1,LSR#7 ;
+ ADD R0,R0,R1,LSR#9 ;
+ ADD R0,R0,R1,LSR#10;
+ MOV R0,R0,LSR#7    ;
+MOVS PC,R14
+
+.add_time           ; input R2
+FNin
+ BL read_time
+ ADD R0,R0,R2
+ BL set_time
+ BL update_sun
+ BL update_ideas
+FNout
+
+.freeze_time
+FNin
+ BL read_time
+ STR R0,frozen_time
+FNout
+
+.unfreeze_time
+ LDR R0,frozen_time
+B set_time
+
+.time_block
+ EQUD 0
+ EQUD 0 ; must be always 0
+
+.frozen_time EQUD 0
+
+FNbin
+
+]
+=0
+
+DEFFNaddtime(A%)
+[OPT PASS
+ MOV R2,#A%
+ BL add_time
+]
+=0

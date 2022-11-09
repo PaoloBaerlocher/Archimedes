@@ -1,0 +1,414 @@
+REM >MASTER.ALGOL.FNseeAlgol
+
+LIBRARY "MASTER.FNbigQuad_"
+LIBRARY "MASTER.FNint_star"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+
+MODE 15:MODE 13:OFF
+
+SYS 6,112,2
+*SCREENLOAD GRA*.SC*.1
+SYS 6,112,0
+*SCREENLOAD GRA*.SC*.1
+
+DIM SPACE 80000
+FOR PASS=4TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+[OPT PASS
+
+.sun_cde FNload("ZARCH_TWO.sun_cde")
+
+FNgraf_lib
+
+FNinter_stars
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FNBigQuadraRoutine
+
+FNalgolView
+
+.sinus FNlookup_sin
+
+.MegaShades FNload("ZARCH_TWO.MEGASHADES")
+
+]
+PROCendinout
+NEXT
+
+CALL claimInterrupt
+
+REPEAT
+WAIT
+CALL clear_scr
+
+CALL moveAlgol
+CALL drawAlgol
+
+A%=!BASESCR:CALL sun_cde
+CALL SwapScreens
+
+UNTIL INKEY(-99)
+CALL stopInterrupt
+END
+
+DEFFNalgolView
+[OPT PASS
+
+.draw_Algol_z    EQUD 0
+.draw_Algol_alfa EQUD 0
+.draw_Algol_beta EQUD 0
+.draw_Algol_tau  EQUD 129
+.draw_Algol_diam EQUD 3    ; = # of remaining diamonds (3 by default)
+
+.adx_light EQUD 0
+.ady_light EQUD 0
+
+.moveAlgol
+ SWI "OS_ReadMonotonicTime"
+ FNadr(1,sinus)
+
+ MOV R2,R0,LSR#2
+ ADD R2,R2,R2,LSL#1
+ STR R2,draw_Algol_alfa
+
+ MOV R2,R0,LSR#2
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ MOV R2,R2,ASR#2
+ STR R2,draw_Algol_z
+
+ MOV R2,R0,LSR#3
+ ADD R2,R2,R2,LSR#1
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]     ;sin(time)
+ MOV R2,R2,ASR#5
+ ADD R2,R2,#129-8
+ STR R2,draw_Algol_tau
+
+ MOV R2,R0,LSR#1
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ MOV R2,R2,ASR#1
+ STR R2,adx_light
+
+ MOV R2,R0,LSR#3
+ ADD R2,R2,R2,LSR#1
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ MOV R2,R2,ASR#1
+ STR R2,ady_light
+
+ MOV R2,R0,LSR#1
+ ADD R2,R2,R2,LSR#1
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ MOV R2,R2,ASR#3
+ STR R2,draw_Algol_beta
+
+MOV PC,R14
+
+.drawAlgol
+FNin2
+ BL drawAlgol_up
+ BL drawAlgol_canon
+ BL drawAlgol_down
+FNout2
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.drawAlgol_down
+FNin
+
+FNadr(9,sinus):ADD R10,R9,#64*4
+
+MOV R7,#056<<24
+.Alalfa
+MOV R8,#32
+.Albeta
+
+ADR R12,minimemo_alg:STMIA R12,{R7-R10}
+
+LDR R4,draw_Algol_alfa
+ADD R8,R4,R8,LSL#3
+MOV R8,R8,LSL#24
+
+LDR R0,draw_Algol_z
+ADR R3,data_Algolquadra
+                 BL calc_betarot
+                 BL rotating1
+ADD R7,R7,#8<<24:BL rotating1
+ADD R8,R8,#8<<24:BL rotating1
+SUB R7,R7,#8<<24:BL rotating1
+
+LDMDB R3,{R1-R8}
+
+   SUB R14,R1,R5           ; this is the BackFace calculation
+   SUBS R13,R4,R6
+   MULNE R13,R14,R13
+
+   RSBS R14,R3,R5
+   SUBNE R0,R2,R6
+   MLAS R14,R0,R14,R13
+   BPL behind
+
+
+FNadr(14,MegaShades+92)                ; sunlight
+
+ADD R13,R1,R5:SUB R13,R13,#160*2:LDR R11,adx_light:ADD R13,R13,R11:MUL R12,R13,R13
+ADD R13,R2,R6:SUB R13,R13,#104*2:LDR R11,ady_light:ADD R13,R13,R11:MLA R12,R13,R13,R12
+
+CMP R12,#88<<9:MOVGT R12,#88<<9
+SUB R14,R14,R12,ASR#9   ; calc intensity
+
+ADR R12,minimemo_alg
+LDMIA R12,{R12,R13}
+EOR R12,R13,R12,LSR#27
+TST R12,#2
+ LDREQ R12,[R14,#05*96] ; what col
+ LDRNE R12,[R14,#10*96]
+
+CMP R12,#0:MOVEQ R12,#1:ORREQ R12,R12,R12,LSL#8:ORREQ R12,R12,R12,LSL#16
+                                                    ; if black then grey
+BL PutBigQuadra
+
+.behind
+ADR R10,minimemo_alg:LDMIA R10,{R7-R10}
+
+SUBS R8,R8,#1:BNE Albeta
+SUBS R7,R7,#8<<24:BPL Alalfa
+
+FNout
+
+.drawAlgol_up
+
+ LDR R0,draw_Algol_beta:CMP R0,#0:MOVMI PC,R14     ; quick BackFace!
+
+FNin
+
+FNadr(9,sinus):ADD R10,R9,#64*4
+
+MOV R8,#32
+.Albeta_2
+
+ADR R12,minimemo_alg:STMIA R12,{R7-R10}
+
+LDR R4,draw_Algol_alfa
+ADD R8,R4,R8,LSL#3
+MOV R8,R8,LSL#24
+
+MOV R7,#64<<24
+
+LDR R0,draw_Algol_z
+ADR R3,data_Algolquadra
+                 BL calc_betarot
+                 BL rotating1
+ADD R8,R8,#8<<24:BL rotating1
+ADD R8,R8,#8<<24:BL rotating1
+MOV R7,#40<<24
+SUB R8,R8,#8<<24:BL rotating2
+
+LDMDB R3,{R1-R8}
+
+FNadr(14,MegaShades+92)                ; sunlight
+
+LDR R12,draw_Algol_beta
+RSB R12,R12,#54
+
+CMP R12,#88:MOVGT R12,#88
+SUB R14,R14,R12         ; calc intensity
+
+ADR R12,minimemo_alg
+LDMIA R12,{R12,R13}
+TST R13,#2
+ MOVNE R12,#03*96/32    ; what col
+ MOVEQ R12,#10*96/32
+ LDR R12,[R14,R12,LSL#5]
+
+CMP R12,#0:MOVEQ R12,#1:ORREQ R12,R12,R12,LSL#8:ORREQ R12,R12,R12,LSL#16
+                                                    ; if black then grey
+BL PutBigQuadra
+
+ADR R10,minimemo_alg:LDMIA R10,{R7-R10}
+
+SUBS R8,R8,#2:BNE Albeta_2
+.quit_Algol_up
+FNout
+
+.drawAlgol_canon
+FNin
+
+ LDR R0,draw_Algol_diam
+ CMP R0,#1:MOVMI PC,R14
+
+FNadr(9,sinus):ADD R10,R9,#64*4
+
+MOVGT R8,#32   ; intensity of canon = f(diamonds #)
+MOVEQ R8,#16
+.Albeta_3
+
+ADR R12,minimemo_alg:STMIA R12,{R7-R10}
+
+LDR R4,draw_Algol_alfa
+ADD R8,R4,R8,LSL#3
+MOV R8,R8,LSL#24
+
+MOV R7,#40<<24
+
+LDR R0,draw_Algol_z
+ADR R3,data_Algolquadra
+                 BL calc_betarot
+                 BL rotating2
+ADD R8,R8,#8<<24:BL rotating2
+ADD R8,R8,#8<<24:BL rotating2
+LDR R7,draw_Algol_tau
+MOV R7,R7,LSL#24
+SUB R8,R8,#8<<24:BL rotating3
+
+LDMDB R3,{R1-R8}
+
+FNadr(14,MegaShades+64)                   ; sunlight
+
+LDR R12,draw_Algol_z
+CMP R12,#0
+ADDGT R14,R14,R12,ASR#2   ; calc intensity
+
+LDR R12,draw_Algol_tau
+CMP R12,#120
+LDRPL R12,[R14,#40*96]
+LDRMI R12,[R14,#41*96]
+
+BL PutBigQuadra
+
+ADR R10,minimemo_alg:LDMIA R10,{R7-R10}
+
+SUBS R8,R8,#4:BNE Albeta_3
+
+FNout
+
+.calc_betarot
+ LDRB R6,draw_Algol_beta
+ LDR R5,[R9,R6,LSL#2]:LDR R6,[R10,R6,LSL#2]  ; sin(rot),cos(rot)
+MOV PC,R14
+
+.rotating1
+ FNrotating1(1,2)
+ STMIA R3!,{R1,R2}
+MOV PC,R14
+
+.rotating2
+ FNrotating2(1,2)
+ STMIA R3!,{R1,R2}
+MOV PC,R14
+
+.rotating3
+ FNrotating3(1,2)
+ STMIA R3!,{R1,R2}
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.minimemo_alg EQUD 0:EQUD 0:EQUD 0:EQUD 0
+
+.data_Algolquadra
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+
+.prosp_alg
+]
+FOR z%=0 TO 159
+[OPT PASS : EQUB 255*10/(10+159-z%) : ]
+NEXT
+[OPT PASS
+ALIGN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FNbin
+
+]
+=0
+
+DEFFNrotating1(regx,regy)
+[OPT PASS
+LDR R11,[R9,R7,LSR#22]:LDR R12,[R10,R7,LSR#22]   ; sin(alfa),cos(alfa)
+LDR R13,[R9,R8,LSR#22]:LDR  R4,[R10,R8,LSR#22]   ; sin(beta),cos(beta)
+
+                                             ; calc x,y,z=(R12,R13,R4)
+MOV R12,R12,LSL#8
+MUL R13,R11,R13
+MUL R4,R11,R4
+
+MUL R11,R5,R12:RSB R11,R11,#0:MLA R11,R6,R13,R11
+MUL R12,R6,R12:               MLA R12,R5,R13,R12
+MOV R12,R12,ASR#8
+
+ADD R13,R0,R11,ASR#18
+ADR regx,prosp_alg+80
+LDRB R13,[regx,R13,ASR#1]
+
+MUL R4,R13,R4:MUL R12,R13,R12
+
+MOV R4,R4,ASR#10+5:MOV R12,R12,ASR#10+5
+
+ADD regx,R4,#160:ADD regy,R12,#104                 ; centre
+]
+=0
+
+DEFFNrotating2(regx,regy)
+[OPT PASS
+LDR R11,[R9,R7,LSR#22]:LDR R12,[R10,R7,LSR#22]   ; sin(alfa),cos(alfa)
+LDR R13,[R9,R8,LSR#22]:LDR  R4,[R10,R8,LSR#22]   ; sin(beta),cos(beta)
+
+                                             ; calc x,y,z=(R12,R13,R4)
+MOV R12,R12,LSL#8
+MUL R13,R11,R13
+MUL  R4,R11, R4
+
+MUL R11,R5,R12:RSB R11,R11,#0:MLA R11,R6,R13,R11
+MUL R12,R6,R12:               MLA R12,R5,R13,R12
+MOV R12,R12,ASR#8
+
+ADD R13,R0,R11,ASR#18
+FNadr(regx,prosp_alg+80)
+LDRB R13,[regx,R13,ASR#1]
+
+MUL R4,R13,R4:MUL R12,R13,R12
+
+MOV R4,R4,ASR#10+5+2:MOV R12,R12,ASR#10+5+2
+
+ADD regx,R4,#160:ADD regy,R12,#104               ; centre
+]
+=0
+
+DEFFNrotating3(regx,regy)
+[OPT PASS
+LDR R11,[R9,R7,LSR#22]:LDR R12,[R10,R7,LSR#22]   ; sin(alfa),cos(alfa)
+LDR R13,[R9,R8,LSR#22]:LDR  R4,[R10,R8,LSR#22]   ; sin(beta),cos(beta)
+
+                                             ; calc x,y,z=(R12,R13,R4)
+MOV R12,R12,LSL#8
+MUL R13,R11,R13
+MUL R4,R11,R4
+
+MUL R11,R5,R12:RSB R11,R11,#0:MLA R11,R6,R13,R11
+MUL R12,R6,R12:               MLA R12,R5,R13,R12
+MOV R12,R12,ASR#8
+
+ADD R13,R0,R11,ASR#18
+ADR regx,prosp_alg+80
+LDRB R13,[regx,R13,ASR#1]
+
+MUL R4,R13,R4:MUL R12,R13,R12
+
+MOV R4,R4,ASR#10+5-2:MOV R12,R12,ASR#10+5-2
+
+ADD regx,R4,#160:ADD regy,R12,#104              ; centre
+]
+=0

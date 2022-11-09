@@ -1,0 +1,799 @@
+REM >MASTER.ALGOL.FNtarget_5
+
+LIBRARY "MASTER.ALGOL.FNtexObj"
+LIBRARY "MASTER.FNfunction"
+LIBRARY "MASTER.FNgentex5"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNline"
+LIBRARY "MASTER.FNbigquad_"
+LIBRARY "MASTER.FNquadra"
+LIBRARY "MASTER.FNmakeDiv"
+LIBRARY "MASTER.FNsprite"
+
+MODE 15:MODE 13:OFF
+
+SYS 6,112,2
+*SCREENLOAD GR*.SCANNER.1
+SYS 6,112,0
+*SCREENLOAD GR*.SCANNER.1
+
+DIM SPACE 190000
+FOR PASS=4TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.dataExp FNload("MASTER.explosion")
+
+FNspriteRoutine
+
+\\\\\\\\\\\\\\\\\\\\\\\
+
+FNgraf_lib_NOBASESCR
+
+.sinus FNlookup_sin
+.buf2Dobj FNram(12*128)
+.algol_diamonds_number EQUD 3
+
+FNlineRoutine
+
+FNquadraRoutine
+
+FNgraf_lib_BASESCR
+
+FNBigQuadraRoutine
+
+FNGenTextureRoutine
+
+FNuni_div_table
+
+FNdestroy_animation
+
+ FNtexturedObjects
+
+.MegaShades FNload("ZARCH_TWO.MegaShades")
+
+.light_textures
+ FNload("ZARCH_TWO.TEXTOR")
+ FNload("ZARCH_TWO.TEXTOR2")
+ FNload("ZARCH_TWO.PO2_TEX")
+ FNload("ZARCH_TWO.PO3_TEX")
+
+.sun_cde FNload("ZARCH_TWO.sun_cde")
+
+.threeD_algol
+]
+ FOR Z=0 TO 319.5 STEP .5:!O%=128*256/(320-Z):P%+=4:O%+=4:NEXT
+[OPT PASS
+
+.galaga FNram(4000)
+
+.start_mainbuffer FNram(2000)
+
+ FNcreate_div_table
+
+ EQUD 0:EQUD 0:EQUD 0
+ EQUD 0:EQUD 0:EQUD 0
+
+.Divis
+]
+PROCendinout
+NEXT
+
+CALL MakeDivs
+CALL enter_target
+
+END
+
+DEFFNdestroy_animation
+eod=65536
+f=1.3
+S%=f*100
+U%=f*60:V%=U%*38/30:W%=U%*46/30:X%=U%*4/30:Y%=U%*6/30
+TC%=16
+[OPT PASS
+
+ FNlinoleum
+
+.enter_target
+FNin2
+
+ BL init_target_coroutine
+
+ BL init_diamonds_status
+
+.loop_enter_target
+ FNwait
+ BL SwapScreens
+
+ BL target_coroutine
+
+ BL clear_scr
+ BL drawLinoleum
+ BL view_3Dscene
+ FNldr(0,BASESCR)
+ BL sun_cde
+ BL ViewScreen
+B loop_enter_target
+
+.quit_enter_target
+FNout2
+
+FNbin
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.init_target_coroutine
+ MOV R0,#0:STR R0,target_counter
+MOVS PC,R14
+
+.target_coroutine
+ LDR R0,target_counter
+ CMP R0,#64
+ BNE no_boom_sound
+  FNbeep(0,11)
+.no_boom_sound
+
+ LDR R0,target_counter
+
+ CMP R0,#64
+ ADDMI R0,R0,#1
+ ADDPL R0,R0,#2
+ STR R0,target_counter
+ CMP R0,#512+256:BPL quit_enter_target
+
+FNadr(1,sinus)
+
+ CMP R0,#064:BMI target_Ph1
+ CMP R0,#128:BMI target_Ph2
+ CMP R0,#512:BMI target_Ph3
+
+ LDR R3,viewX
+ ADD R3,R3,#2
+ STR R3,viewX
+
+ LDR R3,viewY
+ ADD R3,R3,#7
+ STR R3,viewY
+
+ LDR R3,viewZ
+ ADD R3,R3,#4
+ STR R3,viewZ
+
+ MOV PC,R14
+
+.target_Ph3
+ MVN R5,#0:STR R5,boom_flag ; stop boom
+
+ CMP R0,#384
+ LDRPL R3,viewZ
+ SUBPL R3,R3,#1
+ STRPL R3,viewZ
+
+ AND R0,R0,#&FF
+
+ RSB R5,R0,#192
+ STR R5,viewAngle
+
+ LDR R3,[R1,R0,LSL#2]!  ; sin
+ LDR R4,[R1,#64*4]      ; cos
+
+ STR R4,viewX
+ MOV R3,R3,LSL#1
+ ADD R3,R3,#256
+ STR R3,viewY
+
+MOV PC,R14
+
+.target_Ph2
+ SUB R0,R0,#64
+
+ MOV R3,R0,LSR#2
+ STR R3,boom_pha
+
+ LDR R3,[R1,R0,LSL#2]
+
+ MOV R2,R0,LSL#2
+ RSB R2,R2,#512:STR R2,viewY
+
+ RSB R3,R3,#0  :STR R3,viewX
+
+ ADD R3,R0,#150:STR R3,viewZ
+
+ RSB R0,R0,#128:STR R0,viewAngle
+
+ MOV R0,#1     :STR R0,boom_flag
+
+ FNadr(0,Diamond_dead)
+               :STR R0,sceneDef+20
+
+MOV PC,R14
+
+.target_Ph1
+ MOV R0,R0,LSL#4
+ RSB R0,R0,#16*64+256+256:STR R0,viewY
+ SUB R0,R0,#256:STR R0,sceneDef+08
+ MOV R0,#0     :STR R0,viewX
+                STR R0,sceneDef+04
+                STR R0,boom_flag
+ MOV R0,#150   :STR R0,viewZ
+ MOV R0,#100   :STR R0,sceneDef+12
+ MOV R0,#128   :STR R0,viewAngle
+ MOV R0,#64    :STR R0,sceneDef+16
+ FNadr(0,SmallRocketRoll)
+               :STR R0,sceneDef+00
+
+ FNadr(0,Diamond)
+               :STR R0,sceneDef+20
+MOV PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+.target_counter EQUD 0
+.boom_flag      EQUD 0
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+ ;;;;;;;;;;;;;;;;;
+;; 3D parameters ;;
+ ;;;;;;;;;;;;;;;;;
+
+.viewParameters
+.viewX     EQUD 0  ; eye
+.viewY     EQUD 0
+.viewZ     EQUD 0  ; elevation
+.viewAngle EQUD 0
+
+ ;;;;;;;;;;;;;;;;;;;;
+;; scene definition ;;
+ ;;;;;;;;;;;;;;;;;;;;
+
+.sceneDef
+ FNbuild(SmallRocketRoll,0,400,50, 0,0)
+
+ FNbuild(Diamond,0,256,0, 0,0)
+ FNbuild(Diamond,256,-130,0, 0,0)
+ FNbuild(Diamond,-256,-130,0, 0,0)
+
+ FNbuild(StarLight,0,0,0, 0,2)
+
+ FNbuild(TexCube,-64, 500, 120, 4,2)
+ FNbuild(TexCube,+64, 500, 120, 4,2)
+
+ FNbuild(TexCube,-64, 700, 120, 4,2)
+ FNbuild(TexCube,+64, 700, 120, 4,2)
+
+ FNbuild(TexCube,-64, 900, 120, 4,2)
+ FNbuild(TexCube,+64, 900, 120, 4,2)
+
+EQUD eod
+
+.init_diamonds_status
+ FNadr(0,Diamond)
+ FNadr(1,Diamond_dead)
+
+ FNldr(2,algol_diamonds_number)
+ CMP R2,#3
+  STRPL R0,sceneDef+60:STRMI R1,sceneDef+60
+ CMP R2,#2
+  STRPL R0,sceneDef+40:STRMI R1,sceneDef+40
+ CMP R2,#1
+  STRPL R0,sceneDef+20:STRMI R1,sceneDef+20
+
+MOVS PC,R14
+
+.view_3Dscene
+FNin
+
+ADR R5,sceneDef
+
+FNadr(11,sinus)        ; load sin and cos values
+ LDRB R10,viewAngle
+  LDR R10,[R11,R10,LSL#2]!
+  LDR R11,[R11,#64*4]
+
+ADR R12,scene_def_sort
+
+.next3Dobject
+LDMIA R5!,{R0, R1,R2,R3, R4}       :CMP R0,#eod:BEQ quit_create_sort
+
+ ADD R4,R4,R4,LSL#24:STR R4,[R5,#-4]  ; update angle and store it
+
+ ADR R6,viewParameters:LDMIA R6,{R6,R7,R8, R9}
+ SUB R1,R1,R6:SUB R2,R2,R7:SUB R3,R3,R8:SUB R4,R9,R4,LSR#24
+ MOV R4,R4,LSL#16
+
+ MUL R8,R10,R1:MLAS R8,R11,R2,R8:BMI next3Dobject
+ MUL R2,R10,R2:RSB R2,R2,#0:MLA R1,R11,R1,R2:MOV R1,R1,ASR#8:MOV R2,R8,ASR#8
+
+ STMIA R12!,{R0, R1,R2,R3, R4}
+B next3Dobject
+
+.quit_create_sort
+ STR R0,[R12]
+
+ADR R13,scene_def_sort
+
+MOV R0,#11        ; objects #
+.sort_A
+
+ADD R12,R13,#20
+
+SUB R1,R0,#1
+.sort_B
+
+LDMIA R13,{R2-R6}
+LDMIA R12!,{R7-R11}
+
+ CMP R4,R9
+STMMIIA R13,{R7-R11}
+STMMIDB R12,{R2-R6}
+
+SUBS R1,R1,#1:BNE sort_B
+ADD R13,R13,#20
+SUB R0,R0,#1:CMP R0,#1:BGT sort_A
+
+ADR R5,scene_def_sort
+
+.loop_paint3D
+
+ LDMIA R5!,{R0, R1,R2,R3, R4}       :CMP R0,#eod:BEQ quitView3D
+ STR R5,memoPnt
+
+ FNadr(5,SmallRocketRoll)
+ CMP R0,R5:BLEQ paint_virtual_boom
+
+ STR R0,mimi0:FNadr(5,galaga) ; draw object in a viewer's relative position
+ BL rotateTexPoints
+ LDR R0,mimi0:FNadr(5,galaga)
+ BL draw3DTexObject
+
+.quit_paint_virtual_boom
+ LDR R5,memoPnt
+B loop_paint3D
+
+.quitView3D FNout
+
+.memoPnt  EQUD 0
+.mimi0    EQUD 0
+.boom_num EQUD 0
+.boom_pha EQUD 0
+
+FNbin
+
+.scene_def_sort
+FNram(4+12*20) ; 20 bytes for every object
+
+.virtual_rotation EQUD 0
+
+.paint_virtual_boom
+ LDR R6,virtual_rotation      ; adds rotation to the rocket
+ ADD R6,R6,#3<<24
+ STR R6,virtual_rotation
+ BIC R4,R4,#&FF
+ ADD R4,R4,R6,LSR#24
+
+ LDR R6,boom_flag
+ CMP R6,#0:MOVEQ PC,R14       ; draw rocket instead of explosion
+           BMI quit_paint_virtual_boom
+
+ ADR R12,save_centre:STMIA R12,{R1,R2,R3}
+
+ MOV R12,#15
+.loop_paint_vb
+ STR R12,boom_num
+
+ ADR R11,save_centre:LDMIA R11,{R1,R2,R3}
+
+ ADR R4,boom_table
+ ADD R4,R4,R12,LSL#1+2
+ ADD R4,R4,R12,LSL#2
+ LDMIA R4,{R4,R5,R6}
+
+ ADD R12,R1,R4
+ ADD R13,R2,R5
+ ADD R14,R3,R6
+
+ CMP R13,#636:BCS quit_paint_virtual_boom       ;out of perspective bounds
+ FNadr(6,threeD_algol+4*636):LDR R6,[R6,-R13,LSL#2]   ;read perspective
+
+MUL R13,R6,R14:MOV R13,R13,ASR#09:RSB R1,R13,#104 ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#09:ADD R0,R12,#160  ; X    "
+
+ LDR R2,boom_pha
+ ADD R2,R2,#8*3
+ BL PutExploSprite
+
+ LDR R12,boom_num
+ SUBS R12,R12,#1
+ BPL loop_paint_vb
+
+B quit_paint_virtual_boom
+
+.save_centre
+ EQUD 0
+ EQUD 0
+ EQUD 0
+
+.boom_table
+]
+FOR T%=0TO 7
+[OPT PASS
+ EQUD RND(12)-RND(12)
+ EQUD RND(12)-RND(12)
+ EQUD RND(12)-RND(12)
+]
+NEXT
+FOR T%=0TO 7
+[OPT PASS
+ EQUD RND(64)-RND(64)
+ EQUD RND(64)-RND(64)
+ EQUD RND(64)-RND(64)
+]
+NEXT
+[OPT PASS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.StarLight
+FNdefine(StarLight,Dinamic,Shadow,0)
+
+FNstar_ring(S%*0.10,0)
+FNstar_ring(S%*0.20,20)
+FNstar_ring(S%*0.25,40)
+FNstar_ring(S%*0.30,60)
+FNstar_ring(S%*0.33,80)
+FNstar_ring(S%*0.34,100)
+FNstar_ring(S%*0.35,120)
+FNstar_ring(S%*0.30,140)
+FNstar_ring(S%*0.20,160)
+FNstar_ring(S%*0.15,180)
+FNstar_ring(S%*0.12,200)
+
+FNstar_ring(S%*0.10,290)
+FNstar_ring(S%*0.10,380)
+FNstar_ring(S%*0.08,470)
+
+FNendxyz
+
+FNhidden(sta,0)
+.sta
+
+FNstar_bind(0,1,64)
+FNstar_bind(1,2,65)
+FNstar_bind(2,3,64)
+FNstar_bind(3,4,65)
+FNstar_bind(4,5,64)
+FNstar_bind(5,6,65)
+FNstar_bind(6,7,64)
+FNstar_bind(7,8,67)
+FNstar_bind(8,9,67)
+FNstar_bind(9,10,67)
+
+FNstar_bind(10,11,40)
+FNstar_bind(11,12,41)
+FNstar_bind(12,13,41)
+
+EQUD eod
+
+.Diamond
+FNdefine(Diamond,Dinamic,Shadow,0)
+
+FNxyz( X%, X%,000)
+FNxyz( X%,-X%,000)
+FNxyz(-X%,-X%,000)
+FNxyz(-X%, X%,000)
+
+FNxyz( Y%, Y%,U%)
+FNxyz( Y%,-Y%,U%)
+FNxyz(-Y%,-Y%,U%)
+FNxyz(-Y%, Y%,U%)
+
+FNxyz( 2*Y%, 2*Y%,V%)
+FNxyz( 2*Y%,-2*Y%,V%)
+FNxyz(-2*Y%,-2*Y%,V%)
+FNxyz(-2*Y%, 2*Y%,V%)
+
+FNxyz( X%/2, X%/2,W%)
+FNxyz( X%/2,-X%/2,W%)
+FNxyz(-X%/2,-X%/2,W%)
+FNxyz(-X%/2, X%/2,W%)
+
+FNxyz(0,0,2.1*U%)
+
+FNendxyz
+
+FNhidden(dia,0)
+
+.dia
+ FNquad(66,1,0, 0,1,4,5)
+ FNquad(66,1,0, 1,2,5,6)
+ FNquad(66,1,0, 2,3,6,7)
+ FNquad(66,1,0, 3,0,7,4)
+
+ FNquad(67,1,0, 4,5,9,8)
+ FNquad(67,1,0, 5,6,10,9)
+ FNquad(67,1,0, 6,7,11,10)
+ FNquad(67,1,0, 7,4,8,11)
+
+ FNquad(67,1,0, 12,8,9,13)
+ FNquad(67,1,0, 13,9,10,14)
+ FNquad(67,1,0, 14,10,11,15)
+ FNquad(67,1,0, 15,11,8,12)
+
+ FNquad(67,1,0, 12,13,16,16)
+ FNquad(67,1,0, 13,14,16,16)
+ FNquad(67,1,0, 14,15,16,16)
+ FNquad(67,1,0, 15,12,16,16)
+
+EQUD eod
+
+.Diamond_dead
+FNdefine(Diamond_dead,Dinamic,Shadow,0)
+
+FNxyz( X%, X%,000)
+FNxyz( X%,-X%,000)
+FNxyz(-X%,-X%,000)
+FNxyz(-X%, X%,000)
+
+FNxyz( Y%, Y%,U%)
+FNxyz( Y%,-Y%,U%)
+FNxyz(-Y%,-Y%,U%)
+FNxyz(-Y%, Y%,U%)
+
+FNxyz( 2*Y%, 2*Y%,V%)
+FNxyz( 2*Y%,-2*Y%,V%)
+FNxyz(-2*Y%,-2*Y%,V%)
+FNxyz(-2*Y%, 2*Y%,V%)
+
+FNxyz( X%/2, X%/2,W%)
+FNxyz( X%/2,-X%/2,W%)
+FNxyz(-X%/2,-X%/2,W%)
+FNxyz(-X%/2, X%/2,W%)
+
+FNxyz(0,0,2.1*U%)
+
+FNendxyz
+
+FNhidden(dia_dead,0)
+
+.dia_dead
+ FNquad(66,1,0, 0,1,4,5)
+ FNquad(66,1,0, 1,2,5,6)
+ FNquad(66,1,0, 2,3,6,7)
+ FNquad(66,1,0, 3,0,7,4)
+
+ FNquad(66,1,0, 4,5,9,8)
+ FNquad(66,1,0, 5,6,10,9)
+ FNquad(66,1,0, 6,7,11,10)
+ FNquad(66,1,0, 7,4,8,11)
+
+ FNquad(66,1,0, 12,8,9,13)
+ FNquad(66,1,0, 13,9,10,14)
+ FNquad(66,1,0, 14,10,11,15)
+ FNquad(66,1,0, 15,11,8,12)
+
+EQUD eod
+
+.TexCube
+FNdefine(TexCube,Dinamic,Shadow,0)
+
+FNxyz(+TC%,+TC%,+TC%)
+FNxyz(+TC%,-TC%,+TC%)
+FNxyz(-TC%,-TC%,+TC%)
+FNxyz(-TC%,+TC%,+TC%)
+
+FNxyz(+TC%,+TC%,-TC%)
+FNxyz(+TC%,-TC%,-TC%)
+FNxyz(-TC%,-TC%,-TC%)
+FNxyz(-TC%,+TC%,-TC%)
+
+FNendxyz
+
+FNhidden(tcu,0)
+.tcu
+ FNq(65, 0,1,2,3)
+ FNQ(64, 0,1,5,4)
+ FNQ(64, 1,2,6,5)
+ FNQ(64, 2,3,7,6)
+ FNQ(64, 3,0,4,7)
+EQUD eod
+
+.SmallRocketRoll
+]
+e=48/2
+[OPT PASS
+FNdefine(SmallRocketRoll,Dinamic,Shadow,0)
+
+FNxyz(-e*1.5,0,0)
+]
+ray2%=e*SQR(3/4)
+ray1%=ray2%*0.4
+
+FOR L%=0 TO 4
+ [OPT PASS :FNxyz(-e/2,COS(L%*2*PI/5)*ray1%,SIN(L%*2*PI/5)*ray1%) :]
+NEXT
+FOR L%=0 TO 4
+ [OPT PASS :FNxyz(e/2,COS(L%*2*PI/5+PI/5)*ray2%,SIN(L%*2*PI/5+PI/5)*ray2%) :]
+NEXT
+[OPT PASS
+FNxyz(e*1.25,0,0)
+
+EQUD eod
+FNhidden(smroc,0)
+.smroc
+
+FNline(40,1, 0,1)
+FNline(40,1, 0,2)
+FNline(40,1, 0,3)
+FNline(40,1, 0,4)
+FNline(40,1, 0,5)
+
+FNline(41,1, 1,2)
+FNline(41,1, 2,3)
+FNline(41,1, 3,4)
+FNline(41,1, 4,5)
+FNline(41,1, 5,1)
+
+FNline(40,1, 1,6)
+FNline(41,1, 1,10)
+FNline(40,1, 2,7)
+FNline(41,1, 2,6)
+FNline(40,1, 3,8)
+FNline(41,1, 3,7)
+FNline(40,1, 4,9)
+FNline(41,1, 4,8)
+FNline(40,1, 5,10)
+FNline(41,1, 5,9)
+
+FNline(41,1, 6,7)
+FNline(41,1, 7,8)
+FNline(41,1, 8,9)
+FNline(41,1, 9,10)
+FNline(41,1, 10,6)
+
+FNline(40,1, 6,11)
+FNline(40,1, 7,11)
+FNline(40,1, 8,11)
+FNline(40,1, 9,11)
+FNline(40,1, 10,11)
+
+EQUD eod
+]
+=0
+
+DEFFNbuild(pointerToObject,xp%,yp%,zp%,alfa0%,deltaAlfa%)
+alfa0%=alfa0% MOD 256
+deltaAlfa%=deltaAlfa% MOD 256
+
+[OPT PASS
+ EQUD pointerToObject
+ EQUD xp%
+ EQUD yp%
+ EQUD zp%
+ EQUD (alfa0%<<24)+deltaAlfa%
+]
+=0
+
+DEFFNlinoleum
+eod=65536
+[OPT PASS
+
+.drawLinoleum
+FNin
+
+FNadr(13,sinus)
+FNldrb(14,viewAngle)
+LDR R12,[R13,R14,LSL#2]!:LDR R13,[R13,#64*4] ;sin,cos
+
+FNadr(14,start_mainbuffer)
+MOV R11,#eod
+STR R11,[R14],#4
+FNadr(11,threeD_algol+638*4)
+
+FNldr(0,viewX):MOV R2,R0,ASR#8:   AND R0,R0,#255:RSB R0,R0,#255
+FNldr(1,viewY):ADD R2,R2,R1,ASR#8:AND R1,R1,#255:RSB R1,R1,#255
+FNldr(3,viewZ)
+
+MOV R4,#8
+.cly
+MOV R5,#8
+.clx
+
+ADD R6,R0,R4,LSL#8:ADD R7,R1,R5,LSL#8
+SUB R6,R6,#5.5*256-64:SUB R7,R7,#5.5*256-64   ; centre
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+MUL R9,R13,R7:MLA R9,R12,R6,R9              ; point (1)
+CMP R9,#636<<10:BCS noLinol
+MUL R8,R12,R7:RSB R8,R8,#0:MLA R8,R13,R6,R8
+FNrotLinol
+
+STMIA R14,{R6,R7}
+;;;;;;;;;;;;;;;;;;;;;;;;
+ADD R9,R9,R12,LSL#7                         ; point (2)
+CMP R9,#636<<10:BCS noLinol
+ADD R8,R8,R13,LSL#7
+FNrotLinol
+
+STR R6,[R14,#08]:STR R7,[R14,#12]
+;;;;;;;;;;;;;;;;;;;;;;;;
+ADD R9,R9,R13,LSL#7                         ; point (3)
+CMP R9,#636<<10:BCS noLinol
+SUB R8,R8,R12,LSL#7
+FNrotLinol
+
+STR R6,[R14,#16]:STR R7,[R14,#20]
+;;;;;;;;;;;;;;;;;;;;;;;;
+SUB R9,R9,R12,LSL#7                         ; point (4)
+CMP R9,#636<<10:BCS noLinol
+SUB R8,R8,R13,LSL#7
+FNrotLinol
+
+STR R6,[R14,#24]:STR R7,[R14,#28]
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+TST R2,#1
+FNadr(8,MegaShades)
+FNadd(8,96*15+92)
+ADDEQ R8,R8,#96*10
+
+MOVS R9,R9,ASR#13:MOVMI R9,#0
+CMP R9,#23:MOVGT R9,#23
+
+LDR R8,[R8,-R9,LSL#2]
+STR R8,[R14,#32]
+
+ADD R14,R14,#36
+
+.noLinol
+ADD R2,R2,#1
+SUBS R5,R5,#1:BNE clx
+ADD R2,R2,#1
+SUBS R4,R4,#1:BNE cly
+
+;;;;;;;; Through buffer and draw it  ( INVERTED through !)
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.nextLinol
+ LDMDB R14!,{R1-R8,R12}          ; read and draw until sentinel reached
+ CMP R12,#eod:FNexitEQ
+ CMP R1,#320:CMPCS R3,#320:CMPCS R5,#320:CMPCS R7,#320:BCS nextLinol
+ STR R14,memoLinol
+ BL PutBigQuadra
+ LDR R14,memoLinol
+B nextLinol
+
+FNout
+
+FNbin
+
+.memoLinol EQUD 0
+]
+=0
+
+DEFFNrotLinol
+[OPT PASS
+ MOV R10,R9,ASR#10:LDR R10,[R11,-R10,LSL#2]
+ MUL R6,R10,R8:MOV R6,R6,ASR#19:ADD R6,R6,#160
+ MUL R7,R10,R3:MOV R7,R7,ASR#11:ADD R7,R7,#104
+]
+=0
+
+DEFFNstar_ring(R%,H%)
+ nb_ring%=5
+FOR C%=0 TO nb_ring%-1
+[OPT PASS
+ FNxyz(R%*COS(C%*2*PI/nb_ring%),R%*SIN(C%*2*PI/nb_ring%),H%)
+]
+NEXT
+=0
+
+DEFFNstar_bind(B1%,B2%,CO%)
+FOR C%=0TO nb_ring%-1
+[OPT PASS
+ FNQ(CO%, B1%*nb_ring%+C%,B1%*nb_ring%+((C%+1) MOD nb_ring%),B2%*nb_ring%+((C%+1) MOD nb_ring%),B2%*nb_ring%+C%)
+]
+NEXT
+=0

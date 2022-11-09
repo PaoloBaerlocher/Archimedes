@@ -1,0 +1,247 @@
+REM >MASTER.FNmainship
+END
+________________________________________________________________________
+
+DEFFNmainship
+[OPT PASS
+
+.put_solar_tab
+FNin
+ LDR R0,solar_panel_addr
+ FNldr(1,BASESCR)
+ ADD R1,R1,#320*(256-48)
+ MOV R2,#48
+.loop_put_solar_tab_L
+ LDMIA R0!,{R3-R12}:STMIA R1!,{R3-R12}
+ LDMIA R0!,{R3-R12}:STMIA R1!,{R3-R12}
+ LDMIA R0!,{R3-R12}:STMIA R1!,{R3-R12}
+ LDMIA R0!,{R3-R12}:STMIA R1!,{R3-R12}
+ LDMIA R0!,{R3-R10}:STMIA R1!,{R3-R10}
+ ADD R1,R1,#320-48*4
+ SUBS R2,R2,#1:BNE loop_put_solar_tab_L
+
+ SUB R0,R1,#320*48
+
+ MOV R6,#48
+.loop_put_solar_tab_R
+ ADD R1,R0,#320-128
+ MOV R2,#128/4
+ BL invert_row
+ ADD R0,R0,#320
+ SUBS R6,R6,#1:BNE loop_put_solar_tab_R
+
+ FNldr(0,BASESCR)
+ BL sun_cde
+
+ FNcheck_checksum(return_to_DESKTOP)
+
+FNout
+
+.solar_panel_addr EQUD solar_panel
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.enter_mainship
+
+ BL mouse_normal_box
+ BL mouse_pos_quarter
+
+ BL put_solar_tab                      ; INIT
+ BL SwapScreens
+ BL put_solar_tab
+
+ BL claimInterrupt
+ BL reset_but_values
+
+.loop_mainship
+ FNwait
+
+ BL read_time:FNstr(0,14,solar_time)
+
+ BL pointer_animate
+ BL buttons_animate
+ BL test_pointer
+
+ CMP R0,#4     ; landing? then quit mainship
+ MVNEQ R0,#0:LDREQ R2,curr_selected_but:CMPEQ R2,#2:BNE no_quit_mainship
+
+ FNldr(14,curr_planet)           ; test if rocket launch on Algol
+ CMP R14,#13:BNE quit_mainship   ; is possible...
+                                 ;
+ FNldr(14,algol_diamonds_number) ;
+ CMP R14,#0                      ;
+  MOVEQ R0,#7                    ;
+  MOVEQ R1,#1                    ;
+  BLEQ send_speak                ;
+  BEQ no_quit_mainship           ;
+                                 ;
+ FNldr(14,algol_missile_ready)   ;
+ CMP R14,#0:BGT quit_mainship    ;
+  MOV R0,#3                      ;
+  MOV R1,#1                      ;
+  BL send_speak                  ;
+
+.no_quit_mainship
+ ADR R2,butt_row
+ LDR R2,[R2,R0,LSL#2]
+ CMN R2,#1
+ BLEQ reset_solar_tab
+
+ LDR R0,curr_selected_but:CMP R0,#1:BLEQ solar_main_routine
+ LDR R0,curr_selected_but:CMP R0,#2:BLEQ view_currplanet
+ LDR R0,curr_selected_but:CMP R0,#3:BLEQ hold_main_routine
+
+ LDR R0,curr_selected_but:CMP R0,#2:BLNE ViewScreen
+
+ BL SwapScreens
+
+ FNldr(0,hdrive_go)
+ CMN R0,#99:BPL loop_mainship       ; delay between prepare & start
+  BL mouse_off
+  MOV R0,#0:FNstr(0,14,hdrive_go)
+
+  FNldr(0,hyperdrive_to)
+  FNstr(0,14,curr_planet)
+  CMP R0,#13
+  BLMI load_fractaland
+
+  FNldr(14,tunnel_status)
+  CMP R14,#0
+  BLNE hyperDriveRoutine
+
+  FNldr(2,hdrive_seconds)
+  MOV R2,R2,LSL#1
+  BL add_time
+
+  FNbeep(1,30)
+  MOV R0,#2:BL reset_solar_tab
+  BL mouse_flush
+ B loop_mainship
+
+.quit_mainship
+ BL stopInterrupt
+ B bind_exit_mainship
+
+.reset_solar_tab
+FNin
+ STR R0,curr_selected_but
+
+ MOV R1,#6                 ; activate code
+ MVN R2,#0                 ; reset all buttons
+ STR R2,butt_1_status
+ STR R2,butt_2_status
+ STR R2,butt_3_status
+
+ ADR R2,butt_row
+ STR R1,[R2,R0,LSL#2]      ; activate right button
+
+ BL stopInterrupt
+ LDR R0,curr_selected_but
+ BL prepare_solar_screen   ; ecran du bouton R0
+
+ BL put_solar_tab          ; redraw normal panel(on both screens!)
+ MOV R0,#255-48
+ MOV R1,#48
+ BL CopyInOtherPage
+FNout
+
+.buttons_animate
+ LDR R0,butt_1_status
+ SUBS R0,R0,#1
+ STRPL R0,butt_1_status
+
+ MOVPL R0,#45
+ MOVPL R1,#1
+ BPL press_button
+
+ LDR R0,butt_3_status
+ SUBS R0,R0,#1
+ STRPL R0,butt_3_status
+
+ MOVPL R0,#272
+ ADDPL R0,R0,#2
+ MVNPL R1,#0
+ BPL press_button
+MOV PC,R14
+
+.curr_selected_but EQUD 2
+
+.butt_unreal   EQUD 0   ; always pressed! (button # -1)
+.butt_row
+               EQUD -1
+.butt_1_status EQUD -1  ; -1=not pressed,0=fully pressed
+.butt_2_status EQUD -1  ; 1..6=activity phase
+.butt_3_status EQUD -1
+
+.reset_but_values
+ MOV R0,#2
+ STR R0,curr_selected_but
+ MVN R0,#0
+ STR R0,butt_1_status
+ STR R0,butt_2_status
+ STR R0,butt_3_status
+MOVS PC,R14
+
+.test_pointer     ; return R0=-1 if no button pressed,ELSE return button #
+ FNmouse
+ MOV R3,R0        ; x
+ MOV R4,R1        ; y
+
+ MVN R0,#0
+ CMP R2,#4:MOVNE PC,R14 ; no mouse button pressed
+
+ SUB R1,R3,#640   ; dx from centre of the "sun"
+ SUB R2,R4,#116   ; dy
+
+ MUL R5,R1,R1:MLA R5,R2,R2,R5
+ CMP R5,#104^2+1024
+ MOVMI R0,#2:MOVMI PC,R14     ; sun button pressed (code R0=2)
+
+ CMP R3,#228
+  CMPPL R4,#18
+   BMI noButton_1
+ CMP R3,#372
+  CMPMI R4,#122
+   MOVMI R0,#1:MOVMI PC,R14   ; left button pressed (code R0=1)
+.noButton_1
+
+ CMP R3,#904
+  CMPPL R4,#18
+   BMI noButton_3
+ CMP R3,#1040
+  CMPMI R4,#122
+   MOVMI R0,#3:MOVMI PC,R14   ; right button pressed (code R0=3)
+.noButton_3
+ CMP R4,#48*4:MOVPL R0,#4     ; click event in main window
+ MOV PC,R14
+
+.prepare_solar_screen
+ CMP R0,#1:BEQ prepare_sunlight
+ CMP R0,#2:BEQ claimInterrupt
+ CMP R0,#3:BEQ init_hold_routine
+MOV PC,R14
+
+.view_currplanet
+FNin
+ BL clear_scr
+ FNldr(14,curr_planet)
+
+ CMP R14,#13
+ BEQ alg_view
+  BL movePlanet
+  FNadr(0,myScape)
+  BL drawPlanet
+ B end_view_currplanet
+
+.alg_view
+  BL moveAlgol
+  BL drawAlgol
+  BL print_speak
+.end_view_currplanet
+ FNldr(0,BASESCR)
+ BL sun_cde
+FNout
+
+FNbin
+]
+=0

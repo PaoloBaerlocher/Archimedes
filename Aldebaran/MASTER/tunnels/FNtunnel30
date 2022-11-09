@@ -1,0 +1,420 @@
+REM >MASTER.TUNNELS.FNtunnel30
+
+MODE 15:MODE 13:OFF
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNint_star"
+LIBRARY "MASTER.FNBIGQuad_"
+LIBRARY "MASTER.FNline"
+LIBRARY "MASTER.FNinout"
+
+*SCREENLOAD GR*.SC*.2
+SYS 6,112,2
+*SCREENLOAD GR*.SC*.2
+SYS 6,112,0
+
+DIM SPACE 280000
+FOR PASS=4TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.sun_cde FNload("ZARCH_TWO.sun_cde")
+
+.theTunnel
+]
+
+FOR N%=0TO 199
+[OPT PASS
+ FNslice(270*SIN(N%/6),270*COS(N%/5),180+40*SIN(N%/3),1+.1*SIN(N%/5),N%*8,5+2*(N% MOD 17))
+]
+NEXT
+
+[OPT PASS
+
+FNtunnel
+
+FNdefine_pointer
+
+.sinus FNlookup_sin
+
+FNinter_stars
+
+FNgraf_lib
+
+FNBigQuadraRoutine
+
+FNuni_div_table
+
+.MegaShades FNload("ZARCH_TWO.MEGASHADES")
+
+]
+
+PROCendinout
+NEXT
+
+CALL hyperDriveRoutine
+END
+
+REM ********************************
+
+DEFFNtunnel
+
+nbTun%=16       :REM constante = nb de facettes du tunnel
+
+[OPT PASS
+
+;;;;;;;;;;; ROUTINE PRINCIPALE POUR LE TUNNEL ;;;;;;;;;
+
+.hyperDriveRoutine
+FNin
+
+MOV R0,#199:BL generateTunnel
+
+BL claimInterrupt
+
+.reset
+BL initValues
+
+.HyperDriver
+
+BL updateTunPosition
+BL calcTunnelTranslation
+BL newRelRotation
+
+;;;; bounce border
+
+MOV R0,#0:STR R0,hyperDrive   ; no white flash
+
+ LDR R1,shipSpeed
+ CMP R1,#120       ;speed limit
+ ADDMI R1,R1,#1    ;more speed
+ STR R1,shipSpeed
+
+FNwait
+BL clear_scr
+BL calcTunnel
+BL drawTunnel
+FNldr(0,BASESCR):BL sun_cde
+
+BL SwapScreens
+
+B HyperDriver
+
+.quit_hyperdrive
+ BL stopInterrupt
+FNout
+
+.initValues
+ MOV R0,#0
+ STR R0,shipSpeed
+
+ FNadr(0,theTunnel+180*16):STR R0,tunPos
+MOV PC,R14
+
+.calcTunnelTranslation
+ LDR R0,tunPrecPos
+ LDR R1,tunPos
+
+ LDR R2,[R1,#7*16]:LDR R3,[R1,#8*16]      ;load centre
+ SUB R3,R2,R3:MUL R3,R0,R3:RSB R3,R2,R3,ASR#4:STR R3,translXtun
+ LDR R2,[R1,#7*16+4]:LDR R3,[R1,#8*16+4]  ;load centre
+ SUB R3,R2,R3:MUL R3,R0,R3:RSB R3,R2,R3,ASR#4:STR R3,translYtun
+MOV PC,R14
+
+.updateTunPosition       ; newPos=oldPos-speed
+ LDR R0,shipSpeed
+ LDR R1,tunPrecPos
+ LDR R2,tunPos
+ FNadr(3,theTunnel)
+.maybeMore
+ SUBS R1,R1,R0,LSR#4:SUBMI R2,R2,#16:ADDMIS R1,R1,#16:BMI maybeMore
+ CMP R2,R3:BMI quit_hyperdrive        ; end of tunnel ? then act
+
+ STR R1,tunPrecPos      ; new values
+ STR R2,tunPos
+
+ ADD R0,R0,R0,LSL#2:MOV R0,R0,LSR#7:ADD R0,R0,#1:FNstr(0,2,starSpeed)
+MOV PC,R14
+
+.newRelRotation
+ LDRB R0,countRot:ADD R0,R0,#1:STRB R0,countRot
+ FNadr(1,sinus)
+ LDR R1,[R1,R0,LSL#2]:ADD R1,R1,#32
+ LDR R0,mainRot:ADD R0,R0,R1,ASR#5:STR R0,mainRot
+MOV PC,R14
+
+ ;;;;;;;;;;;;;;;;;;;;;
+;;;; tunnel values ;;;;
+ ;;;;;;;;;;;;;;;;;;;;;
+
+.tunPos     EQUD 0      ; current slice address
+.tunPrecPos EQUD 0      ; = [0..15] position dans slice
+
+.mainRot    EQUD 0
+.translXtun EQUD 0
+.translYtun EQUD 0
+.hyperDrive EQUD 0
+
+.shipSpeed EQUD 0       ; shifted by <<4
+
+.countRot  EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.generateTunnel         ; input R0= length
+
+MOV R1,R0               ; remember length
+
+FNadr(12,sinus)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#1 = CREATE TRANSLATED CENTRES ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+LDR R2,rndTunnel:ADD R2,R2,R2,ROR#1:EOR R2,R2,R2,ROR#17:STR R2,rndTunnel
+
+AND R9,R2,#%111111:ADD R9,R9,#128         ; rayon de transl
+AND R10,R2,#%11<<17:AND R11,R2,#%11<<22   ; angles de translation
+MOV R10,R10,LSR#17:ADD R10,R10,#5:MOV R11,R11,LSR#22:ADD R11,R11,#5
+
+FNadr(2,theTunnel)
+.genCentre
+
+AND R3,R0,#63:LDR R3,[R12,R3,LSL#4]:MUL R8,R9,R3  ; modulation
+ADD R8,R9,R8,ASR#8
+
+MUL R3,R0,R10:AND R3,R3,#255:LDR R3,[R12,R3,LSL#2]:MUL R3,R8,R3
+MOV R3,R3,ASR#8
+MUL R4,R0,R11:AND R4,R4,#255:LDR R4,[R12,R4,LSL#2]:MUL R4,R8,R4
+MOV R4,R4,ASR#8
+
+STMIA R2,{R3,R4}:ADD R2,R2,#16 ; save centre
+
+SUBS R0,R0,#1:BPL genCentre
+
+SUB R0,R1,#7      ; remember length
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#2 = CREATE RAYS AND COLOURS ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+LDR R2,rndTunnel:ADD R2,R2,R2,ROR#1:EOR R2,R2,R2,ROR#17:STR R2,rndTunnel
+
+AND R8,R2,#%11111                                      ; take color
+
+AND R3,R2,#%1111<<10:MOV R3,R3,LSR#10:MOV R4,#0        ; rotation
+
+AND R9,R2,#%111111<<26:MOV R9,R9,LSR#26:ADD R9,R9,#128  ; rayon de compr
+AND R10,R2,#%11<<14:AND R11,R2,#%11<<16       ; angles de compression
+MOV R10,R10,LSR#14:ADD R10,R10,#5:MOV R11,R11,LSR#16:ADD R11,R11,#5
+
+FNadr(2,theTunnel+8)
+.genRayCol
+
+MUL R5,R1,R10:AND R5,R5,#255:LDR R5,[R12,R5,LSL#2]:ADD R5,R9,R5,ASR#2
+MUL R6,R1,R11:AND R6,R6,#255:LDR R6,[R12,R6,LSL#2]:ADD R6,R9,R6,ASR#2
+ORR R5,R6,R5,LSL#16
+
+ADD R8,R8,#1:AND R8,R8,#63:CMP R8,#42:SUBPL R8,R8,#42
+
+CMP R1,#18        ; debut ou fin de tunnel! code &FF
+ MOVMI R6,#&FF<<08
+ MOVPL R6,R8,LSL#8
+ CMPPL R1,R0
+ MOVPL R6,#&FF<<08
+
+ADD R4,R4,R3:ORR R6,R6,R4,LSL#16   ;rot
+
+STMIA R2,{R5,R6}:ADD R2,R2,#16 ; save rays and cols
+
+SUBS R1,R1,#1:BPL genRayCol
+
+MOV PC,R14
+
+.rndTunnel EQUD -TIME
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.calcTunnel
+FNin
+
+LDR R0,translXtun:ADD R1,R0,R0,LSL#1:SUB R0,R0,R1,ASR#4:STR 0,translXtun
+LDR R0,translYtun:ADD R1,R0,R0,LSL#1:SUB R0,R0,R1,ASR#4:STR 0,translYtun
+
+LDR R0,tunPos:LDR R1,tunPrecPos
+
+ADR R2,buffTunnel
+
+MOV R9,#9    ; 9 plans
+.lPlans
+
+LDMIA R0!,{R3,R4, R5,R6}   ; load definition
+
+LDR R8,translXtun:ADD R3,R3,R8   ; translation
+LDR R8,translYtun:ADD R4,R4,R8
+
+FNadr(8,threeDA)
+
+CMP R9,#1:BEQ cutPers   ;if last slice then...
+
+ADD R8,R8,R9,LSL#6:LDR R8,[R8,R1,LSL#2]  ;load perspective
+.contCut
+
+LDR R13,mainRot
+ADD R14,R13,R6,LSR#16 ; the first alfa
+
+ LDR R12,hyperDrive:CMP R12,#0:BNE whiteFlash
+
+ FNadr(12,MegaShades+92):SUB R12,R12,R1,LSR#1
+ MOV R11,R6,LSL#16:MOV R11,R11,LSR#24
+ CMP R11,#&FF
+ MOVEQ R12,#0
+ ADDNE R11,R11,R11,LSL#1:ADDNE R12,R12,R11,LSL#5:LDRNE R12,[R12,-R9,LSL#3]
+.whiteFlash
+ STR R12,[R2],#4        ; store col
+
+MOV R7,#nbTun%
+.lDef
+
+ADD R14,R14,#256/nbTun% ; the new alfa
+AND R14,R14,#&FF
+
+FNadr(11,sinus)
+LDR R10,[R11,R14,LSL#2]! ;load sin(R11)
+LDR R11,[R11,#64*4]      ;load cos(R11)
+
+MOV R13,R5,LSR#16:    MUL R10,R13,R10:ADD R10,R3,R10,ASR#8
+BIC R13,R5,#&00FF0000:MUL R11,R13,R11:ADD R11,R4,R11,ASR#8
+
+MUL R10,R8,R10:MOV R10,R10,ASR#8:ADD R10,R10,#160
+MUL R11,R8,R11:MOV R11,R11,ASR#8:RSB R11,R11,#104
+
+STMIA R2!,{R10,R11}      ; x,y
+
+SUBS R7,R7,#1:BNE lDef
+
+SUBS R9,R9,#1:BNE lPlans
+
+FNout
+
+.cutPers
+LDR R8,[R8,#31*4]
+
+LDR R7,[R0,#-24]  ; load previous ray def
+MOV R7,R7,LSR#16
+RSB R13,R7,R5,LSR#16
+MUL R13,R1,R13
+ADD R7,R7,R13,ASR#4
+BIC R5,R5,#&00FF0000:ORR R5,R5,R7,LSL#16
+
+LDR R7,[R0,#-24]  ; load previous ray def
+AND R7,R7,#&FF
+AND R13,R5,#&FF
+RSB R13,R7,R13
+MUL R13,R1,R13
+ADD R7,R7,R13,ASR#4
+BIC R5,R5,#&FF:ORR R5,R5,R7
+
+LDR R7,[R0,#-28]
+LDR R13,translYtun:ADD R7,R7,R13    ; dont forget translation
+
+RSB R13,R7,R4                       ; en theorie  ici on a (0,0)!!!
+MUL R13,R1,R13
+ADD R4,R7,R13,ASR#4
+
+LDR R7,[R0,#-32]
+LDR R13,translXtun:ADD R7,R7,R13    ; dont forget translation
+RSB R13,R7,R3
+MUL R13,R1,R13
+ADD R3,R7,R13,ASR#4
+
+LDR R7,[R0,#-20]
+MOV R7,R7,LSR#16
+RSB R13,R7,R6,LSR#16
+
+CMP R13,#128:SUBPL R13,R13,#256  ; to avoid bugs
+CMN R13,#128:ADDMI R13,R13,#256
+
+MUL R13,R1,R13
+ADD R13,R7,R13,ASR#4
+AND R13,R13,#&FF
+BIC R6,R6,#&00FF0000
+ORR R6,R6,R13,LSL#16
+
+B contCut
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.buffTunnel
+ FNram(9*(4+nbTun%*8))  ; 9 slices of nbTun% facettes de 12 bytes
+
+.drawTunnel
+FNin
+
+FNadr(0,buffTunnel)
+
+MOV R10,#8  ; 8 slices
+.loopSlice
+
+STR R10,mR10
+
+LDR R12,[R0],#4   ; load col
+CMP R12,#0
+ ADDEQ R0,R0,#8*nbTun%
+ BEQ black_slice
+
+MOV R11,#nbTun%/2
+.loopFace
+
+ADD R7,R0,#4+8*nbTun%
+
+LDMIA R0!,{R1,R2,R3,R4}
+LDMIA R7 ,{R5,R6,R7,R8}
+
+  STR R0,mR0:STR R11,mR11
+  CMP R2,#208:CMPCS R4,#208:CMPCS R6,#208:CMPCS R8,#208
+  BCS nono_put
+  CMP R1,#320:CMPCS R3,#320:CMPCS R5,#320:CMPCS R7,#320
+   MOVCS R14,R12
+   BLCC PutBigQuadra
+   MOV R12,R14     ; retrieve color
+.nono_put
+  LDR R0,mR0:LDR R11,mR11
+
+SUBS R11,R11,#1:BNE loopFace
+LDR R10,mR10
+.black_slice
+SUBS R10,R10,#1:BNE loopSlice
+
+FNout
+
+ .mR0 EQUD 0
+ .mR10 EQUD 0
+ .mR11 EQUD 0
+
+FNbin
+
+.threeDA
+]
+FOR z%=0 TO 160
+[OPT PASS : EQUD 5*256*10/(10+z%) : ]
+NEXT
+
+=0
+
+DEFFNslice(Xc,Yc,R,e,rot,col)
+R2=R/e
+R1=R*e
+rot=rot AND &FF
+
+IF R1>255 OR R2>255 PRINT " ### slice out of range"
+
+[OPT PASS
+
+EQUD Xc:EQUD Yc:EQUD R2 OR (R1<<16):EQUD (col<<8) OR (rot<<16)
+
+]
+=0

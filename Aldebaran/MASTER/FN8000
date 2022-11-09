@@ -1,0 +1,458 @@
+REM >MASTER.FN8000
+
+*RMENSURE LZWD       *RMLOAD !ALDEBARAN.LZWDmod
+*RMENSURE Sou_PLAYER *RMLOAD !ALDEBARAN.Sou*
+*RMENSURE InterfaceMananger *RMLOAD !ALDEBARAN.Interface
+
+MODE 0
+
+LIBRARY "MASTER.FNprot"
+LIBRARY "MASTER.FNmakeDiv"
+LIBRARY "MASTER.FNriscos"
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNfunction"
+
+LIBRARY "MASTER.FNputChars"
+LIBRARY "MASTER.FNsunlight"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNsolar"
+
+LIBRARY "MASTER.FNlanding"
+LIBRARY "MASTER.FNplanet"
+LIBRARY "MASTER.FNint_star"
+LIBRARY "MASTER.FNbigQuad_"
+LIBRARY "MASTER.FNquadra"
+LIBRARY "MASTER.FNgenTex5"
+LIBRARY "MASTER.FNsprite"
+LIBRARY "MASTER.FNcutPlane"
+LIBRARY "MASTER.FNsection"
+LIBRARY "MASTER.FNline"
+LIBRARY "MASTER.FNtimer"
+LIBRARY "MASTER.FNdatasave"
+
+LIBRARY "MASTER.TUNNELS.FNtunnel30"
+
+LIBRARY "MASTER.ALGOL.FNseeAlgol"
+LIBRARY "MASTER.ALGOL.FNalgol_*"
+LIBRARY "MASTER.ALGOL.FNdrawCube"
+LIBRARY "MASTER.ALGOL.FNrocket"
+LIBRARY "MASTER.ALGOL.FNpenetre2"
+LIBRARY "MASTER.ALGOL.FNface"
+LIBRARY "MASTER.ALGOL.FNtexObj"
+LIBRARY "MASTER.ALGOL.FNtarget_5"
+
+LIBRARY "MASTER.FNmainShip"
+LIBRARY "MASTER.FNprofs"
+LIBRARY "MASTER.FNstories"
+LIBRARY "MASTER.FNbrain"
+LIBRARY "MASTER.FNhold"
+
+LIBRARY "MASTER.FNinvaders"
+LIBRARY "MASTER.SPR_ALDE.FNanims"
+
+LIBRARY "MASTER.FNobjects"
+LIBRARY "MASTER.FNscape27"
+LIBRARY "MASTER.FNradar"
+LIBRARY "MASTER.FNpartGaz"
+LIBRARY "MASTER.FNtexture"
+LIBRARY "MASTER.FNgyros"
+LIBRARY "MASTER.FNsoftWait"
+LIBRARY "MASTER.FNbase"
+LIBRARY "MASTER.FNcrashes"
+LIBRARY "MASTER.FNboom3"
+
+Static=0:Dinamic=1:Shadow=1:NoShadow=0          :REM const
+maxPoints=22
+maxPoints2=128
+eod=65536
+cargo_max%=40
+minutes=2*60
+hours=60*minutes
+
+max_profs_on_FL%=2
+
+Divis=&8000+624*1024-176*1024
+myScape=Divis+64*1024
+evil_data=Divis-42*1024
+
+DIM cde 600000
+FOR PASS=4TO 6 STEP 2
+P%=&8000
+O%=cde
+delta_PO%=O%-P%
+PROCinitinout
+IF NOT main_assembly% THEN ERROR 1," ### ABORT : not main"
+[OPT PASS
+
+.sinus           FNlookup_sin                   ; tables accessibles
+.buf2Dobj        FNram(12*maxPoints2)
+.theSkyBlue      FNload("MASTER.theSkyBlue")
+.theSkyRed       FNload("MASTER.theSkyRed")
+.table3D         FNtable_3Dscape
+.MegaShades      FNload("ZARCH_TWO.MegaShades")
+.MegaShadesWater FNload("ZARCH_TWO.BlueShades")
+.VegaChars       FNload("ZARCH_TWO.VegaChars")
+.solar_tab       FNload("ZARCH_TWO.solar_tab")
+
+.store_code_addr EQUD store_code
+.prot_value      EQUD 0                         ; !outlong value
+
+.borne_data      FNload("ZARCH_TWO.borne")      ; crunched
+.alde_title      FNload("ZARCH_TWO.alde_title")
+
+.light_textures  FNload("ZARCH_TWO.TEXTOR")
+                 FNload("ZARCH_TWO.TEXTOR2")
+                 FNload("ZARCH_TWO.PO2_TEX")
+                 FNload("ZARCH_TWO.PO3_TEX")
+
+FNbinders
+
+FNinvaders
+
+FNalde_animations
+FNfullStars
+FNprofs
+
+FNinter_stars
+FNlanding
+FNplanetView
+FNalgolView
+
+FNprot_matrix_coder
+
+FNcutPlaneRoutine
+FNquadraRoutine
+FNlineRoutine
+FNerase_sky
+FNgraf_lib_BASESCR
+FNprot_flyback
+FNsectionRoutine
+FNBigQuadraRoutine
+FNtextureRoutine
+FNuni_div_table
+FNGenTextureRoutine
+FNspriteRoutine
+FNputChars
+FNmainship
+FNsunLight_calc
+FNsunLight
+FNsolar
+
+FNprot_messages
+
+FNgraf_lib_NOBASESCR
+
+FNtexturedObjects
+
+FNfacial_animation
+
+FNalgol_zone
+
+FNpenetre
+FNrocket
+FNcubeObjects
+FNtunnel
+
+FNbrain
+
+FNhold
+
+FNflashlight_datas
+FNsun_datas
+
+FNscape
+
+FNdestroy_animation
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; ZONE FOR SOME DATAS ;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+.soleil_data   FNload("ZARCH_TWO.soleil")
+.sun_cde       FNload("ZARCH_TWO.sun_cde")
+.dataExp       FNload("MASTER.explosion")
+
+ FNload_scape
+
+ FNprot_set_pos_string
+
+ FNriscos
+ FNpalette
+ FNdefine_pointer
+ FNtimer
+
+ FNbad_entry
+
+ FNcreate_div_table
+
+.decrunch_FL_panel
+FNin
+ ADR R0,FL_panel:FNldr(1,BASESCR):ADD R1,R1,#320*208
+ FNadr(2,start_mainbuffer)
+ SWI "LZWD_Decompress"
+ BL put_weapon_instances
+ BL put_twin_meters
+ BL put_weapon_indicator
+ BL put_window_indicator
+ MOV R0,#208:MOV R1,#48
+ BL CopyInOtherPage
+
+FNout
+
+FNbin
+
+.prot_genesis_time EQUD 0
+
+ FNdatasave
+ FNreinit_rnd_seeds
+
+.FL_panel      FNload("ZARCH_TWO.FL_panel")   ; crunched
+
+ FNprot_position_table
+
+ FNprofs_and_projects_text
+ FNprot_matrix_table
+ FNobjects_definitions
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ZONE FOR GENERAL BUFFER ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.get_buffer_addr ADR R2,start_mainbuffer:MOVS PC,R14
+
+]
+ end_of_file%=O%
+[OPT PASS
+
+.start_mainbuffer
+
+.explList                     ; for Algol Rocket explosion
+.theTunnel  FNram(16*200)
+.algolSide  FNram(6* 256*8)   ; 8 niveaux 256 lignes de 8 "cubes"
+.PartStrips FNram(13*(64*12)) ; place pour 63 particules
+.solar_panel
+.PartTable  FNram(256*28)     ; max 256 particules
+.eofTable
+.freeMemory FNram((8+(maxPoints+1)*12) * 22) ; TabLength*nb of objects
+.Rad_data   FNram(4*1024)
+
+.end_mainbuffer
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;ZONE FOR (MUSIC) OR (LAND AND DIVISIONS)  AND THEN SAMPLES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+]
+PROCendinout
+NEXT
+
+IF evil_data<start_mainbuffer ERROR " ### ERROR:not enough room for evil"
+IF Divis-12<Rad_data+4*1024   ERROR " ### ERROR:not enough room for free"
+
+PROCrawmat_infos
+
+PRINT "ALDEBARAN ASSEMBLED"
+*REMOVE !ALDEBARAN.alde
+OSCLI("SAVE !ALDEBARAN.alde "+STR$~cde+" "+STR$~end_of_file%+" "+STR$~wimper+" 8000")
+*DEDICACES.do_start2
+END
+________________________________________________________________________
+
+DEFFNbinders
+[OPT PASS
+
+.bind_exit_mainship
+ BL mouse_off
+
+ FNldr(0,curr_planet)
+ CMP R0,#13:BEQ is_Algol
+
+ BL decrunch_FL_panel
+ BL enter_landing
+ BL move_Taurus_TO_FL
+ BL mouse_flush
+ BL set_landing_FL
+ FNaddtime(5*minutes)
+ B enter_zarchscape
+
+.is_Algol
+
+ FNdecr(0,14,algol_missile_ready)
+
+ BL enter_algol
+
+ FNldr(14,boomPhase)
+ CMP R14,#0
+   MOVNE R0,#8
+   MOVNE R1,#47
+   BLNE send_speak
+   BNE enter_mainship   ; rocket destroyed
+
+ BL enter_target
+
+ FNldr(0,algol_diamonds_number)
+ SUBS R0,R0,#1
+ FNsetflag("PL")
+ FNstr(0,14,algol_diamonds_number)
+
+ ADD R0,R0,#4           ; message about the # of remaining power stations
+ MOV R1,#47
+ BL send_speak
+
+ MOVEQ R0,#8            ; congratulations Commander! (when dia_# = 0)
+ BLEQ mail_send
+
+ MOV R1,#5:BL decrement_ALGOL_power
+
+ B enter_mainship
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.bind_exit_planet
+ BL kill_SoftWait
+ BL norm_palette
+ MOV R0,#208:MOV R1,#48
+ BL CopyInOtherPage
+ BL enter_takeoff
+ BL move_FL_TO_Taurus
+ FNaddtime(5*minutes)
+ FNtry_to_kidnap
+
+ FNadr(0,solar_tab)
+ LDR R1,solar_panel_adr
+ LDR R2,start_mainbuffer_adr
+ SWI "LZWD_Decompress"
+
+ B enter_mainship
+
+.solar_panel_adr EQUD solar_panel
+.start_mainbuffer_adr EQUD start_mainbuffer
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.bind_destroyed_FL
+ BL kill_SoftWait
+
+ FNldr(7,FL_profs_how_much)
+ BL move_FL_TO_Cemetery
+ FNldr(8,FL_profs_how_much)
+ CMP R7,R8
+  MOVNE R0,#4
+  BLNE mail_send
+
+ MOV R0,#100
+ FNstr(0,1,damage_on_FL)
+
+ MOV R0,#2
+ MOV R1,#40
+ BL send_speak
+
+ B enter_brain
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.bind_exit_zarchscape
+ BL kill_SoftWait
+ BL move_FL_TO_Base
+ B enter_brain
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.bind_exit_brain
+ BL move_Base_TO_FL
+ BL mouse_off
+ BL decrunch_FL_panel
+ BL init_ship_world
+ BL interrupt_speak
+ B enter_zarchscape
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.happy_end
+ BL mouse_off
+ BL mouse_flush
+ BL happyend_animation
+ BL Init_Game
+B return_to_DESKTOP
+
+.sad_end
+ BL mouse_off
+ BL mouse_flush
+ BL sadend_animation
+ BL Init_Game
+B return_to_DESKTOP
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNbad_entry
+[OPT PASS
+.protection_bad_entry   ; abort game
+ EQUD 0                 ; null instruction
+ BL clear_wholescr
+
+ FNadr(0,abort_game_message)
+ MOV R2,#32
+ MOV R3,#01
+ BL CentredString
+ MOV R0,#0:MOV R1,#256
+ LDR R14,protection_bad_entry
+ B CopyInOtherPage
+
+]
+=0
+
+DEFFNtry_to_kidnap
+[OPT PASS
+ SWI "OS_ReadMonotonicTime"
+ AND R1,R0,#%00001111
+ ADD R1,R1,#1
+ CMP R1,#13
+ ANDMI R0,R0,#%11110000
+ MOVMI R0,R0,LSR#4
+ CMPMI R0,#15
+  BLMI kidnap_prof  ; prof # R0 , on planet # R1
+]
+=0
+
+DEFFNreinit_rnd_seeds
+[OPT PASS
+
+.init_rnd_values
+ SWI "OS_ReadMonotonicTime"
+ ADR R1,rnd_addresses
+ LDR R4,main_seed
+.loop_init_rnd_values
+
+ LDR R2,[R1],#4
+ CMN R2,#1:MOVEQS PC,R14
+
+ LDR R3,[R2]      ; load previous seed
+ EOR R0,R3,R0,ROR#7
+ ADD R0,R0,R0,ASR#1
+ ADD R0,R0,R4,LSR#24
+ MOV R4,R4,ROR#8
+ ORR R0,R0,#1<<31
+ STR R0,[R2]      ; save new one
+
+B loop_init_rnd_values
+
+.main_seed EQUD &63A1479F
+
+.rnd_addresses ; terminated by a (-1) sentinel
+ EQUD rnd_ships
+ EQUD rnd_Jet
+ EQUD rnd_dara
+ EQUD rnd_planets
+ EQUD rnd_wave
+ EQUD rnd_data
+ EQUD rnd_boom
+ EQUD rndPart
+ EQUD rndFount
+ EQUD -1
+
+]
+=0

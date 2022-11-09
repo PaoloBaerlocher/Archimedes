@@ -1,0 +1,24 @@
+CHECK_CHECKSUM
+--------------
+
+landing
+enter_zarchscape
+profs_information
+put_solar_tab
+hold_main_routine
+invaders
+
+CHECKSUM
+--------
+in FNbrain
+
+TARGET
+------
+
+bind_exit_mainship
+bind_destroyed_FL
+bind_exit_zarchscape
+bind_exit_planet
+mouse_flush
+add_time
+return_to_DESKTOP

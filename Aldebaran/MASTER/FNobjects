@@ -1,0 +1,2974 @@
+REM >MASTER.FNobjects
+REM written by P Baerlocher
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNfunction"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNquadra"
+LIBRARY "MASTER.FNcutPlane"
+LIBRARY "MASTER.FNline"
+LIBRARY "MASTER.FNmakeDiv"
+LIBRARY "MASTER.FNscape27"
+
+Static=0:Dinamic=1:Shadow=1:NoShadow=0          :REM const
+maxPoints=22
+maxPoints2=128
+eod=65536
+
+DIM cde 260000
+FOR PASS=4TO 6 STEP 2
+P%=cde
+O%=cde
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.what EQUD 0
+.angl EQUD 0
+.bu   EQUD Divis+64*1024
+
+.zozo
+FNin2
+ BL clear_scr
+ LDR R0,what
+ LDR R4,angl
+ LDR R5,bu
+ BL RotateDinamic
+ LDR R0,what
+ MOV R1,#420<<20
+; sub r1,r1,#100<<20
+ MOV R2,#352<<20
+ MOV R3,#100<<20
+ RSB R3,R3,#0
+ LDR R5,bu
+ BL DrawObject
+FNout2
+
+.marc          ; statics
+FNin2
+ BL clear_scr
+ LDR R0,what
+ MOV R1,#436<<20
+ MOV R2,#352<<20
+ LDR R5,bu
+ BL DrawObject
+FNout2
+
+FNbin
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.MegaShades FNload("ZARCH_TWO.MegaShades")
+            FNload("ZARCH_TWO.MegaShades")
+.sinus      FNlookup_sin
+.buf2Dobj   FNram(12*maxPoints2)
+
+FNgraf_lib_NOBASESCR
+
+FNobjects_definitions
+
+FNobjects
+FNbin
+
+.FinX EQUD 0
+.FinY EQUD 0
+.PosX EQUD 0
+.PosY EQUD 0
+.Elevation EQUD -378+130
+.RealPos   EQUD 0
+
+FNcutPlaneRoutine
+FNbin
+FNquadraRoutine
+FNbin
+FNlineRoutine
+
+FNgraf_lib_BASESCR
+FNbin
+
+.table3D FNtable_3Dscape
+
+FNcreate_div_table
+
+.myScape
+.tabCutSquare3D
+
+EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0
+
+.Divis
+
+]
+PROCendinout
+NEXT
+
+CALL MakeDivs
+
+MODE 15:MODE 13:OFF
+
+REPEAT
+ WAIT
+ MOUSE X,Y,Z
+ !Elevation=0
+ !what=Car
+ a1%=TIME/3
+ a2%=TIME/2
+ a3%=TIME/1
+ a1%=a1% AND 255
+ a2%=a2% AND 255
+ a3%=a3% AND 255
+ !angl=a1%+(a2%<<8)+(a3%<<16)
+ CALL SwapScreens
+ CALL zozo
+ CALL ViewScreen
+UNTIL FALSE
+
+REPEAT
+ WAIT
+ MOUSE X,Y,Z
+ !Elevation=-378+130+(Y-X)/4
+ !what=Quadrix
+ a1%=TIME/3
+ a2%=TIME/2
+ a3%=TIME/1
+ a1%=a1% AND 255
+ a2%=a2% AND 255
+ a3%=a3% AND 255
+ !angl=a1%+(a2%<<8)+(a3%<<16)
+ CALL SwapScreens
+ CALL marc
+ CALL ViewScreen
+UNTIL FALSE
+
+END
+
+DEFFNobjects
+
+Static=0:Dinamic=1:Shadow=1:NoShadow=0          :REM const
+eod=65536                                       :REM EndOfData sentinel
+maxPoints=22
+
+[OPT PASS
+
+.ReadObjectAddress   ; input R0=objects code ;output R0=objects address
+LDR R0,[PC,R0,LSL#2]
+MOV PC,R14
+EQUD 0                        ;0
+
+;;;;;;;;;;;;;;;;;;;;;;
+;  Alive  ;   Dead   ;
+;;;;;;;;;;;;;;;;;;;;;;        ; dont forget to update crashes datas
+
+EQUD Zynx    :EQUD DeadZynx   ; Static objects
+EQUD Erbe    :EQUD DeadErbe
+EQUD Tree    :EQUD DeadTree
+EQUD Quadrix :EQUD DeadQuadrix
+EQUD Telef   :EQUD DeadTelef
+EQUD Mystic  :EQUD DeadMystic
+EQUD Condens :EQUD DeadCondens
+EQUD Palace  :EQUD DeadPalace
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0       :EQUD 0
+EQUD 0                     ; End of static
+
+EQUD FlashLight      ;=64  ; 16 Dinamic objects
+EQUD TopFun          ;=65
+EQUD Medusa          ;=66
+EQUD Car             ;=67
+EQUD Ebudae          ;=68
+EQUD MiniMine        ;=69
+EQUD Toupy           ;=70
+EQUD Eagle           ;=71
+EQUD LadyBird        ;=72
+EQUD Conca           ;=73
+EQUD Framey          ;=74
+EQUD Exaode          ;=75
+EQUD Batship         ;=76
+EQUD Jaily           ;=77
+EQUD Globule         ;=78
+EQUD Reticule        ;=79
+
+.quadraRegs FNram(14*4)
+
+.Down1Up
+CMP R11,#192:BMI Down12Up
+CMP R12,#192:BMI Down13Up2
+CMP R14,#192:BMI Down14Up23
+
+.Down1Up234
+MOV R0,R5:MOV R5,R3:MOV R3,R1:MOV R1,R7:MOV R7,R0
+MOV R0,R6:MOV R6,R4:MOV R4,R2:MOV R2,R8:MOV R8,R0
+MOV R0,R12:MOV R12,R11:MOV R11,R10:MOV R10,R14:MOV R14,R0
+B Down2Up134
+
+.Down12Up
+CMP R12,#192:BMI Down123Up
+CMP R14,#192:BMI Down124Up3
+
+.Down12Up34                 ; CAS DEUX DOWN ET DEUX UP
+FNsaveQuadraRegs
+BL readColW:STR R12,magicCut:BL PutQuadra    ; background
+FNloadQuadraRegs
+
+BL readCol
+LDR R13,quadraRegs+44
+LDR R14,quadraRegs+52
+
+FNadr(0,Divis)
+
+SUB R14,R14,R10:RSB R10,R10,#192
+ADD R10,R10,R14,LSL#7:LDR R10,[R0,R10,LSL#2]:SUB R10,R10,#320<<16
+
+SUB R14,R1,R7:MUL R14,R10,R14:SUB R1,R1,R14,ASR#16
+SUB R14,R2,R8:MUL R14,R10,R14:SUB R2,R2,R14,ASR#16
+
+SUB R14,R13,R11:RSB R11,R11,#192
+ADD R11,R11,R14,LSL#7:LDR R11,[R0,R11,LSL#2]:SUB R11,R11,#320<<16
+
+SUB R14,R4,R6:MUL R14,R11,R14:SUB R4,R4,R14,ASR#16
+SUB R14,R3,R5:MUL R14,R11,R14:SUB R3,R3,R14,ASR#16
+
+LDR R13,magicCut:BL PutPlane
+B qdrwQ
+
+.Down123Up
+CMP R14,#192:BMI Down1234Up
+
+.Down123Up4                 ; CAS TROIS DOWN ET UN UP
+FNsaveQuadraRegs
+BL readColW:STR R12,magicCut:BL PutQuadra    ; background
+FNloadQuadraRegs
+
+BL readCol
+LDR R13,quadraRegs+44
+LDR R14,quadraRegs+52
+
+FNadr(0,Divis)
+
+SUB R11,R14,R10:RSB R10,R10,#192
+ADD R10,R10,R11,LSL#7:LDR R10,[R0,R10,LSL#2]:SUB R10,R10,#320<<16
+
+SUB R11,R1,R7:MUL R11,R10,R11:SUB R1,R1,R11,ASR#16
+SUB R11,R2,R8:MUL R11,R10,R11:SUB R2,R2,R11,ASR#16
+
+SUB R14,R14,R13:RSB R13,R13,#192
+ADD R13,R13,R14,LSL#7:LDR R13,[R0,R13,LSL#2]:SUB R13,R13,#320<<16
+
+SUB R14,R5,R7:MUL R14,R13,R14:SUB R5,R5,R14,ASR#16
+SUB R14,R6,R8:MUL R14,R13,R14:SUB R6,R6,R14,ASR#16
+
+MOV R3,R7:MOV R4,R8         ; point2=point4 -> triangle
+
+LDR R13,magicCut:BL PutPlane
+B qdrwQ
+
+.Down1234Up    ;all down!easy.
+BL readColW
+B drwQ
+
+.Down124Up3
+
+MOV R0,R7:MOV R7,R5:MOV R5,R3:MOV R3,R1:MOV R1,R0
+MOV R0,R8:MOV R8,R6:MOV R6,R4:MOV R4,R2:MOV R2,R0
+MOV R0,R14:MOV R14,R12:MOV R12,R11:MOV R11,R10:MOV R10,R0
+B Down123Up4
+
+.Down13Up2
+CMP R14,#192:BMI Down134Up2
+
+.Down13Up24    ; theoriquement impossible
+B qdrwQ
+
+.Down134Up2
+MOV R0,R3:MOV R3,R7:MOV R7,R0
+MOV R0,R4:MOV R4,R8:MOV R8,R0
+MOV R0,R11:MOV R11,R14:MOV R14,R0
+B Down123Up4
+
+.Down14Up23
+MOV R0,R3:MOV R3,R7:MOV R7,R0
+MOV R0,R4:MOV R4,R8:MOV R8,R0
+MOV R0,R11:MOV R11,R14:MOV R14,R0
+B Down12Up34
+
+;;;;
+
+.Down2Up1
+CMP R12,#192:BMI Down23Up1
+CMP R14,#192:BMI Down24Up13
+
+.Down2Up134              ; CAS 1 DOWN ET 3 UP
+FNsaveQuadraRegs
+MOV R7,R3:MOV R8,R4
+BL readColW:STR R12,magicCut:BL PutQuadra    ; background
+FNloadQuadraRegs
+MOV R3,R7:MOV R4,R8
+BL readCol:STR R12,quadraRegs+48:BL PutQuadra   ;save col and draw!
+FNloadQuadraRegs
+
+FNadr(0,Divis)
+
+SUB R12,R12,R11:RSB R14,R11,#192
+ADD R14,R14,R12,LSL#7:LDR R14,[R0,R14,LSL#2]:SUB R14,R14,#320<<16
+
+SUB R12,R3,R5:MUL R12,R14,R12:SUB R7,R3,R12,ASR#16
+SUB R12,R4,R6:MUL R12,R14,R12:SUB R8,R4,R12,ASR#16
+
+SUB R10,R10,R11:RSB R14,R11,#192
+ADD R14,R14,R10,LSL#7:LDR R14,[R0,R14,LSL#2]:SUB R14,R14,#320<<16
+
+SUB R10,R3,R1:MUL R10,R14,R10:SUB R3,R3,R10,ASR#16
+SUB R10,R4,R2:MUL R10,R14,R10:SUB R4,R4,R10,ASR#16
+
+MOV R12,R13:LDR R13,magicCut:BL PutPlane
+B qdrwQ
+
+.magicCut EQUD 0
+
+.Down24Up13    ; theoriquement impossible
+B qdrwQ
+
+.Down23Up1
+CMP R14,#192:BMI Down234Up1
+
+.Down23Up14
+MOV R0,R1:MOV R1,R5:MOV R5,R0
+MOV R0,R2:MOV R2,R6:MOV R6,R0
+MOV R0,R10:MOV R10,R12:MOV R12,R0
+B Down12Up34
+
+.Down234Up1
+MOV R0,R3:MOV R3,R5:MOV R5,R7:MOV R7,R1:MOV R1,R0
+MOV R0,R4:MOV R4,R6:MOV R6,R8:MOV R8,R2:MOV R2,R0
+MOV R0,R12:MOV R12,R14:MOV R14,R10:MOV R10,R11:MOV R11,R0
+B Down123Up4
+
+;;;;;
+
+.Down3Up12
+CMP R14,#192:BMI Down34Up12
+
+.Down3Up124
+MOV R0,R1:MOV R1,R3:MOV R3,R5:MOV R5,R7:MOV R7,R0
+MOV R0,R2:MOV R2,R4:MOV R4,R6:MOV R6,R8:MOV R8,R0
+MOV R0,R12:MOV R12,R14:MOV R14,R10:MOV R10,R11:MOV R11,R0
+B Down2Up134
+
+.Down34Up12
+MOV R0,R1:MOV R1,R5:MOV R5,R0
+MOV R0,R2:MOV R2,R6:MOV R6,R0
+MOV R0,R10:MOV R10,R12:MOV R12,R0
+B Down14Up23
+
+.Down4Up123
+MOV R0,R3:MOV R3,R7:MOV R7,R0
+MOV R0,R4:MOV R4,R8:MOV R8,R0
+MOV R0,R11:MOV R11,R14:MOV R14,R0
+
+B Down2Up134
+
+.readCol
+FNadr (12,MegaShades)
+ADD R12,R12,R13,LSL#2
+LDR R12,[R12,R9,LSL#5]   ; color x 96 bytes
+MOV PC,R14
+
+.readColW
+FNadr (12,MegaShades)
+ADD R12,R12,#&1200       ; = MegaShadesWater
+ADD R12,R12,R13,LSL#2
+LDR R12,[R12,R9,LSL#5]   ; color x 96 bytes  = 32*3
+MOV PC,R14
+
+.memoXp EQUD 0
+.memoYp EQUD 0
+.memoLand EQUD 0
+.lessSqMemo EQUD 0
+
+.PutObjectsRow       ; input R0=row #
+FNin
+
+FNadr(10,myScape+128*128*2)   ; offset for object data
+LDRB R2,PosY:ADD R2,R2,R0:AND R2,R2,#127:ADD R10,R10,R2,LSL#7
+LDRB R1,PosX
+
+FNadr(13,tabCutSquare3D+4):LDR R13,[R13,R0,LSL#3] ; read lessSquares value
+STR R13,lessSqMemo
+ADD R1,R1,R13:ADD R1,R1,#1 ; xpos
+
+RSB R13,R13,#13 ; # of squares to ctrl
+
+MOV R1,R1,LSL#25               ; now work in atom units only
+MOV R2,R2,LSL#25:STR R2,memoYp ;store Y position in atom units
+                STR R10,memoLand
+
+.ldrwLeft
+LDRB R0,[R10,R1,LSR#25]     ;read obj cde in landdef
+CMP R0,#0:BEQ noObj1
+
+STR R1,memoXp
+
+BL ReadObjectAddress
+BL DrawObject
+
+LDR R1,memoXp:LDR R2,memoYp:LDR R10,memoLand
+.noObj1
+ADD R1,R1,#32<<20           ;next pos
+SUBS R13,R13,#1:BNE ldrwLeft
+
+LDRB R1,PosX
+LDR R13,lessSqMemo
+ADD R1,R1,#26:SUB R1,R1,R13 ; xpos
+RSB R13,R13,#13   ; # of squares to ctrl
+MOV R1,R1,LSL#25   ; atom coords
+
+.ldrwRight
+LDRB R0,[R10,R1,LSR#25]
+CMP R0,#0:BEQ noObj2
+
+STR R1,memoXp
+
+BL ReadObjectAddress
+BL DrawObject
+
+LDR R1,memoXp:LDR R2,memoYp:LDR R10,memoLand
+.noObj2
+SUB R1,R1,#32<<20
+SUBS R13,R13,#1:BNE ldrwRight
+
+FNout
+
+.PutShadowsRow       ; input R0=row #
+FNin
+
+FNadr(10,myScape+128*128*2)   ; offset for object data
+LDRB R2,PosY:ADD R2,R2,R0:AND R2,R2,#127:ADD R10,R10,R2,LSL#7
+LDRB R1,PosX
+
+FNadr(13,tabCutSquare3D+4):LDR R13,[R13,R0,LSL#3] ; read lessSquares value
+STR R13,lessSqMemo
+ADD R1,R1,R13:ADD R1,R1,#1 ; xpos
+
+RSB R13,R13,#13 ; # of squares to ctrl
+
+MOV R1,R1,LSL#25               ; now work in atom units only
+MOV R2,R2,LSL#25:STR R2,memoYp ;store Y position in atom units
+                STR R10,memoLand
+
+.ldrwLeftS
+LDRB R0,[R10,R1,LSR#25]     ;read obj cde in landdef
+CMP R0,#0:BEQ noObj1S
+
+STR R1,memoXp
+
+BL ReadObjectAddress
+BL DrawShadow
+
+LDR R1,memoXp:LDR R2,memoYp:LDR R10,memoLand
+.noObj1S
+ADD R1,R1,#32<<20
+SUBS R13,R13,#1:BNE ldrwLeftS
+
+LDRB R1,PosX
+LDR R13,lessSqMemo
+ADD R1,R1,#26:SUB R1,R1,R13 ; xpos
+RSB R13,R13,#13   ; # of squares to ctrl
+MOV R1,R1,LSL#25  ; atom coords
+
+.ldrwRightS
+LDRB R0,[R10,R1,LSR#25]
+CMP R0,#0:BEQ noObj2S
+
+STR R1,memoXp
+
+BL ReadObjectAddress
+BL DrawShadow
+
+LDR R1,memoXp:LDR R2,memoYp:LDR R10,memoLand
+.noObj2S
+SUB R1,R1,#32<<20
+SUBS R13,R13,#1:BNE ldrwRightS
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+.DrawObject            ; IN  R0=Obj pointer,(R1,R2)=(posX<<20,posY<<20)
+FNin2                  ;    R3=posZ for dinamic<<20;R5=input list for dinamic
+                       ; R13 unaltered
+
+FNadr(7,buf2Dobj)
+
+LDR R6,[R0],#8
+TST R6,#2:BEQ staticObj
+
+.dinamicObj
+LDR R4,Elevation
+ADD R3,R3,R4,LSL#20   ; object's altitude
+
+LDR R9,RealPos:SUB R9,R2,R9,LSL#20
+MOV R9,R9,LSR#24
+CMP R9,#23:MOVGT R9,#23
+STR R9,strip3D ;useful for the colour
+
+ADR R11,theLight
+LDMIA R5!,{R12,R13,R14}    ;load light vector
+STMIA R11,{R12,R13,R14}    ;and store it
+
+.dinamicObjLoop
+LDMIA R5!,{R12,R13,R14}
+ADD R0,R0,#12:CMP R12,#eod:BEQ testHidden
+
+ADD R12,R12,R1,ASR#20    ; in atom coords
+ADD R13,R13,R2,ASR#20
+ADD R14,R14,R3,ASR#20
+
+LDR R6,RealPos
+SUB R12,R12,R6,LSR#16
+CMN R12,#64:ADDMI R12,R12,#128<<5      ; problemes bord horizontal
+MOV R6,R6,LSL#16:SUBS R13,R13,R6,LSR#16
+ADDMI R13,R13,#128<<5 ; pour des problemes au bord vertical du land
+SUB R12,R12,#13.5*32  ;centre par rapport a' l'axe vertical
+
+CMP R13,#432:BCS quitDrawObj ; out of perspective bounds
+FNadr(6,table3D):LDR R6,[R6,R13,LSL#2]   ;read perspective
+
+MUL R13,R6,R14:MOV R13,R13,ASR#14:RSB R13,R13,#10  ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#14:ADD R12,R12,#160  ; X    "
+
+SUB R14,R14,R4    ; sub !Elevation to obtain real high
+
+STMIA R7!,{R12,R13,R14}     ; R14 is "hauteur du point"
+B dinamicObjLoop
+
+.testHidden    ; R13 contains 'hidden' value
+LDR R12,[R0,#-8]:SUB R0,R0,#4
+ANDS R12,R12,#&FF:BEQ drawDinNow   ; no hidden tests!
+MOV R8,#0               ;init counter
+.nxtHidden
+LDMIA R0!,{R1,R3,R5}    ;load hplane
+
+ LDMIA R1,{R1,R2}       ;load plane coords
+ LDMIA R3,{R3,R4}
+ LDMIA R5,{R5,R6}
+
+ FNBackFace
+ ORRMI R8,R8,R12        ; set the counter if right half-space
+
+MOVS R12,R12,LSR#1:BNE nxtHidden
+LDR R0,[R0,R8,LSL#2]   ; and finally load the right obj address!
+
+.drawDinNow
+LDR R9,[R0]
+CMP R9,#eod:BEQ quitDrawObj
+TST R9,#1<<30:ADDNE R0,R0,#3*4:ADDEQ R0,R0,#8*4 ; move to end of surf def
+                BNE lineDinObj
+.quadDinObj
+
+ SUB R13,R0,#3*4:LDMDB R13,{R5,R6,R7,R8}  ;read the four points
+
+ LDMIA R5,{R1,R2,R10}
+ LDMIA R6,{R3,R4,R11}
+ LDMIA R7,{R5,R6,R12}   ; load the first three (x,y) coords
+
+  FNBackFace:BPL drawDinNow
+
+ STR R0,memoR
+
+  SUB R13,R0,#3*4:LDMIA R13,{R7,R13,R14}      ;load normal surface vector
+  LDR R0,theLight:  MUL R0,R7,R0
+  LDR R7,theLight+4:MLA R0,R13,R7,R0
+  LDR R7,theLight+8:MLA R0,R14,R7,R0
+  LDR R13,strip3D
+   CMP R13,R0,ASR#21:MOVMI R0,R13,LSL#21
+   ADDS R13,R13,R0,ASR#21:MOVMI R13,#0
+   CMPGT R13,#23:MOVGT R13,#23
+
+ LDMIA R8,{R7,R8,R14}   ;load the fourth point
+
+   CMP R10,#192:BMI Down1Up
+   CMP R11,#192:BMI Down2Up1
+   CMP R12,#192:BMI Down3Up12
+   CMP R14,#192:BMI Down4Up123
+
+   BL readCol     ; UP world
+
+.drwQ
+ BL PutQuadra
+.qdrwQ
+ LDR R0,memoR
+B drawDinNow
+
+.lineDinObj
+LDR R13,strip3D
+ BL readCol  ;en fonction de R9(real color) et de R13=!strip3D
+
+ LDMDB R0,{R1,R2}
+ LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}   ;load coords
+
+ ADD R2,R2,#1:ADD R4,R4,#1 ;to make things going
+
+ BL PutLine   ; draw line  .R0 unaltered
+B drawDinNow
+
+;;;;;;;;;
+
+.staticObj
+FNadr(9,myScape)
+ADD R9,R9,R1,LSR#25:MOV R5,R2,LSR#25:LDRB R9,[R9,R5,LSL#7] ;read local h
+ADD R9,R9,R9,ASR#1   ;x1.5
+LDR R3,Elevation:ADD R3,R3,R9 ; object's altitude
+LDR R9,RealPos:SUB R9,R2,R9,LSL#20
+MOV R9,R9,LSR#24
+CMP R9,#23:MOVPL R9,#23
+STR R9,strip3D ;useful for the colour
+
+.staticObjLoop
+LDMIA R0!,{R12,R13,R14}:CMP R12,#eod:SUBEQ R0,R0,#8:BEQ drawNow
+
+ADD R12,R12,R1,ASR#20    ; in atom coords
+ADD R13,R13,R2,ASR#20
+ADD R14,R14,R3
+
+LDR R6,RealPos
+SUB R12,R12,R6,LSR#16
+CMN R12,#64:ADDMI R12,R12,#128<<5      ; problemes bord horizontal
+MOV R6,R6,LSL#16:SUBS R13,R13,R6,LSR#16
+ADDMI R13,R13,#128<<5  ; pour des problemes au bord vertical du land
+SUB R12,R12,#13.5*32 ;centre par rapport a' l'axe vertical
+
+CMP R13,#432:BCS quitDrawObj ; out of perspective bounds
+FNadr(6,table3D):LDR R6,[R6,R13,LSL#2]   ;read perspective
+
+MUL R14,R6,R14:MOV R14,R14,ASR#14:RSB R14,R14,#10  ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#14:ADD R12,R12,#160  ; X    "
+
+STMIA R7!,{R12,R14,PC}     ; the last one is useless!
+B staticObjLoop
+
+.drawNow
+LDR R9,[R0]
+CMP R9,#eod:BEQ quitDrawObj
+TST R9,#1<<30:ADDEQ R0,R0,#8*4:ADDNE R0,R0,#3*4 ; move to end of surf def
+
+LDR R13,strip3D:BL readCol
+
+TST R9,#1<<30:BNE lineObj
+.quadObj
+
+ SUB R10,R0,#3*4:LDMDB R10,{R5,R6,R7,R8}  ;read the 4 points
+
+ LDMIA R5,{R1,R2}:LDMIA R6,{R3,R4}:LDMIA R7,{R5,R6}
+         ; load the (x,y) coords
+
+ TST R9,#1<<31:BEQ noBackFace
+
+   FNBackFace:BPL drawNow
+
+.noBackFace
+
+ LDMIA R8,{R7,R8}
+
+ STR R0,memoR
+ BL PutQuadra
+ LDR R0,memoR
+B drawNow
+
+.lineObj
+
+ LDMDB R0,{R1,R2}
+ LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}   ;load coords
+
+ ADD R2,R2,#1:ADD R4,R4,#1 ;to make things going
+
+ BL PutLine   ; draw line  .R0 unaltered
+B drawNow
+
+.quitDrawObj
+FNout2
+
+.strip3D EQUD 0
+.theLight EQUD 0:EQUD 0:EQUD 0
+
+.RotateDinamic         ; IN   R0=Obj pointer
+FNin2                  ;      R4=(alfa,beta,gamma)
+                       ;      R5=output 3D (rotated) list ( unchanged!!!)
+STR R5,memoR
+
+ADD R0,R0,#8           ; go to xyz def
+
+FNadr(10,sinus):ADD R11,R10,#64*4  ; R11=cosTable
+
+ AND R12,R4,#&FF0000  ;mask alfa
+LDR R6,[R10,R12,LSR#16-2]:LDR R7,[R11,R12,LSR#16-2]   ;sin(alfa),cos(alfa)
+ AND R12,R4,#&00FF00  ;mask beta
+LDR R8,[R10,R12,LSR#08-2]:LDR R9,[R11,R12,LSR#08-2]   ;sin(beta),cos(beta)
+ AND R12,R4,#&0000FF  ;mask gamma
+LDR R10,[R10,R12,LSL#2  ]:LDR R11,[R11,R12,LSL#2  ] ;sin(gamma),cos(gamma)
+
+MOV R12,R8,LSL#8:MUL R13,R9,R10:MUL R14,R11,R9
+STMIA R5!,{R12,R13,R14} ; the light vector
+
+.rotatePoints
+LDMIA R0!,{R12,R13,R14}:CMP R12,#eod:BEQ exit_RotateDynamic
+
+MUL R4,R14,R10:RSB R4,R4,#0:MLA R4,R13,R11,R4
+MUL R14,R11,R14:MLA R14,R13,R10,R14:MOV R14,R14,ASR#8:MOV R13,R4,ASR#8
+
+MUL R4,R14,R8:RSB R4,R4,#0:MLA R4,R12,R9,R4
+MUL R14,R9,R14:MLA R14,R12,R8,R14:MOV R14,R14,ASR#8:MOV R12,R4,ASR#8
+
+MUL R4,R13,R6:RSB R4,R4,#0:MLA R4,R12,R7,R4
+MUL R13,R7,R13:MLA R13,R12,R6,R13:MOV R13,R13,ASR#8:MOV R12,R4,ASR#8
+
+STMIA R5!,{R12,R13,R14}
+B rotatePoints
+
+.exit_RotateDynamic
+STR R12,[R5]
+LDR R5,memoR
+FNout2
+
+.DrawShadow        ; IN   R0=Obj pointer,(R1,R2)=(posX<<20,posY<<20) in land
+                   ;      R3=posZ if dinamic (to ctrl crash) <<20
+FNin2              ;      R5=input 3D (rotated) list for dinamic
+
+LDR R6,[R0],#8               ;load header and skip ShadowObj
+TST R6,#1:BEQ quitShadow
+TST R6,#2:BEQ staticShadow
+
+.dinamicShadow
+LDR R0,[R0,R6,LSR#22]         ;move R0 directly to surface definition
+MOV R0,R0,LSR#8:STR R0,memoR ;save the pointer to a surface definition
+
+ADD R0,R5,#12  ;move pointer after light vector(now R0)
+
+MOV R5,#0:STR R5,underLand  ;init underLand value(0=ship en l'air)
+
+LDR R5,Elevation
+FNadr(7,buf2Dobj)
+FNadr(9,myScape)
+
+.dinamicShadowLoop
+LDMIA R0!,{R12,R13,R14}:CMP R12,#eod:BEQ readShadowList_andInitR0
+
+FNcalcShadowPoints(Dinamic)  ;and save them at R7!
+B dinamicShadowLoop
+
+.underLand EQUD 0 ; si le ship est sous la terre,on store ici son delta z
+                  ; utile pour calculer collision ship-land
+.staticShadow
+
+FNadr(7,buf2Dobj)
+FNadr(9,myScape)
+
+LDR R0,[R0,#-4]            ; load ShadowObj address
+LDR R5,Elevation
+
+.staticShadowLoop
+LDR R12,[R0],#4:CMP R12,#eod:BEQ readShadowList
+LDMIA R12,{R12,R13} ;load real x,y coords
+
+FNcalcShadowPoints(Static)  ;and save them at R7!
+
+B staticShadowLoop
+
+.readShadowList_andInitR0
+ LDR R0,memoR
+.readShadowList
+
+.nextSurface
+LDR R1,[R0]
+CMP R1,#eod:BEQ quitShadow   ;end of work!
+TST R1,#1<<30:ADDEQ R0,R0,#8*4:ADDNE R0,R0,#3*4 ; move to end of surf def
+TST R1,#1<<29:BEQ nextSurface
+
+TST R1,#1<<30:BNE lineShadow
+.quadShadow
+ SUB R1,R0,#3*4:LDMDB R1,{R1,R2,R3,R4}  ;read the four points
+
+ LDMIA R4,{R7,R8}:LDMIA R3,{R5,R6}:LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}
+         ; load the (x,y) coords of the piece of shadow
+
+ STR R0,memoR
+ MOV R12,#0:BL PutQuadra     ; and finally draw it!
+ LDR R0,memoR
+B nextSurface
+
+.lineShadow
+ LDMDB R0,{R1,R2}
+ LDMIA R2,{R3,R4}:LDMIA R1,{R1,R2}   ;load coords
+
+ MOV R12,#0:BL PutLine   ; finally draw it! ( a black line ) ;R0 unaltered
+B nextSurface
+
+.quitShadow
+FNout2
+
+FNbin
+
+.memoR EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+]
+
+=0
+
+REM *********** END OF MAIN ROUTINE *********************************
+
+DEFFNcalcShadowPoints(kind%)
+[OPT PASS
+
+ADD R12,R12,R1,ASR#20    ; in atom squares
+ADD R13,R13,R2,ASR#20
+]
+IF kind%=Dinamic THEN [OPT PASS: ADD R14,R14,R3,ASR#20 : ]
+[OPT PASS
+
+MOV R6,R12,ASR#5  ; in square units
+MOV R8,R13,ASR#5
+
+MOV R6,R6,LSL#25:MOV R8,R8,LSL#25  ; shift to clear useless bits
+
+AND R4,R12,#31   ; X precision
+
+ADD R10,R8,R6,LSR#7:LDRB R10,[R9,R10,LSR#25-7]   ; h1
+
+ADD R6,R6,#1<<25
+ADD R11,R8,R6,LSR#7:LDRB R11,[R9,R11,LSR#25-7]   ; h2
+SUB R11,R11,R10:MUL R11,R4,R11:ADD R11,R11,R10,LSL#5 ; h12=h1~h2
+
+ADD R8,R8,#1<<25
+ADD R10,R8,R6,LSR#7:LDRB R10,[R9,R10,LSR#25-7]   ; h3
+SUB R6,R6,#1<<25
+ADD R6,R8,R6,LSR#7:LDRB R6,[R9,R6,LSR#25-7]      ; h4
+SUB R10,R10,R6:MUL R10,R4,R10:ADD R10,R10,R6,LSL#5 ; h34=h3~h4
+
+AND R6,R13,#31   ; Y precision
+ SUB R10,R10,R11:MUL R10,R6,R10:ADD R10,R11,R10,ASR#5 ;=high
+
+ADD R10,R10,R10,ASR#1  ; x1.5
+]
+
+IF kind%=Dinamic THEN
+[OPT PASS
+ SUBS R14,R14,R10,ASR#5:LDRMI R6,underLand:CMPMI R14,R6:STRMI R14,underLand
+]           : REM test crash on land
+ENDIF
+
+[OPT PASS
+
+ADD R14,R5,R10,ASR#5   ; the real high ! (R5=!Elevation)
+
+LDR R6,RealPos
+SUB R12,R12,R6,LSR#16
+CMN R12,#64:ADDMI R12,R12,#128<<5      ; problemes bord horizontal
+MOV R6,R6,LSL#16:SUBS R13,R13,R6,LSR#16
+ADDMI R13,R13,#128<<5 ; pour des problemes au bord vertical du land
+SUB R12,R12,#13.5*32  ;centre par rapport a' l'axe vertical
+
+CMP R13,#448:BCS quitShadow ; out of perspective bounds
+
+FNadr(6,table3D):LDR R6,[R6,R13,LSL#2]   ;read perspective
+
+MUL R14,R6,R14:MOV R14,R14,ASR#14:RSB R14,R14,#10  ; Y projection
+MUL R12,R6,R12:MOV R12,R12,ASR#14:ADD R12,R12,#160  ; X    "
+
+STMIA R7!,{R12,R14,PC}     ; the last one is useless!
+]
+=0
+
+DEFFNsaveQuadraRegs
+[OPT PASS
+ADR R0,quadraRegs:STMIA R0,{R1-R14}
+]
+=0
+
+DEFFNloadQuadraRegs
+[OPT PASS
+ADR R1,quadraRegs:LDMIA R1,{R1-R14}
+]
+=0
+
+REM ************ Now some 'base' structures to build objects ***********
+
+DEFFNarm1
+[OPT PASS
+FNquad(20,1,0,2,3,0,0):FNquad(20,1,1,3,4,0,0):FNquad(20,1,1,4,2,0,0)
+FNquad(32,1,0,17,2,5,4)
+]
+=0
+
+DEFFNarm2
+[OPT PASS
+FNquad(20,1,0,7,8,1,1):FNquad(20,1,1,8,9,1,1):FNquad(20,1,1,9,7,1,1)
+FNquad(32,1,0,17,5,9,8)
+]
+=0
+
+DEFFNbody
+[OPT PASS
+FNq(32,3,6,5,4)
+FNq(32,6,7,9,5)
+
+FNq(47,17,15,16,16)
+FNq(47,17,10,11,11)
+FNq(47,17,14,15,15)
+FNq(47,17,11,12,12)
+
+FNq(41,17,16,2,2)
+FNq(41,17,8,10,10)
+
+FNq(40,13,14,17,17)
+FNq(40,17,12,13,13)
+
+FNq(41,16,15,3,2)
+FNq(41,11,10,8,7)
+
+FNq(13,12,11,6,6):FNq(41,6,11,7,7)
+FNq(18,13,12,6,14)
+FNq(13,15,14,6,6):FNq(41,15,6,3,3)
+]
+=0
+
+DEFFNwing1
+[OPT PASS
+
+FNq(01,5,6,4,4)
+FNq(03,9,8,7,7)
+FNr(05,6,9,7,4)
+FNq(05,4,7,8,5)
+FNq(00,5,8,9,6)
+
+]
+=0
+
+
+DEFFNwing2
+[OPT PASS
+
+FNq(01,11,10,12,12)
+FNq(03,13,14,15,15)
+FNr(05,10,13,15,12)
+FNq(05,11,14,13,10)
+FNq(00,12,15,14,11)
+
+]
+=0
+
+DEFFNkopf
+[OPT PASS
+
+FNr(25,0,1,2,2)
+FNq(25,0,3,1,1)
+FNq(25,3,0,2,2)
+FNq(23,2,1,3,3)
+
+]
+=0
+
+DEFFNtfBody
+[OPT PASS
+FNq(42, 5,6,9,9)  ;derriere
+FNq(12, 6,7,10,9)
+FNq(42, 7,8,10,10)
+FNq(12, 9,10,8,5)
+
+FNq(47, 2,1,0,0)  ;pointe
+FNq(46, 3,2,0,0)
+FNq(47, 4,3,0,0)
+FNq(46, 1,4,0,0)
+
+FNq(45, 6,2,3,7)  ;milieu
+FNq(46, 7,3,4,8)
+FNq(45, 8,4,1,5)
+FNq(46, 5,1,2,6)
+
+]
+=0
+
+DEFFNtfWing1
+[OPT PASS
+FNq(5,3,7,17,13):FNr(7,7,3,13,17)
+]
+=0
+
+DEFFNtfWing2
+[OPT PASS
+FNq(7,2,6,16,12):FNr(5,6,2,12,16)
+]
+=0
+
+DEFFNtfWing3
+[OPT PASS
+FNq(7,1,5,15,11):FNr(5,5,1,11,15)
+]
+=0
+
+DEFFNtfWing4
+[OPT PASS
+FNq(5,4,8,18,14):FNr(7,8,4,14,18)
+]
+=0
+
+DEFFNerbe_element(rot%)
+[OPT PASS
+ FNxyz_rot(07,-5,12, rot%)
+ FNxyz_rot(07,+5,12, rot%)
+ FNxyz_rot(15,-6,16, rot%)
+ FNxyz_rot(15,+6,16, rot%)
+ FNxyz_rot(22,00,10, rot%)
+]
+=0
+
+DEFFNq(A,B,C,D,E) =FNquad(A,1,1,B,C,D,E)  :REM quadra with BackFace,Shadow
+DEFFNQ(A,B,C,D,E) =FNq(A, C,B,E,D)        :REM inverted backface
+DEFFNr(A,B,C,D,E) =FNquad(A,1,0,B,C,D,E)  :REM quadra with BackFace,noShadow
+DEFFNR(A,B,C,D,E) =FNr(A, C,B,E,D)        :REM inverted backface
+_________________________________________________________________________
+_________________________________________________________________________
+_________________________________________________________________________
+
+DEFFNobjects_definitions
+
+L1=58 :REM FlashLight unit
+L2=17 :REM LadyBird   unit
+L3=14 :REM TopFun     unit
+L4=17 :REM Ebudae     unit
+L5=9  :REM Medusa     unit
+L6=15 :REM MiniMine   unit
+L7=20 :REM Toupy      unit
+L8=16 :REM Eagle      unit
+L9=20 :REM Conca      unit
+LA=19 :REM Framey     unit
+LB=18 :REM Exaode     unit
+LC=25 :REM Batship    unit
+LD=16 :REM Jaily      unit
+LE=08 :REM Globule    unit
+LF=15 :REM Car        unit
+LG=12 :REM Reticule   unit
+
+[OPT PASS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;  Si l'objet est statique et avec ombre,il doit pointer a' un objet
+;  ombre.
+;  Si l'objet est dinamique,l'ombre est dessinee a partir de lui-meme
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Palace
+FNdefine(Palace,Static,Shadow,PalaceShadow)
+
+ FNxyz(-4,-4,0)      ; pod
+ FNxyz(+4,-4,0)
+ FNxyz(+0,+3,0)
+ FNxyz(-4,-4,16)
+ FNxyz(+4,-4,16)
+ FNxyz(+0,+3,16)
+
+ FNxyz(+12,+12,016)  ; building
+ FNxyz(-12,+12,016)
+ FNxyz(-12,-12,016)
+ FNxyz(+12,-12,016)
+
+ FNxyz(+12,+12,024)
+ FNxyz(-12,+12,024)
+ FNxyz(-12,-12,024)
+ FNxyz(+12,-12,024)
+
+ FNxyz(+12,+12,032)
+ FNxyz(-12,+12,032)
+ FNxyz(-12,-12,032)
+ FNxyz(+12,-12,032)
+
+ FNxyz(+12,+12,040)
+ FNxyz(-12,+12,040)
+ FNxyz(-12,-12,040)
+ FNxyz(+12,-12,040)
+
+FNendxyz
+
+ FNquad(44,1,0, 1,4,5,2)
+ FNquad(45,1,0, 2,5,3,0)
+
+ FNquad(45,1,0, 07,11,12,08)
+ FNquad(45,1,0, 09,13,10,06)
+ FNquad(46,0,0, 07,11,10,06)
+ FNquad(44,0,0, 10,11,12,13)
+
+ FNquad(45,1,0, 8+07,8+11,8+12,8+08)
+  FNquad(45,1,0,  07,  11,  20,  16)
+ FNquad(45,1,0, 8+09,8+13,8+10,8+06)
+  FNquad(45,1,0,  09,  13,  18,  14)
+ FNquad(46,0,0, 8+07,8+11,8+10,8+06)
+ FNquad(47,0,0, 8+10,8+11,8+12,8+13)
+  FNquad(46,0,0,  15,  19,  10,  06)
+
+EQUD eod
+
+.PalaceShadow
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(8)
+FNpointerPoint(9)
+EQUD eod
+
+FNquadSh(0,1,2,3)
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.DeadPalace
+FNdefine(DeadPalace,Static,Shadow,DeadPalaceShadow)
+
+ FNxyz(-4,-4,0)      ; pod
+ FNxyz(+4,-4,0)
+ FNxyz(+0,+3,0)
+ FNxyz(-4,-4,16)
+ FNxyz(+4,-4,16)
+ FNxyz(+0,+3,16)
+
+FNendxyz
+
+ FNquad(43,1,0, 1,4,5,2)
+ FNquad(44,1,0, 2,5,3,0)
+ FNquad(45,0,0, 3,4,5,5)
+
+EQUD eod
+
+.DeadPalaceShadow
+FNpointerPoint(0)
+FNpointerPoint(1)
+FNpointerPoint(2)
+EQUD eod
+
+FNquadSh(0,1,2,2)
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Zynx
+FNdefine(Zynx,Static,Shadow,ZynxShadow)
+
+FNxyz(-04,000,050)   ; 0
+FNxyz(+04,000,050)
+FNxyz(004,-04,000)
+FNxyz(004,+04,000)
+FNxyz(-04,+04,000)
+FNxyz(-04,-04,000)
+
+FNxyz(012,-12,035)   ; 6
+FNxyz(012,+12,035)
+FNxyz(-12,+12,035)
+FNxyz(-12,-12,035)
+FNxyz(016,-16,043)
+FNxyz(016,+16,043)
+FNxyz(-16,+16,043)
+FNxyz(-16,-16,043)
+
+FNxyz(006,-06,040)   ; 14
+FNxyz(006,+06,040)
+FNxyz(-06,+06,040)
+FNxyz(-06,-06,040)
+FNxyz(010,-10,048)
+FNxyz(010,+10,048)
+FNxyz(-10,+10,048)
+FNxyz(-10,-10,048)
+
+FNendxyz
+
+FNquad(47,0,0,13,9,10,6)      ; first
+FNquad(45,0,0,12,8,13,9)      ; first
+ FNquad(46,0,0,21,17,18,14)   ; second
+ FNquad(44,0,0,20,16,21,17)   ; second
+
+  FNquad(21,0,0,1,0,3,4)      ; centre
+  FNquad(22,1,0,3,2,1,1)
+  FNquad(22,1,0,5,4,0,0)
+
+FNquad(45,0,0,10,6,11,7)      ; first
+ FNquad(44,0,0,18,14,19,15)   ; second
+ FNquad(46,0,0,19,15,20,16)   ; second
+FNquad(47,0,0,11,7,12,8)      ; first
+EQUD eod
+
+.ZynxShadow
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(8)
+FNpointerPoint(9)
+FNpointerPoint(10)
+FNpointerPoint(11)
+FNpointerPoint(12)
+FNpointerPoint(13)
+FNpointerPoint(14)
+FNpointerPoint(15)
+FNpointerPoint(16)
+FNpointerPoint(17)
+FNpointerPoint(18)
+FNpointerPoint(19)
+FNpointerPoint(20)
+FNpointerPoint(21)
+EQUD eod
+
+FNquadSh(0,1,4,5)
+FNquadSh(1,2,5,6)
+FNquadSh(2,3,6,7)
+FNquadSh(3,0,7,4)
+
+FNquadSh(8+0,8+1,8+4,8+5)
+FNquadSh(8+1,8+2,8+5,8+6)
+FNquadSh(8+2,8+3,8+6,8+7)
+FNquadSh(8+3,8+0,8+7,8+4)
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.DeadZynx
+FNdefine(DeadZynx,Static,Shadow,DeadZynxShadow)
+
+FNxyz(-04,000,050)   ; 0
+FNxyz(+04,000,050)
+FNxyz(004,-04,000)
+FNxyz(004,+04,000)
+FNxyz(-04,+04,000)
+FNxyz(-04,-04,000)
+
+FNxyz(012,-12,035)   ; 6
+FNxyz(012,+12,035)
+FNxyz(-12,+12,035)
+FNxyz(-12,-12,035)
+FNxyz(016,-16,043)
+FNxyz(016,+16,043)
+FNxyz(-16,+16,043)
+FNxyz(-16,-16,043)
+
+FNxyz(006,-06,040)   ; 14
+FNxyz(006,+06,040)
+FNxyz(-06,+06,040)
+FNxyz(-06,-06,040)
+FNxyz(010,-10,048)
+FNxyz(010,+10,048)
+FNxyz(-10,+10,048)
+FNxyz(-10,-10,048)
+
+FNendxyz
+
+FNrect(46,0,0,9,13,10,6)      ; first
+FNrect(44,0,0,8,12,13,9)      ; first
+ FNrect(45,0,0,17,21,18,14)   ; second
+ FNrect(43,0,0,16,20,21,17)   ; second
+
+  FNquad(21,0,0,1,0,3,4)      ; centre
+  FNquad(22,1,0,3,2,1,1)
+  FNquad(22,1,0,5,4,0,0)
+
+FNrect(44,0,0,6,10,11,7)      ; first
+ FNrect(43,0,0,14,18,19,15)   ; second
+ FNrect(45,0,0,15,19,20,16)   ; second
+FNrect(46,0,0,7,11,12,8)      ; first
+EQUD eod
+
+.DeadZynxShadow
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(8)
+FNpointerPoint(9)
+FNpointerPoint(10)
+FNpointerPoint(11)
+FNpointerPoint(12)
+FNpointerPoint(13)
+FNpointerPoint(14)
+FNpointerPoint(15)
+FNpointerPoint(16)
+FNpointerPoint(17)
+FNpointerPoint(18)
+FNpointerPoint(19)
+FNpointerPoint(20)
+FNpointerPoint(21)
+EQUD eod
+
+FNrectSh(1,0,4,5)
+FNrectSh(2,1,5,6)
+FNrectSh(3,2,6,7)
+FNrectSh(0,3,7,4)
+
+FNrectSh(8+1,8+0,8+4,8+5)
+FNrectSh(8+2,8+1,8+5,8+6)
+FNrectSh(8+3,8+2,8+6,8+7)
+FNrectSh(8+0,8+3,8+7,8+4)
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Tree
+FNdefine(Tree,Static,Shadow,TreeShadow)
+
+FNxyz(003,-03,000)
+FNxyz(-03,003,000)
+FNxyz(000,000,040)
+FNxyz(22*COS(2*PI*0/6),22*SIN(2*PI*0/6),50)
+FNxyz(22*COS(2*PI*1/6),22*SIN(2*PI*1/6),50)
+FNxyz(22*COS(2*PI*2/6),22*SIN(2*PI*2/6),50)
+FNxyz(22*COS(2*PI*3/6),22*SIN(2*PI*3/6),50)
+FNxyz(22*COS(2*PI*4/6),22*SIN(2*PI*4/6),50)
+FNxyz(22*COS(2*PI*5/6),22*SIN(2*PI*5/6),50)
+
+FNendxyz
+
+FNquad(12,0,0,0,1,2,2)
+FNquad(25,0,0,6,7,2,2)
+FNquad(23,0,0,7,8,2,2)
+FNquad(29,0,0,8,3,2,2)
+FNquad(25,0,0,3,4,2,2)
+FNquad(23,0,0,4,5,2,2)
+FNquad(29,0,0,5,6,2,2)
+EQUD eod
+
+.TreeShadow
+FNpointerPoint(3)
+FNpointerPoint(4)
+FNpointerPoint(5)
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(8)
+EQUD eod
+
+FNquadSh(0,1,2,3)
+FNquadSh(0,3,4,5)
+EQUD eod
+
+.DeadTree
+FNdefine(DeadTree,Static,NoShadow,0)
+
+FNxyz(003,-03,000)
+FNxyz(-03,003,000)
+FNxyz(000,000,040)
+FNxyz(22*COS(2*PI*0/6),22*SIN(2*PI*0/6),50)
+FNxyz(22*COS(2*PI*1/6),22*SIN(2*PI*1/6),50)
+FNxyz(22*COS(2*PI*2/6),22*SIN(2*PI*2/6),50)
+FNxyz(22*COS(2*PI*3/6),22*SIN(2*PI*3/6),50)
+FNxyz(22*COS(2*PI*4/6),22*SIN(2*PI*4/6),50)
+FNxyz(22*COS(2*PI*5/6),22*SIN(2*PI*5/6),50)
+
+FNendxyz
+
+FNquad(43,0,0,0,1,2,2)
+FNline(23,0, 2,3)
+FNline(23,0, 2,4)
+FNline(23,0, 2,5)
+FNline(23,0, 2,6)
+FNline(23,0, 2,7)
+FNline(23,0, 2,8)
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Quadrix
+FNdefine(Quadrix,Static,Shadow,QuadrixShadow)
+
+FNxyz(000,000,042)
+
+FNxyz(-03,-03,020)
+FNxyz(+03,-03,020)
+FNxyz(+03,+03,020)
+FNxyz(-03,+03,020)
+
+FNxyz(-05,-05,000)
+FNxyz(+05,-05,000)
+FNxyz(+05,+05,000)
+FNxyz(-05,+05,000)
+
+FNxyz(-06,-18,004)
+FNxyz(+06,-18,004)
+FNxyz(+18,-06,004)
+FNxyz(+18,+06,004)
+
+FNxyz(+06,+18,004)
+FNxyz(-06,+18,004)
+FNxyz(-18,+06,004)
+FNxyz(-18,-06,004)
+
+FNendxyz
+
+;FNquad(12,1,0, 1,0,2,2)      ; never seen
+;FNquad(16,0,0, 9,1,10,2)     ;
+FNquad(22,1,0, 10,2,6,6)
+FNquad(21,1,0, 9,5,1,1)
+
+FNquad(11,1,0, 2,0,3,3)
+FNquad(16,0,0, 11,2,12,3)
+FNquad(22,1,0, 12,3,7,7)
+;FNquad(21,1,0, 11,6,2,2)
+
+FNquad(11,1,0, 4,0,1,1)
+FNquad(16,0,0, 15,4,16,1)
+;FNquad(22,1,0, 16,1,5,5)
+FNquad(21,1,0, 15,8,4,4)
+
+FNquad(12,0,0, 3,0,4,4)
+FNquad(16,0,0, 13,3,14,4)
+FNquad(22,1,0, 14,4,8,8)
+FNquad(21,1,0, 13,7,3,3)
+
+EQUD eod
+
+.QuadrixShadow
+FNpointerPoint(5)
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(8)
+FNpointerPoint(9)
+FNpointerPoint(10)
+FNpointerPoint(11)
+FNpointerPoint(12)
+FNpointerPoint(13)
+FNpointerPoint(14)
+FNpointerPoint(15)
+FNpointerPoint(16)
+EQUD eod
+
+FNquadSh(0,1,4,5)
+FNquadSh(0,1,2,3)
+FNquadSh(1,2,6,7)
+FNquadSh(2,3,8,9)
+FNquadSh(3,0,10,11)
+EQUD eod
+
+.DeadQuadrix
+FNdefine(DeadQuadrix,Static,Shadow,DeadQuadrixShadow)
+
+FNxyz(000,000,042)
+
+FNxyz(-03,-03,020)
+FNxyz(+03,-03,020)
+FNxyz(+03,+03,020)
+FNxyz(-03,+03,020)
+
+FNxyz(-05,-05,000)
+FNxyz(+05,-05,000)
+FNxyz(+05,+05,000)
+FNxyz(-05,+05,000)
+
+FNxyz(-06,-18,004)
+FNxyz(+06,-18,004)
+FNxyz(+18,-06,004)
+FNxyz(+18,+06,004)
+
+FNxyz(+06,+18,004)
+FNxyz(-06,+18,004)
+FNxyz(-18,+06,004)
+FNxyz(-18,-06,004)
+
+FNendxyz
+
+;FNline(47,0, 0,1)
+;FNline(47,0, 0,2)
+;FNline(47,0, 0,3)
+;FNline(47,0, 0,4)
+
+FNline(45,0, 1,2)
+FNline(45,0, 2,3)
+FNline(45,0, 3,4)
+FNline(45,0, 4,1)
+
+FNline(45,0, 1,5)
+FNline(45,0, 2,6)
+FNline(45,0, 3,7)
+FNline(45,0, 4,8)
+
+FNline(45,0, 5,6)
+FNline(45,0, 6,7)
+FNline(45,0, 7,8)
+FNline(45,0, 8,5)
+
+FNline(45,0, 1,16)
+FNline(45,0, 1,09)
+FNline(45,0, 2,10)
+FNline(45,0, 2,11)
+FNline(45,0, 3,12)
+FNline(45,0, 3,13)
+FNline(45,0, 4,14)
+FNline(45,0, 4,15)
+
+FNline(45,0, 5,16)
+FNline(45,0, 5,09)
+FNline(45,0, 6,10)
+FNline(45,0, 6,11)
+FNline(45,0, 7,12)
+FNline(45,0, 7,13)
+FNline(45,0, 8,14)
+FNline(45,0, 8,15)
+
+FNline(45,0, 9,10)
+FNline(45,0, 11,12)
+FNline(45,0, 13,14)
+FNline(45,0, 15,16)
+
+EQUD eod
+
+.DeadQuadrixShadow
+FNpointerPoint(5)
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(8)
+FNpointerPoint(9)
+FNpointerPoint(10)
+FNpointerPoint(11)
+FNpointerPoint(12)
+FNpointerPoint(13)
+FNpointerPoint(14)
+FNpointerPoint(15)
+FNpointerPoint(16)
+EQUD eod
+
+FNrectSh(0,1,2,3)
+
+FNlineSh(0,11)
+FNlineSh(1,5)
+FNlineSh(2,7)
+FNlineSh(3,9)
+
+FNlineSh(0,4)
+FNlineSh(1,6)
+FNlineSh(2,8)
+FNlineSh(3,10)
+
+FNlineSh(4,5)
+FNlineSh(6,7)
+FNlineSh(8,9)
+FNlineSh(10,11)
+
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Erbe
+FNdefine(Erbe,Static,Shadow,ErbeShadow)
+
+FNxyz(000,000,000)   ; 0
+FNerbe_element(10)
+FNerbe_element(82)
+FNerbe_element(195)
+FNerbe_element(288)
+
+FNendxyz
+
+FNquad(21,0,0,8,9,10,10)
+FNquad(20,0,0,6,7,0,0)
+FNquad(19,0,0,6,7,8,9)
+
+FNquad(20,0,0,1,2,0,0)
+FNquad(19,0,0,1,2,3,4)
+FNquad(21,0,0,3,4,5,5)
+
+FNquad(20,0,0,11,12,0,0)
+FNquad(19,0,0,11,12,13,14)
+FNquad(21,0,0,13,14,15,15)
+
+FNquad(20,0,0,16,17,0,0)
+FNquad(19,0,0,16,17,18,19)
+FNquad(21,0,0,18,19,20,20)
+
+EQUD eod
+
+.ErbeShadow
+FNpointerPoint(0)
+FNpointerPoint(1)
+FNpointerPoint(2)
+FNpointerPoint(5)
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(10)
+FNpointerPoint(11)
+FNpointerPoint(12)
+FNpointerPoint(15)
+FNpointerPoint(16)
+FNpointerPoint(17)
+FNpointerPoint(20)
+EQUD eod
+
+FNquadSh(0,01,02,03)
+FNquadSh(0,04,05,06)
+FNquadSh(0,07,08,09)
+FNquadSh(0,10,11,12)
+
+EQUD eod
+
+.DeadErbe
+FNdefine(DeadErbe,Static,Shadow,DeadErbeShadow)
+
+FNxyz(000,000,000)   ; 0
+FNerbe_element(10)
+FNerbe_element(82)
+FNerbe_element(195)
+FNerbe_element(288)
+
+FNendxyz
+
+FNline(22,0, 0,1)
+FNline(22,0, 0,2)
+FNline(22,0, 2,4)
+FNline(22,0, 1,3)
+FNline(22,0, 3,5)
+FNline(22,0, 4,5)
+
+FNline(22,0, 0,5+1)
+FNline(22,0, 0,5+2)
+FNline(22,0, 5+2,5+4)
+FNline(22,0, 5+1,5+3)
+FNline(22,0, 5+3,5+5)
+FNline(22,0, 5+4,5+5)
+
+FNline(22,0, 0,10+1)
+FNline(22,0, 0,10+2)
+FNline(22,0, 10+2,10+4)
+FNline(22,0, 10+1,10+3)
+FNline(22,0, 10+3,10+5)
+FNline(22,0, 10+4,10+5)
+
+FNline(22,0, 0,15+1)
+FNline(22,0, 0,15+2)
+FNline(22,0, 15+2,15+4)
+FNline(22,0, 15+1,15+3)
+FNline(22,0, 15+3,15+5)
+FNline(22,0, 15+4,15+5)
+
+EQUD eod
+
+.DeadErbeShadow
+FNpointerPoint(0)
+FNpointerPoint(1)
+FNpointerPoint(2)
+FNpointerPoint(5)
+FNpointerPoint(6)
+FNpointerPoint(7)
+FNpointerPoint(10)
+FNpointerPoint(11)
+FNpointerPoint(12)
+FNpointerPoint(15)
+FNpointerPoint(16)
+FNpointerPoint(17)
+FNpointerPoint(20)
+EQUD eod
+
+FNrectSh(0,1,3,2)
+FNrectSh(0,4,6,5)
+FNrectSh(0,7,9,8)
+FNrectSh(0,10,12,11)
+
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Mystic
+FNdefine(Mystic,Static,Shadow,MysticShadow)
+
+FNxyz(+3,00,000)
+FNxyz(00,+3,000)
+FNxyz(-3,00,000)
+FNxyz(00,-3,000)
+
+FNxyz(+5,00,025)
+FNxyz(00,+5,025)
+FNxyz(-5,00,025)
+FNxyz(00,-5,025)
+
+FNxyz(+16,+12,32)
+FNxyz(+12,+16,32)
+
+FNxyz(-12,+16,32)
+FNxyz(-16,+12,32)
+
+FNxyz(-16,-12,32)
+FNxyz(-12,-16,32)
+
+FNxyz(+12,-16,32)
+FNxyz(+16,-12,32)
+
+FNxyz(00,00,050)
+
+FNendxyz
+
+FNquad(46,0,0, 0,1,5,4)   ; pod
+FNquad(45,0,0, 2,1,5,6)
+
+FNquad(11,0,0, 4,5,8,9)   ; body
+FNquad(11,0,0, 5,6,10,11)
+FNquad(11,0,0, 6,7,12,13)
+FNquad(11,0,0, 7,4,14,15)
+FNquad(12,0,0, 4,5,6,7)
+
+FNquad(40,0,0, 08,09,16,16)   ; antenne
+FNquad(40,0,0, 10,11,16,16)
+FNquad(40,0,0, 12,13,16,16)
+FNquad(40,0,0, 14,15,16,16)
+
+EQUD eod
+
+.MysticShadow
+ FNpointerPoint(04)
+ FNpointerPoint(05)
+ FNpointerPoint(06)
+ FNpointerPoint(07)
+
+ FNpointerPoint(08)
+ FNpointerPoint(09)
+ FNpointerPoint(10)
+ FNpointerPoint(11)
+ FNpointerPoint(12)
+ FNpointerPoint(13)
+ FNpointerPoint(14)
+ FNpointerPoint(15)
+EQUD eod
+
+FNquadSh(0,1,4,5)
+FNquadSh(1,2,6,7)
+FNquadSh(2,3,8,9)
+FNquadSh(3,0,10,11)
+
+FNquadSh(0,1,2,3)
+
+EQUD eod
+
+.DeadMystic
+FNdefine(DeadMystic,Static,Shadow,DeadMysticShadow)
+
+FNxyz(+3,00,000)
+FNxyz(00,+3,000)
+FNxyz(-3,00,000)
+FNxyz(00,-3,000)
+
+FNxyz(+5,00,025)
+FNxyz(00,+5,025)
+FNxyz(-5,00,025)
+FNxyz(00,-5,025)
+
+FNxyz(+16,+12,32)
+FNxyz(+12,+16,32)
+
+FNxyz(-12,+16,32)
+FNxyz(-16,+12,32)
+
+FNxyz(-16,-12,32)
+FNxyz(-12,-16,32)
+
+FNxyz(+12,-16,32)
+FNxyz(+16,-12,32)
+
+FNxyz(00,00,050)
+
+FNendxyz
+
+FNquad(45,0,0, 0,1,5,4)   ; pod
+FNquad(44,0,0, 2,1,5,6)
+
+FNrect(11,0,0, 5,4,8,9)   ; body
+FNrect(11,0,0, 6,5,10,11)
+FNrect(11,0,0, 7,6,12,13)
+FNrect(11,0,0, 4,7,14,15)
+FNquad(12,0,0, 4,5,6,7)
+
+FNtria(40,0,0, 08,09,16)  ; antenne
+FNtria(40,0,0, 10,11,16)
+FNtria(40,0,0, 12,13,16)
+FNtria(40,0,0, 14,15,16)
+
+EQUD eod
+
+.DeadMysticShadow
+ FNpointerPoint(04)
+ FNpointerPoint(05)
+ FNpointerPoint(06)
+ FNpointerPoint(07)
+
+ FNpointerPoint(08)
+ FNpointerPoint(09)
+ FNpointerPoint(10)
+ FNpointerPoint(11)
+ FNpointerPoint(12)
+ FNpointerPoint(13)
+ FNpointerPoint(14)
+ FNpointerPoint(15)
+ FNpointerPoint(16)
+EQUD eod
+
+FNquadSh(0,1,2,3)
+
+FNrectSh(1,0,4,5)   ; body
+FNrectSh(2,1,6,7)
+FNrectSh(3,2,8,9)
+FNrectSh(0,3,10,11)
+
+FNtriaSh(04,05,12)  ; antenne
+FNtriaSh(06,07,12)
+FNtriaSh(08,09,12)
+FNtriaSh(10,11,12)
+
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Condens
+FNdefine(Condens,Static,Shadow,CondensShadow)
+
+FNxyz(000,000,00)
+
+FNxyz(+12,+12,20)
+FNxyz(+12,-12,20)
+FNxyz(-12,-12,20)
+FNxyz(-12,+12,20)
+
+FNxyz(+12,+12,25)
+FNxyz(+12,-12,25)
+FNxyz(-12,-12,25)
+FNxyz(-12,+12,25)
+
+FNxyz(000,000,40)
+
+FNendxyz
+
+FNquad(44,0,0, 1,2,0,0)
+FNquad(43,0,0, 2,3,0,0)
+FNquad(44,0,0, 3,4,0,0)
+
+FNquad(21,1,0, 2,1,0,0)
+FNquad(21,1,0, 4,3,0,0)
+FNquad(14,0,0, 1,4,0,0)
+
+FNquad(36,0,0, 7,8,9,9)
+FNquad(36,0,0, 5,6,9,9)
+FNquad(34,0,0, 8,5,9,9)
+
+EQUD eod
+
+.CondensShadow
+ FNpointerPoint(01)
+ FNpointerPoint(02)
+ FNpointerPoint(03)
+ FNpointerPoint(04)
+
+EQUD eod
+
+FNquadSh(0,1,2,3)
+
+EQUD eod
+
+.DeadCondens
+FNdefine(DeadCondens,Static,Shadow,DeadCondensShadow)
+
+FNxyz(000,000,00)
+
+FNxyz(+12,+12,20)
+FNxyz(+12,-12,20)
+FNxyz(-12,-12,20)
+FNxyz(-12,+12,20)
+
+FNendxyz
+
+FNquad(43,0,0, 2,3,0,0)
+FNquad(44,0,0, 1,2,0,0)
+FNquad(44,0,0, 3,4,0,0)
+FNquad(43,0,0, 4,1,0,0)
+
+EQUD eod
+
+.DeadCondensShadow
+ FNpointerPoint(01)
+ FNpointerPoint(02)
+ FNpointerPoint(03)
+ FNpointerPoint(04)
+EQUD eod
+
+FNquadSh(0,1,2,3)
+
+EQUD eod
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.Telef
+FNdefine(Telef,Static,Shadow,TelefShadow)
+
+FNxyz(000,000,30)
+
+FNxyz(+03,+03,00)
+FNxyz(+03,-03,00)
+FNxyz(-03,-03,00)
+FNxyz(-03,+03,00)
+
+FNxyz(-12,+08,35)
+FNxyz(+12,+08,35)
+FNxyz(+16,+08,30)
+FNxyz(+14,+08,25)
+FNxyz(+10,+08,30)
+FNxyz(-10,+08,30)
+FNxyz(-14,+08,25)
+FNxyz(-16,+08,30)
+
+FNxyz(-12,-08,35)
+FNxyz(+12,-08,35)
+FNxyz(+16,-08,30)
+FNxyz(+14,-08,25)
+FNxyz(+10,-08,30)
+FNxyz(-10,-08,30)
+FNxyz(-14,-08,25)
+FNxyz(-16,-08,30)
+
+FNendxyz
+
+FNquad(32,1,0, 1,2,0,0)    ; pod
+FNquad(32,1,0, 3,4,0,0)
+FNquad(31,0,0, 4,1,0,0)
+
+FNquad(44,1,0, 12,20,19,11)
+FNquad(45,1,0, 5,13,20,12)
+FNquad(45,1,0, 14,6,7,15)
+FNquad(47,0,0, 5,6,14,13)
+FNquad(44,1,0, 15,7,8,16)
+
+FNquad(46,0,0, 5,6,9,10)
+FNquad(46,0,0, 6,7,8,9)
+FNquad(46,0,0, 5,10,11,12)
+
+EQUD eod
+
+.TelefShadow
+ FNpointerPoint(07)
+ FNpointerPoint(12)
+ FNpointerPoint(15)
+ FNpointerPoint(20)
+
+EQUD eod
+
+FNquadSh(0,1,2,3)
+
+EQUD eod
+
+.DeadTelef
+FNdefine(DeadTelef,Static,Shadow,DeadTelefShadow)
+
+FNxyz(000,000,30)
+
+FNxyz(+03,+03,00)
+FNxyz(+03,-03,00)
+FNxyz(-03,-03,00)
+FNxyz(-03,+03,00)
+
+FNendxyz
+
+FNquad(43,1,0, 1,2,0,0)    ; pod
+FNquad(43,1,0, 3,4,0,0)
+FNquad(32,0,0, 4,1,0,0)
+
+EQUD eod
+
+.DeadTelefShadow
+ FNpointerPoint(1)
+ FNpointerPoint(2)
+ FNpointerPoint(3)
+ FNpointerPoint(4)
+
+EQUD eod
+
+FNquadSh(0,1,2,3)
+
+EQUD eod
+
+;; DINAMIC OBJECTS
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Car
+FNdefine(Car,Dinamic,Shadow,0)
+
+ FNxyz(LF/2      ,-LF/2,00)     ; 0
+ FNxyz(   0      ,-LF/2,LF/2)
+ FNxyz(-LF       ,-LF/2,LF/2)
+ FNxyz(-LF       ,-LF/2,-LF/2)
+ FNxyz(-LF  +LF/5,-LF/2,-LF/2-LF/5)
+ FNxyz(LF-LF/5   ,-LF/2,-LF/2-LF/5)
+ FNxyz(LF        ,-LF/2,-LF/2)
+ FNxyz(LF        ,-LF/2,-LF/5)
+
+ FNxyz(LF/2      ,+LF/2,00)     ; 8
+ FNxyz(   0      ,+LF/2,LF/2)
+ FNxyz(-LF       ,+LF/2,LF/2)
+ FNxyz(-LF       ,+LF/2,-LF/2)
+ FNxyz(-LF  +LF/5,+LF/2,-LF/2-LF/5)
+ FNxyz(LF-LF/5   ,+LF/2,-LF/2-LF/5)
+ FNxyz(LF        ,+LF/2,-LF/2)
+ FNxyz(LF        ,+LF/2,-LF/5)
+
+ FNxyz(-LF/5,0,LF/2)     ; tripod
+ FNxyz(-LF/1.1,-LF/3,LF/2)
+ FNxyz(-LF/1.1,+LF/3,LF/2)
+                              ; no BackFace flag available for dinamic!
+FNendxyz
+
+FNhidden(car,0)               ; how many test/planes to ctrl
+
+.car
+
+ FNr(12, 7,0,8,15)
+ FNr(11, 0,1,9,8)
+
+ FNR(46, 0,1,2,3)
+ FNQ(46, 5,0,3,4)
+ FNQ(46, 0,5,6,7)
+
+ FNq(46, 8,9,10,11)
+ FNq(46, 13,8,11,12)
+ FNq(46, 15,8,13,14)
+
+
+ FNq(46, 1,2,10,9)
+ FNq(46, 2,3,11,10)
+ FNq(46, 3,4,12,11)
+ FNq(46, 4,5,13,12)
+ FNq(46, 5,6,14,13)
+ FNq(46, 6,7,15,14)
+
+ FNr(44, 16,17,18,18)
+
+EQUD eod
+
+.FlashLight
+FNdefine(FlashLight,Dinamic,Shadow,0)
+
+FNxyz(L1/1.7,-L1/3.5,0)
+FNxyz(L1/1.7,L1/3.5,0)
+
+FNxyz(L1/10,-L1/2.5,0)
+FNxyz(-L1/20,-L1/2.7,L1/10)
+
+FNxyz(L1/15,-L1/3,-L1/20)
+FNxyz(L1/4,0,-L1/10)
+FNxyz(0,0,L1/5)
+FNxyz(-L1/20,L1/2.7,L1/10)
+FNxyz(L1/10,L1/2.5,0)
+FNxyz(L1/15,L1/3,-L1/20) ;9
+
+FNxyz(-L1/6,L1/2.7,0)
+
+FNxyz(-L1/5,L1/3,L1/7)
+
+FNxyz(-L1/2,L1/5,L1/4.8)
+FNxyz(-L1/1.7,0,L1/4.7)
+FNxyz(-L1/2,-L1/5,L1/4.8)
+
+FNxyz(-L1/5,-L1/3,L1/7)
+
+FNxyz(-L1/6,-L1/2.7, 0)
+
+FNxyz(0,0,-L1/8)
+
+FNxyz(0,-L1/3.5, 0)   ; utile pour calcul direction de tir(avec P1)
+
+FNxyz(-L1/2.4,+L1/4.5,-L1/30) ; utile pour calculer le jet
+FNxyz(-L1/2.4,-L1/4.5,-L1/30)
+
+FNendxyz
+
+FNhidden(fl1,2)      ; indique combien de plans il faut tester
+FNhplane(7,8,9)      ; def des plans en question
+FNhplane(2,3,4)
+EQUD fl1             ; jump table
+EQUD fl2
+EQUD fl3
+EQUD fl4
+
+.fl1
+FNarm1
+FNarm2
+FNbody
+EQUD eod
+
+.fl2
+FNarm1
+FNbody
+FNarm2
+EQUD eod
+
+.fl3
+FNarm2
+FNbody
+FNarm1
+EQUD eod
+
+.fl4
+FNbody
+FNarm2
+FNarm1
+EQUD eod
+
+.LadyBird
+FNdefine(LadyBird,Dinamic,Shadow,0)
+
+FNxyz(L2+L2/2,0,0)
+FNxyz(0+L2/2,L2,0)
+FNxyz(0+L2/2,-L2,0)
+FNxyz(L2/4+L2/2,0,L2/2)       ;3
+
+FNxyz(-L2/4+L2/2,-L2/8,L2/2)  ;4
+FNxyz(-L2/3+L2/2,-L2/6,0)
+FNxyz(-L2/3.5+L2/2,-L2,0)     ;6
+
+FNxyz(-L2*1.6+L2/2,-L2/3,L2)  ;7
+FNxyz(-L2*2+L2/2,-L2/2,0)
+FNxyz(-L2*1.8+L2/2,-L2*1.5,0)
+
+FNxyz(-L2/4+L2/2,L2/8,L2/2)   ;10
+FNxyz(-L2/3+L2/2,L2/6,0)
+FNxyz(-L2/3.5+L2/2,L2,0)      ;12
+
+FNxyz(-L2*1.6+L2/2,L2/3,L2)   ;13
+FNxyz(-L2*2+L2/2,L2/2,0)
+FNxyz(-L2*1.8+L2/2,L2*1.5,0)
+
+FNxyz(-L2*2+L2/2,0,0)         ;16
+
+FNendxyz
+
+FNhidden(la1,2)      ; indique combien de plans il faut tester
+FNhplane(1,2,3)      ; def des plans en question
+FNhplane(4,5,8)
+EQUD la1             ; jump table
+EQUD la2
+EQUD la3
+EQUD la4
+
+.la1
+FNkopf
+FNwing1
+FNwing2
+EQUD eod
+
+.la2
+FNkopf
+FNwing2
+FNwing1
+EQUD eod
+
+.la3
+FNwing1
+FNwing2
+FNkopf
+EQUD eod
+
+.la4
+FNwing2
+FNwing1
+FNkopf
+EQUD eod
+
+.TopFun
+FNdefine(TopFun,Dinamic,Shadow,0)
+
+FNxyz(L3*1.3,0,0)           ;0
+
+FNxyz(L3/10,L3/4,-L3/4)     ;1
+FNxyz(L3/10,L3/4,L3/4)
+FNxyz(L3/10,-L3/4,L3/4)
+FNxyz(L3/10,-L3/4,-L3/4)    ;4
+
+FNxyz(-L3,L3/3,-L3/3)       ;5
+FNxyz(-L3,L3/3,L3/3)
+FNxyz(-L3,-L3/3,L3/3)
+FNxyz(-L3,-L3/3,-L3/3)      ;8
+
+FNxyz(-L3*0.8,L3/5,0)       ;9
+FNxyz(-L3*0.8,-L3/5,0)      ;10
+
+FNxyz(0,L3/2,-L3/2)     ;11
+FNxyz(0,L3/2,L3/2)
+FNxyz(0,-L3/2,L3/2)
+FNxyz(0,-L3/2,-L3/2)    ;14
+
+FNxyz(-L3*1.1,L3/2,-L3/2)       ;15
+FNxyz(-L3*1.1,L3/2,L3/2)
+FNxyz(-L3*1.1,-L3/2,L3/2)
+FNxyz(-L3*1.1,-L3/2,-L3/2)      ;18
+
+FNendxyz
+
+FNhidden(tf1,2)      ; indique combien de plans il faut tester
+FNhplane(4,3,8)
+FNhplane(3,2,7)
+EQUD tf1
+EQUD tf4
+EQUD tf2
+EQUD tf3
+
+.tf1
+ FNtfWing2
+ FNtfWing3
+ FNtfWing4
+ FNtfBody
+ FNtfWing1
+ EQUD eod
+
+.tf2
+ FNtfWing1
+ FNtfWing3
+ FNtfWing4
+ FNtfBody
+ FNtfWing2
+ EQUD eod
+
+.tf3
+ FNtfWing1
+ FNtfWing2
+ FNtfWing4
+ FNtfBody
+ FNtfWing3
+ EQUD eod
+
+.tf4
+ FNtfWing1
+ FNtfWing2
+ FNtfWing3
+ FNtfBody
+ FNtfWing4
+ EQUD eod
+
+.Ebudae
+ FNdefine(Ebudae,Dinamic,Shadow,0)
+
+FNxyz(L4*1.5,0,0)    ;0
+FNxyz(L4/2,L4/4,0)   ;1
+FNxyz(L4/2,0,L4/2)   ;2
+FNxyz(L4/2,-L4/4,0)  ;3
+
+FNxyz(-L4/2,0,L4/1.5)
+FNxyz(-L4/1.5,0,0)
+FNxyz(-L4*1.5,1.25*L4,0)
+FNxyz(-L4*1.5,-1.25*L4,0)
+FNendxyz
+FNhidden(eb1,0)      ; indique combien de plans il faut tester
+.eb1
+ FNq(46,6,4,5,5)
+ FNq(46,4,7,5,5)
+
+ FNq(15,2,1,0,0)
+ FNq(15,3,2,0,0)
+ FNq(25,4,6,1,2)
+ FNq(25,7,4,2,3)
+ FNq(15,3,0,1,5)
+ FNq(35,7,3,5,5)
+ FNq(35,5,1,6,6)
+
+EQUD eod
+
+.Medusa
+ FNdefine(Medusa,Dinamic,Shadow,0)
+
+FNxyz(L5*COS(000*2*PI/360),L5*SIN(000*2*PI/360),L5)     ;0
+FNxyz(L5*COS(045*2*PI/360),L5*SIN(045*2*PI/360),L5)
+FNxyz(L5*COS(090*2*PI/360),L5*SIN(090*2*PI/360),L5)
+FNxyz(L5*COS(135*2*PI/360),L5*SIN(135*2*PI/360),L5)
+FNxyz(L5*COS(180*2*PI/360),L5*SIN(180*2*PI/360),L5)
+FNxyz(L5*COS(225*2*PI/360),L5*SIN(225*2*PI/360),L5)
+FNxyz(L5*COS(270*2*PI/360),L5*SIN(270*2*PI/360),L5)
+FNxyz(L5*COS(315*2*PI/360),L5*SIN(315*2*PI/360),L5)     ;7
+
+FNxyz(2*L5*COS(000*2*PI/360),2*L5*SIN(000*2*PI/360),00) ;8
+FNxyz(2*L5*COS(045*2*PI/360),2*L5*SIN(045*2*PI/360),00)
+FNxyz(2*L5*COS(090*2*PI/360),2*L5*SIN(090*2*PI/360),00)
+FNxyz(2*L5*COS(135*2*PI/360),2*L5*SIN(135*2*PI/360),00)
+FNxyz(2*L5*COS(180*2*PI/360),2*L5*SIN(180*2*PI/360),00)
+FNxyz(2*L5*COS(225*2*PI/360),2*L5*SIN(225*2*PI/360),00)
+FNxyz(2*L5*COS(270*2*PI/360),2*L5*SIN(270*2*PI/360),00)
+FNxyz(2*L5*COS(315*2*PI/360),2*L5*SIN(315*2*PI/360),00) ;15
+
+FNxyz(0,0,-L5*3.5)
+FNxyz(0,0,-L5*4.0)
+
+FNendxyz
+
+FNhidden(me1,0)      ; indique combien de plans il faut tester
+.me1
+
+ FNr(41,1,0,16,16)    ; inside
+ FNr(03,2,1,16,16)
+ FNr(41,3,2,16,16)
+ FNr(03,4,3,16,16)
+ FNr(41,5,4,16,16)
+ FNr(03,6,5,16,16)
+ FNr(41,7,6,16,16)
+ FNr(03,0,7,16,16)
+
+ FNr(31,0,1,9,8)
+ FNr(32,1,2,10,9)
+ FNr(31,2,3,11,10)
+ FNr(32,3,4,12,11)
+ FNr(31,4,5,13,12)
+ FNr(32,5,6,14,13)
+ FNr(31,6,7,15,14)
+ FNr(32,7,0,8,15)
+
+ FNq(45,8,9,16,16)
+ FNq(47,9,10,16,16)
+ FNq(45,10,11,16,16)
+ FNq(47,11,12,16,16)
+ FNq(45,12,13,16,16)
+ FNq(47,13,14,16,16)
+ FNq(45,14,15,16,16)
+ FNq(47,15,8,16,16)
+
+EQUD eod
+
+.MiniMine
+ FNdefine(MiniMine,Dinamic,Shadow,0)
+
+FNxyz(L6,0,0)
+FNxyz(0,-L6/2,L6/4)
+FNxyz(0,L6/2,L6/4)
+FNxyz(0,L6/2,-L6/4)
+FNxyz(0,-L6/2,-L6/4)
+
+FNxyz(0,0,0)
+
+FNendxyz
+
+FNhidden(mi1,0)      ; indique combien de plans il faut tester
+.mi1
+
+ FNq(45,1,2,0,0)
+ FNq(45,3,4,0,0)
+
+ FNq(01,1,4,3,2)
+ FNq(11,4,1,0,0)
+ FNq(11,2,3,0,0)
+
+EQUD eod
+
+.Toupy
+ FNdefine(Toupy,Dinamic,Shadow,0)
+
+FNxyz(0,0,2*L7)                                         ;0
+FNxyz(L7*COS(000*2*PI/360)/4,L7*SIN(000*2*PI/360)/4,L7) ;1
+FNxyz(L7*COS(045*2*PI/360)/4,L7*SIN(045*2*PI/360)/4,L7)
+FNxyz(L7*COS(090*2*PI/360)/4,L7*SIN(090*2*PI/360)/4,L7)
+FNxyz(L7*COS(135*2*PI/360)/4,L7*SIN(135*2*PI/360)/4,L7)
+FNxyz(L7*COS(180*2*PI/360)/4,L7*SIN(180*2*PI/360)/4,L7)
+FNxyz(L7*COS(225*2*PI/360)/4,L7*SIN(225*2*PI/360)/4,L7)
+FNxyz(L7*COS(270*2*PI/360)/4,L7*SIN(270*2*PI/360)/4,L7)
+FNxyz(L7*COS(315*2*PI/360)/4,L7*SIN(315*2*PI/360)/4,L7)
+
+FNxyz(L7*COS(000*2*PI/360),L7*SIN(000*2*PI/360),L7) ;9
+FNxyz(L7*COS(045*2*PI/360),L7*SIN(045*2*PI/360),L7)
+FNxyz(L7*COS(090*2*PI/360),L7*SIN(090*2*PI/360),L7)
+FNxyz(L7*COS(135*2*PI/360),L7*SIN(135*2*PI/360),L7)
+FNxyz(L7*COS(180*2*PI/360),L7*SIN(180*2*PI/360),L7)
+FNxyz(L7*COS(225*2*PI/360),L7*SIN(225*2*PI/360),L7)
+FNxyz(L7*COS(270*2*PI/360),L7*SIN(270*2*PI/360),L7)
+FNxyz(L7*COS(315*2*PI/360),L7*SIN(315*2*PI/360),L7) ;16
+
+FNxyz(0,0,0)
+
+FNendxyz
+
+FNhidden(to1,0)      ; indique combien de plans il faut tester
+.to1
+
+ FNq(11,09,10,17,17)
+ FNq(21,10,11,17,17)
+ FNq(11,11,12,17,17)
+ FNq(21,12,13,17,17)
+ FNq(11,13,14,17,17)
+ FNq(21,14,15,17,17)
+ FNq(11,15,16,17,17)
+ FNq(21,16,09,17,17)
+
+ FNr(15,02,10,09,01)
+ FNr(15,03,11,10,02)
+ FNr(45,04,12,11,03)
+ FNr(45,05,13,12,04)
+ FNr(15,06,14,13,05)
+ FNr(15,07,15,14,06)
+ FNr(45,08,16,15,07)
+ FNr(45,01,09,16,08)
+
+ FNr(15,02,01,00,00)
+ FNr(15,03,02,00,00)
+ FNr(45,04,03,00,00)
+ FNr(45,05,04,00,00)
+ FNr(15,06,05,00,00)
+ FNr(15,07,06,00,00)
+ FNr(45,08,07,00,00)
+ FNr(45,01,08,00,00)
+
+EQUD eod
+
+.Eagle
+ FNdefine(Eagle,Dinamic,Shadow,0)
+]
+[OPT PASS
+
+ FNEagle_atom(L8*1.5,-L8*0.7+L8/3)
+ FNEagle_atom(L8*1.2,-L8*0.8+L8/3)
+ FNxyz(L8+L8/3,       0,        0)
+
+FNendxyz
+
+FNhidden(ea1,3)
+FNhplane(20,0,5)
+FNhplane(20,2,7)
+FNhplane(20,4,9)
+
+EQUD ea1
+EQUD ea5
+EQUD ea1
+EQUD ea4
+EQUD ea1
+EQUD ea1
+EQUD ea3
+EQUD ea3
+
+.ea1
+ FNeagle_arm(0)
+ FNeagle_arm(2)
+ FNeagle_arm(8)
+ FNeagle_arm(4)
+ FNeagle_arm(6)
+EQUD eod
+
+.ea2
+ ;FNeagle_arm(2)
+ ;FNeagle_arm(4)
+ ;FNeagle_arm(0)
+ ;FNeagle_arm(6)
+ ;FNeagle_arm(8)
+
+.ea3
+ FNeagle_arm(4)
+ FNeagle_arm(2)
+ FNeagle_arm(6)
+ FNeagle_arm(8)
+ FNeagle_arm(0)
+EQUD eod
+
+.ea4
+ FNeagle_arm(6)
+ FNeagle_arm(4)
+ FNeagle_arm(8)
+ FNeagle_arm(0)
+ FNeagle_arm(2)
+EQUD eod
+
+.ea5
+ FNeagle_arm(8)
+ FNeagle_arm(0)
+ FNeagle_arm(6)
+ FNeagle_arm(2)
+ FNeagle_arm(4)
+EQUD eod
+
+;;;;;;;;;;;;;;;;;;;;;;;
+
+.Conca
+ FNdefine(Conca,Dinamic,Shadow,0)
+
+ FNxyz(L9,0,0)
+]
+ FOR Z%=0TO 5
+[OPT PASS:FNxyz( L9*COSRAD30,L9*.5*COS(Z%*2*PI/6),L9*.5*SIN(Z%*2*PI/6)) :]
+ NEXT
+ FOR Z%=0TO 5
+[OPT PASS:FNxyz( L9*.5,L9*.87*COS(Z%*2*PI/6),L9*.87*SIN(Z%*2*PI/6)) :]
+ NEXT
+ FOR Z%=0TO 5
+[OPT PASS:FNxyz( 0,L9*COS(Z%*2*PI/6),L9*SIN(Z%*2*PI/6)) :]
+ NEXT
+
+[OPT PASS
+FNendxyz
+
+FNhidden(co1,0)
+.co1
+]
+ REM inside
+ REM ******
+
+ FOR Z%=0TO 5
+[OPT PASS :FNR(01+10*(Z% MOD 2), 1+((Z%+1) MOD 6), 1+Z%,0,0) :]
+ NEXT
+
+ FOR Z%=0TO 5
+[OPT PASS :FNR(11-10*(Z% MOD 2), 7+((Z%+1) MOD 6),7+Z%,1+Z%,1+((Z%+1) MOD 6)) :]
+ NEXT
+
+ FOR Z%=0TO 5
+[OPT PASS :FNR(01+10*(Z% MOD 2),13+((Z%+1) MOD 6),13+Z%,7+Z%,7+((Z%+1) MOD 6)) :]
+ NEXT
+
+ REM outside
+ REM ******
+
+ FOR Z%=0TO 5
+[OPT PASS :FNQ(15+10*(Z% MOD 2), 1+Z%, 1+((Z%+1) MOD 6),0,0) :]
+ NEXT
+
+ FOR Z%=0TO 5
+[OPT PASS :FNQ(25-10*(Z% MOD 2), 7+Z%, 7+((Z%+1) MOD 6), 1+((Z%+1) MOD 6),1+Z%) :]
+ NEXT
+
+ FOR Z%=0TO 5
+[OPT PASS :FNQ(15+10*(Z% MOD 2),13+Z%,13+((Z%+1) MOD 6),7+((Z%+1) MOD 6), 7+Z%) :]
+ NEXT
+
+[OPT PASS
+EQUD eod
+
+.Framey
+ FNdefine(Framey,Dinamic,Shadow,0)
+
+ FNFramey_atom(LA,    +LA/2)
+ FNFramey_atom(LA/1.5,+LA/3)
+
+ FNFramey_atom(LA,    -LA/2)
+ FNFramey_atom(LA/1.5,-LA/3)
+
+FNendxyz
+
+FNhidden(fra,0)
+.fra
+
+ FNR(47, 5,6,16,15)  ; inside
+ FNR(47, 6,7,17,16)
+ FNR(47, 7,8,18,17)
+ FNR(47, 8,9,19,18)
+ FNR(47, 9,5,15,19)
+
+ FNQ(40, 0,1,6,5)
+ FNQ(40, 1,2,7,6)
+ FNQ(40, 2,3,8,7)
+ FNQ(40, 3,4,9,8)
+ FNQ(40, 4,0,5,9)
+
+ FNq(40, 10,11,16,15)
+ FNq(40, 11,12,17,16)
+ FNq(40, 12,13,18,17)
+ FNq(40, 13,14,19,18)
+ FNq(40, 14,10,15,19)
+
+ FNr(06, 0,1,11,10)
+ FNq(06, 1,2,12,11)
+ FNq(06, 2,3,13,12)
+ FNq(06, 3,4,14,13)
+ FNq(06, 4,0,10,14)
+
+EQUD eod
+
+.Exaode
+ FNdefine(Exaode,Dinamic,Shadow,0)
+
+ FNxyz(LB,COS(RAD090)*LB/4,SIN(RAD090)*LB/4)
+ FNxyz(LB,COS(RAD330)*LB/4,SIN(RAD330)*LB/4)
+ FNxyz(LB,COS(RAD210)*LB/4,SIN(RAD210)*LB/4)
+ FNxyz(LB*1.3,COS(RAD100)*LB/2,SIN(RAD100)*LB/2)
+ FNxyz(LB*1.3,COS(RAD080)*LB/2,SIN(RAD080)*LB/2)
+ FNxyz(LB*1.3,COS(RAD340)*LB/2,SIN(RAD340)*LB/2)
+ FNxyz(LB*1.3,COS(RAD320)*LB/2,SIN(RAD320)*LB/2)
+ FNxyz(LB*1.3,COS(RAD220)*LB/2,SIN(RAD220)*LB/2)
+ FNxyz(LB*1.3,COS(RAD200)*LB/2,SIN(RAD200)*LB/2)
+ FNxyz(LB*1.5,0,0)
+
+ FNxyz(-LB,COS(RAD090)*LB/4,SIN(RAD090)*LB/4)
+ FNxyz(-LB,COS(RAD330)*LB/4,SIN(RAD330)*LB/4)
+ FNxyz(-LB,COS(RAD210)*LB/4,SIN(RAD210)*LB/4)
+ FNxyz(-LB*1.3,COS(RAD100)*LB/2,SIN(RAD100)*LB/2)
+ FNxyz(-LB*1.3,COS(RAD080)*LB/2,SIN(RAD080)*LB/2)
+ FNxyz(-LB*1.3,COS(RAD340)*LB/2,SIN(RAD340)*LB/2)
+ FNxyz(-LB*1.3,COS(RAD320)*LB/2,SIN(RAD320)*LB/2)
+ FNxyz(-LB*1.3,COS(RAD220)*LB/2,SIN(RAD220)*LB/2)
+ FNxyz(-LB*1.3,COS(RAD200)*LB/2,SIN(RAD200)*LB/2)
+ FNxyz(-LB*1.5,0,0)
+
+FNendxyz
+
+FNhidden(exa1,1)
+FNhplane(0,1,2)
+EQUD exa1
+EQUD exa2
+
+.exa1
+ FNexaode_left
+ FNexaode_centre
+ FNexaode_right
+EQUD eod
+
+.exa2
+ FNexaode_right
+ FNexaode_centre
+ FNexaode_left
+EQUD eod
+
+.Batship
+ FNdefine(Batship,Dinamic,Shadow,0)
+
+ FNxyz(+LC,+00,+00)        ; 0
+ FNxyz(+LC/3,+LC/3,0)
+ FNxyz(+LC/3,-LC/3,0)
+ FNxyz(-LC/4,+LC/2.8,0)
+ FNxyz(-LC/4,-LC/2.8,0)    ; 4
+ FNxyz(-LC/2.3,+LC/4,0)
+ FNxyz(-LC/2.3,-LC/4,0)
+ FNxyz(-LC/2,0,0)          ; 7
+ FNxyz(0,0,LC/1.5)
+
+ FNxyz(-LC/4-LC/2,+LC/2.8+LC/3,-LC/4)  ; 9
+ FNxyz(+LC/3+LC/2,+LC/3+LC/3,-LC/4)    ; 10
+
+ FNxyz(-LC/4-LC/2,+LC/2.8+LC/3,LC/4)   ; 11
+ FNxyz(+LC/3+LC/2,+LC/3+LC/3,LC/4)     ; 12
+
+ FNxyz(-LC/4-LC/2,-LC/2.8-LC/3,-LC/4)  ; 13
+ FNxyz(+LC/3+LC/2,-LC/3-LC/3,-LC/4)    ; 14
+
+ FNxyz(-LC/4-LC/2,-LC/2.8-LC/3,LC/4)   ; 15
+ FNxyz(+LC/3+LC/2,-LC/3-LC/3,LC/4)     ; 16
+
+FNendxyz
+
+FNhidden(bat1,1)
+FNhplane(0,8,7)
+EQUD bat2
+EQUD bat1
+
+.bat1
+ FNbat_left
+ FNbat_centre
+ FNbat_right
+EQUD eod
+
+.bat2
+ FNbat_right
+ FNbat_centre
+ FNbat_left
+EQUD eod
+
+.Jaily
+ FNdefine(Jaily,Dinamic,Shadow,0)
+
+ FNxyz(000,000,+LD*0.9)       ; 0
+]
+ FOR R%=0TO 9
+  [OPT PASS: FNxyz(LD*COS(R%*2*PI/10),LD*SIN(R%*2*PI/10),+LD/4):]
+ NEXT
+ FOR R%=0TO 9
+  [OPT PASS: FNxyz(LD*COS(R%*2*PI/10)*1.2,LD*SIN(R%*2*PI/10)*1.2,-LD/4):]
+ NEXT
+
+[OPT PASS
+FNendxyz
+
+FNhidden(jai,0)
+
+.jai
+]
+
+ FOR R%=0TO 9
+  CR%=11+1*(R% MOD 2)
+  [OPT PASS :FNr(CR%, 11+R%,11+((1+R%) MOD 10) ,0,0)  :]
+ NEXT
+
+ FOR R%=0TO 9
+  CR%=42-2*(R% MOD 2)
+  [OPT PASS :FNQ(CR%, 01+R%,01+((1+R%) MOD 10) ,0,0)  :]
+ NEXT
+
+ FOR R%=0TO 9
+  CR%=42-2*(R% MOD 2)
+  [OPT PASS :FNQ(CR%, 11+R%,11+((1+R%) MOD 10),01+((1+R%) MOD 10),1+R%) :]
+ NEXT
+
+[OPT PASS
+EQUD eod
+
+.Globule
+ FNdefine(Globule,Dinamic,Shadow,0)
+]
+ FOR R%=0TO 10
+ alfa=2*PI*R%/11
+[OPT PASS
+ FNxyz(SIN(alfa)*LE,COS(alfa)*LE,COS(2*alfa)*LE/2)
+ FNxyz(SIN(alfa)*LE*2,COS(alfa)*LE*2,COS(2*alfa)*LE)
+]
+ NEXT
+[OPT PASS
+FNendxyz
+
+FNhidden(glo,0)
+.glo
+]
+ FOR R%=6TO 10
+  S%=(R%+1) MOD 11
+[OPT PASS
+ FNQ(13, 2*R%+0,2*R%+1,2*S%+1,2*S%+0)
+]
+NEXT
+
+ FOR R%=0TO 5
+  S%=(R%+1) MOD 11
+[OPT PASS
+ FNr(23, 2*R%+0,2*R%+1,2*S%+1,2*S%+0)
+
+]
+NEXT
+
+ FOR R%=0TO 5
+  S%=(R%+1) MOD 11
+[OPT PASS
+
+ FNQ(13, 2*R%+0,2*R%+1,2*S%+1,2*S%+0)
+]
+NEXT
+
+ FOR R%=6TO 10
+  S%=(R%+1) MOD 11
+[OPT PASS
+ FNq(23, 2*R%+0,2*R%+1,2*S%+1,2*S%+0)
+
+]
+NEXT
+
+[OPT PASS
+EQUD eod
+
+.Reticule
+ FNdefine(Reticule,Dinamic,Shadow,0)
+
+ FNxyz(-LG/2,-LG,+LG)         ;0
+ FNxyz(-LG/2,+LG,+LG)
+ FNxyz(-LG/2,+LG,-LG)
+ FNxyz(-LG/2,-LG,-LG)
+
+ FNxyz(+LG/2,-LG,+LG)         ;4
+ FNxyz(+LG/2,+LG,+LG)
+ FNxyz(+LG/2,+LG,-LG)
+ FNxyz(+LG/2,-LG,-LG)
+
+ FNxyz(+LG/4,-LG*1.5,+LG*1.5) ;8
+ FNxyz(+LG/4,+LG*1.5,+LG*1.5)
+ FNxyz(+LG/4,+LG*1.5,-LG*1.5)
+ FNxyz(+LG/4,-LG*1.5,-LG*1.5)
+
+ FNxyz(-LG*1.2,0,0)           ;12
+
+ FNxyz(+LG/4,-LG*0.5,+LG*0.25)
+ FNxyz(+LG/4,+LG*0.5,+LG*0.25)
+ FNxyz(+LG/4,+LG*0.5,-LG*0.25)
+ FNxyz(+LG/4,-LG*0.5,-LG*0.25)
+
+ FNxyz(+LG*1.9,0,0)
+
+FNendxyz
+FNhidden(re1,1)
+FNhplane(0,6,2)
+
+EQUD re1
+EQUD re2
+
+.re1
+ FNret_arm(3,2,0,1)
+EQUD eod
+
+.re2
+ FNret_arm(0,1,3,2)
+EQUD eod
+
+]
+=0
+
+REM ************ Now some 'base' structures to build objects ***********
+
+DEFFNbat_centre
+[OPT PASS
+ FNR(32, 5,0,6,7)
+ FNR(32, 1,0,5,3)
+ FNR(32, 6,0,2,4)
+
+ FNQ(24, 0,8,2,2)
+ FNQ(31, 8,4,2,2)
+
+ FNQ(24, 1,8,0,0)
+ FNQ(31, 3,8,1,1)
+
+ FNQ(32, 3,5,8,8)
+ FNQ(25, 5,7,8,8)
+ FNQ(25, 7,6,8,8)
+ FNQ(32, 6,4,8,8)
+]
+=0
+
+DEFFNbat_right
+[OPT PASS
+ FNr(01, 03,01,12,11)
+ FNr(01, 01,03,09,10)
+ FNr(05, 01,10,12,12)
+ FNr(05, 03,11,09,09)
+
+ FNQ(28, 03,01,12,11)
+ FNQ(28, 01,03,09,10)
+ FNQ(28, 01,10,12,12)
+ FNQ(28, 03,11,09,09)
+]
+=0
+
+DEFFNbat_left
+[OPT PASS
+ FNR(01, 04,02,16,15)
+ FNR(01, 02,04,13,14)
+ FNR(05, 02,14,16,16)
+ FNR(05, 04,15,13,13)
+
+ FNq(28, 04,02,16,15)
+ FNq(28, 02,04,13,14)
+ FNq(28, 02,14,16,16)
+ FNq(28, 04,15,13,13)
+]
+=0
+
+DEFFNexaode_centre
+[OPT PASS
+ FNR(47, 0,1,11,10)
+ FNQ(47, 1,2,12,11)
+ FNQ(47, 2,0,12,10)
+]
+=0
+
+DEFFNexaode_left
+[OPT PASS
+ FNR(01, 3,4,0,0)
+ FNQ(01, 4,5,1,0)
+ FNQ(01, 5,6,1,1)
+ FNQ(01, 6,7,2,1)
+ FNQ(01, 7,8,2,2)
+ FNQ(01, 8,3,0,2)
+
+ FNr(46, 3,4,9,9)
+ FNq(46, 4,5,9,9)
+ FNq(46, 5,6,9,9)
+ FNq(46, 6,7,9,9)
+ FNq(46, 7,8,9,9)
+ FNq(46, 8,3,9,9)
+]
+=0
+
+DEFFNexaode_right
+[OPT PASS
+ FNr(01, 13,14,10,10)
+ FNq(01, 14,15,11,10)
+ FNq(01, 15,16,11,11)
+ FNq(01, 16,17,12,11)
+ FNq(01, 17,18,12,12)
+ FNq(01, 18,13,10,12)
+
+ FNR(46, 13,14,19,19)
+ FNQ(46, 14,15,19,19)
+ FNQ(46, 15,16,19,19)
+ FNQ(46, 16,17,19,19)
+ FNQ(46, 17,18,19,19)
+ FNQ(46, 18,13,19,19)
+]
+=0
+
+DEFFNFramey_atom(Fr_radius%,z_pos%)
+FOR R%=0TO 4
+ Fr_alfa=2*PI*R%/5
+[OPT PASS
+ FNxyz(Fr_radius%*COS(Fr_alfa),Fr_radius%*SIN(Fr_alfa),z_pos%)
+]
+NEXT
+=0
+
+DEFFNret_arm_inside(A%)
+ B%=(A%+1) MOD 4
+[OPT PASS
+ FNR(03, A%,B%,B%+4,A%+4)
+]
+=0
+
+DEFFNret_arm_outside(A%)
+ B%=(A%+1) MOD 4
+[OPT PASS
+ FNQ(05, A%+4,B%+4,B%+8,A%+8)
+ FNQ(01, A%+8,B%+8,B%,A%)
+]
+=0
+
+DEFFNret_arm(V1%,V2%,V3%,V4%)
+[OPT PASS
+ FNret_arm_inside(V1%)
+ FNret_arm_inside(V2%)
+ FNret_arm_inside(V3%)
+ FNret_arm_inside(V4%)
+
+ FNret_body
+
+ FNret_arm_outside(V1%)
+ FNret_arm_outside(V2%)
+ FNret_arm_outside(V3%)
+ FNret_arm_outside(V4%)
+]
+=0
+
+DEFFNret_body
+[OPT PASS
+ FNQ(40, 13,14,12,12)
+ FNQ(47, 14,15,12,12)
+ FNQ(40, 15,16,12,12)
+ FNQ(47, 16,13,12,12)
+
+ FNq(47, 13,14,17,17)
+ FNq(40, 14,15,17,17)
+ FNq(47, 15,16,17,17)
+ FNq(40, 16,13,17,17)
+
+]
+=0
+
+DEFFNEagle_atom(Fr_radius%,x_pos%)
+FOR R%=0TO 9
+ Fr_alfa=2*PI*R%/10
+[OPT PASS
+ FNxyz(x_pos%,Fr_radius%*COS(Fr_alfa),Fr_radius%*SIN(Fr_alfa))
+]
+NEXT
+=0
+
+DEFFNeagle_arm(A%)
+ B%=(A%+1) MOD 10
+[OPT PASS
+ FNq(11, A%+10,B%+10,20,20)
+ FNq(13, A%,B%,A%+10,B%+10)
+ FNr(13, B%,A%,20,20)
+ FNq(11, B%+10,B%,20,20)
+ FNq(11, A%,A%+10,20,20)
+]
+=0

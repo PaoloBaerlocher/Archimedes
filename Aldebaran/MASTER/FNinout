@@ -1,0 +1,282 @@
+REM >MASTER.FNinout
+REM (c) P Baerlocher 1992
+
+REM permet de sauver et charger R14 au debut et a' la fin d'une routine
+REM sans se preoccuper de la location
+
+REM !!!! Il faut un bin(corbeille) tous les 4Kb au moins
+
+REM permet de charger un fichier (a' la deuxieme PASS seulement)
+REM en reservant sa taille automatiquement
+
+DEFPROCinitinout
+IF (PASS AND 4)=0 THEN ERROR 1," ### ERROR : bad PASS"
+PASSone=4:PASStwo=6
+
+IF PASS=PASSone THEN
+ DIM bins(64):okinout=FALSE:ok_OP=(O%=P%):stART%=P%
+
+ cs_num%=6        :REM only FNcheck,not FNcheck_ckecksum
+ DIM check_routines(cs_num%):check_routines()=0
+ DIM prot_addr_code(2*cs_num%,3)
+ENDIF
+
+cbin=0
+cinout=0
+totbin=0
+main_assembly%=TRUE
+cs_count%=0
+ccs_count%=0
+PROCresetZF
+ENDPROC
+
+DEFFNin
+ON ERROR PRINT " ### ERROR in FNinout":END
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ cinout+=1
+ELSE
+ [OPT PASS
+ STR R14,bins(cbin)+4*cinout
+ ]
+ENDIF
+ON ERROR OFF
+=0
+
+DEFFNout
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ELSE
+ [OPT PASS
+ LDR R15,bins(cbin)+4*cinout
+ ]
+ cinout+=1
+ENDIF
+=0
+
+DEFFNexitEQ
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ELSE
+ [OPT PASS
+ LDREQ R15,bins(cbin)+4*cinout
+ ]
+ENDIF
+=0
+
+DEFFNexitNE
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ELSE
+ [OPT PASS
+ LDRNE R15,bins(cbin)+4*cinout
+ ]
+ENDIF
+=0
+
+DEFFNexitCS
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ELSE
+ [OPT PASS
+ LDRCS R15,bins(cbin)+4*cinout
+ ]
+ENDIF
+=0
+
+DEFFNexit
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ELSE
+ [OPT PASS
+ LDR R15,bins(cbin)+4*cinout
+ ]
+ENDIF
+=0
+
+DEFFNexitMI
+IF PASS=PASSone THEN
+ P%+=4
+ O%+=4
+ELSE
+ [OPT PASS
+ LDRMI R15,bins(cbin)+4*cinout
+ ]
+ENDIF
+=0
+
+DEFFNin2
+ON ERROR PRINT " ### ERROR in FNinout":END
+IF PASS=PASSone THEN
+ P%+=8
+ O%+=8
+ cinout+=2
+ELSE
+ [OPT PASS
+ STR R13,bins(cbin)+4*cinout
+ STR R14,bins(cbin)+4*cinout+4
+ ]
+ENDIF
+ON ERROR OFF
+=0
+
+DEFFNout2
+IF PASS=PASSone THEN
+ P%+=8
+ O%+=8
+ELSE
+ [OPT PASS
+ LDR R13,bins(cbin)+4*cinout
+ LDR R15,bins(cbin)+4*cinout+4
+ ]
+ cinout+=2
+ENDIF
+=0
+
+DEFFNbin
+ bins(cbin)=P%
+ P%+=4*cinout
+ O%+=4*cinout
+ totbin+=cinout
+ cinout=0
+ cbin+=1
+ IF cbin>64 THEN ERROR 17," ### ABORT : too many bins"
+ IF PASS=PASStwo AND NOT(okinout) THEN PRINT" ### WARNING : no endinout ctrl"
+=0
+
+DEFPROCendinout
+IF cinout<>0 THEN ERROR 17," ### ABORT : end bin missing"
+okinout=TRUE
+IF PASS=PASSone THEN PRINT " ### NOTE :"cbin" bins"
+IF PASS=PASSone THEN PRINT " ### NOTE :"4*totbin" bytes for bins"
+IF PASS=PASSone AND ok_OP AND O%<>P% THEN PRINT " ### NOTE : O%<>P%"
+IF PASS=PASSone THEN PRINT " ### PROGRAM LENGTH : "P%-stART%," = Kb "INT((P%-stART%)/1024)
+IF PASS=PASStwo THEN PROCprot_new_addr_code
+
+ENDPROC
+
+DEFFNload(F$)
+IF PASS=PASStwo THEN
+ SYS "OS_File",&FF,F$,O%,0 TO ,,,,file_len%  :REM load
+ELSE
+ SYS "OS_File",&05,F$ TO ,,,,file_len%       :REM just read length
+ENDIF
+ P%+=file_len%:P%+=(4-(P% MOD 4)) MOD 4
+ O%+=file_len%:O%+=(4-(O% MOD 4)) MOD 4
+=0
+
+DEFFNtext(S$,max_len%)  :REM big string unique => list of small strings
+
+PROCconvert_str(S$)
+
+set_text_addr% =O%
+set_text_value%=0
+text_len%=LEN(S$)
+text_len_count%=0
+[OPT PASS
+ EQUB 0     ; viendra setter cette value apres les calculs
+]
+REPEAT
+
+ WHILE LEFT$(S$,1)=" "
+  S$=RIGHT$(S$,LEN(S$)-1)
+  text_len%-=1
+ ENDWHILE
+
+ sub_string_pos%=LEN(S$)
+
+ IF sub_string_pos%>max_len% THEN
+  sub_string_pos%=max_len%+1
+  WHILE MID$(S$,sub_string_pos%,1)<>" "
+   sub_string_pos%-=1
+  ENDWHILE
+  IF sub_string_pos%>max_len% THEN sub_string_pos%=max_len%
+ ENDIF
+
+ WHILE MID$(S$,sub_string_pos%,1)=" "
+  sub_string_pos%-=1
+ ENDWHILE
+
+[OPT PASS
+ EQUS MID$(S$,1,sub_string_pos%)+CHR$13
+]
+ text_len_count%+=sub_string_pos%
+ S$=RIGHT$(S$,LEN(S$)-sub_string_pos%)
+ set_text_value%+=1
+UNTIL text_len%=text_len_count%
+ ?set_text_addr%=set_text_value%
+[OPT PASS
+ ALIGN
+]
+=0
+
+DEFFNstring(S$)
+[OPT PASS
+EQUS S$+CHR$13
+ALIGN
+]
+=0
+
+DEFFNtotstring(S$,l%)
+ S$+=CHR$13
+ IF LEN(S$)>l% THEN ERROR 1," ### ERROR in FNtotstring"
+[OPT PASS
+ EQUS S$
+ FNram(l%-LEN(S$))
+]
+=0
+
+DEFPROCconvert_str(RETURN S$)
+IF PASS=PASStwo THEN
+FOR thr%=1 TO LEN(S$)
+ CASE MID$(S$,thr%,1) OF
+  WHEN "0","1","2","3","4","5","6","7","8","9":MID$(S$,thr%)=CHR$(ASC(MID$(S$,thr%,1))-ASC("0")+ASC("["))
+  WHEN ".":MID$(S$,thr%)="f"
+  WHEN ":":MID$(S$,thr%)="g"
+  WHEN "!":MID$(S$,thr%)="h"
+  WHEN "?":MID$(S$,thr%)="j"
+  WHEN "-":MID$(S$,thr%)="k"
+  WHEN "%":MID$(S$,thr%)="l"
+ ENDCASE
+NEXT
+ENDIF
+ENDPROC
+
+DEFFNdivide_routine
+[OPT PASS
+
+.divide ; R12=(R1/R2)*65536            ; condition R1>=0,R2>0
+ MOV R12,#0
+ MOV R0,#1<<27
+.divide_loop
+ MOVS R1,R1,LSL#1
+ CMPCC R1,R2,LSL#12
+ SUBCS R1,R1,R2,LSL#12
+ ORRCS R12,R12,R0
+
+ MOV R0,R0,LSR#1
+ CMP R0,#1<<4:BNE divide_loop
+
+MOVS PC,R14
+]
+=0
+
+DEFFNbeep(Sample_num%,Pitch%)
+[OPT PASS
+ MOV R1,#Sample_num%
+ MOV R2,#Pitch%
+ SWI "Sou_MakeSample"
+]
+=0
+
+DEFFNmouse
+[OPT PASS
+ SWI "OS_Mouse"
+]
+=0

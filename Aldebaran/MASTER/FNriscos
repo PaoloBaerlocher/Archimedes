@@ -1,0 +1,789 @@
+REM >MASTER.FNriscos
+END
+__________________________________________________________________________
+
+DEFFNriscos
+[OPT PASS
+
+.q2%
+ EQUD -1
+ EQUD 0
+ EQUD 0
+ EQUD 56
+ EQUD 96
+ EQUD %10000000001010
+ FNstring("!Aldebaran")
+
+.menu_block
+ FNstring("Aldebaran")
+ EQUB 7
+ EQUB 2
+ EQUB 7
+ EQUB 0
+ EQUD 16*9+4
+ EQUD 44
+ EQUD 0
+  FNmenu(&00, 0,17+(7<<24),"Info     ")
+  FNmenu(&00, 0,17+(7<<24),"Player   ")
+  FNmenu(&00, 0,17+(7<<24),"Options  ")
+  FNmenu(&00, 0,17+(7<<24),"Save     ")
+  FNmenu(&00,-1,17+(7<<24),"Restart  ")
+  FNmenu(&80,-1,17+(7<<24),"Quit     ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.exit_app
+ LDR R1,taskid%
+ SWI "Wimp_CloseDown"
+ SWI "OS_Exit"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.filetype        EQUD &C88
+.taskid%         EQUD 0
+.info_handle     EQUD 0
+.save_handle     EQUD 0
+.play_handle     EQUD 0
+.opt_handle      EQUD 0
+.wimp_info       FNstring("info"+CHR$13+"         ")
+.wimp_save       FNstring("save"+CHR$13+"         ")
+.wimp_play       FNstring("player"+CHR$13+"       ")
+.wimp_opt        FNstring("pref"+CHR$13+"         ")
+.my_template     FNstring("<Alde$Dir>.Templates")
+.wimp_init_value EQUD &4B534154
+.mytaskname      FNstring("Aldebaran")
+.samples_file    FNstring("<Alde$Dir>.samples")
+.save_name       EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.wimper
+
+ MOV R0,#&FF
+ ADR R1,samples_file
+ MOV R2,#Divis
+ MOV R3,#0
+ SWI "OS_File"             ; load...
+
+ FNadr(0,Divis)            ; ...and decrunch samples
+ MOV R1,#myScape+48*1024
+ SUB R2,R1,#20*1024
+ SWI "LZWD_Decompress"
+
+ BL Init_Game
+
+ MOV R0,#200
+ LDR R1,wimp_init_value
+ ADR R2,mytaskname
+ SWI "Wimp_Initialise"
+ STR R1,taskid%
+                                    ; INIT TEMPLATES
+ ADR R1,my_template
+ SWI "Wimp_OpenTemplate"
+
+ FNadr(2,indir_buffer)
+
+ FNload_template(wimp_info)   ; INFO window
+
+ FNadr(1,user_buffer)
+ SWI "Wimp_CreateWindow"
+ STR R0,info_handle
+
+ FNload_template(wimp_save)   ; SAVE window
+
+ FNadr(1,user_buffer)
+ SWI "Wimp_CreateWindow"
+ STR R0,save_handle
+ FNadr(1,user_buffer)
+ STR R0,[R1]
+ MOV R0,#1 : STR R0,[R1,#4]          ; 1 is writable icon
+ SWI "Wimp_GetIconState"
+ LDR R0,[R1,#28]
+ STR R0,save_name
+
+ FNload_template(wimp_play)   ; PLAY window
+
+ FNadr(1,user_buffer)
+ SWI "Wimp_CreateWindow"
+ STR R0,play_handle
+
+ FNload_template(wimp_opt)    ; OPT window
+
+ FNadr(1,user_buffer)
+ SWI "Wimp_CreateWindow"
+ STR R0,opt_handle
+
+ SWI "Wimp_CloseTemplate"
+
+.cs_1begin
+ SWI "OS_ReadMonotonicTime"
+ FNstr(0,1,prot_genesis_time)
+.cs_1end
+
+ MOV R0,#1              ; Bar sun
+ ADR R1,q2%
+ SWI "Wimp_CreateIcon"
+
+ BL set_options
+
+ SWI "OS_GetEnv"        ; double-click?
+ ADD R1,R0,#22
+ LDRB R2,[R1,#-1]
+ LDRB R3,[R1,#00]
+  CMP R2,#13:CMPGT R3,#13:BLE polly
+B load_now_and_set
+
+.open_menu
+
+ LDR R0,info_handle
+ STR R0,menu_block+32
+ LDR R0,play_handle
+ STR R0,menu_block+32+24
+ LDR R0,opt_handle
+ STR R0,menu_block+32+24*2
+ LDR R0,save_handle
+ STR R0,menu_block+32+24*3
+
+ LDR R2,[R1,#0]    ; load x mouse
+ SUB R2,R2,#64
+ ADR R1,menu_block
+ MOV R3,#228+44+44+44
+ SWI "Wimp_CreateMenu"
+
+ BL compile_windows
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.polly
+
+ MOV R0,#0    ; mask
+ FNadr(1,user_buffer)
+ SWI "Wimp_Poll"
+
+ CMP R0,#1:BEQ redraw_window
+
+ CMP R0,#2:SWIEQ "Wimp_OpenWindow":BEQ polly
+
+ CMP R0,#7:BEQ save_ack
+
+ CMP R0,#17:CMPNE R0,#18:BEQ receive
+
+ CMP R0,#8:BNE no_key_pressed
+
+ LDR R3,[R1,#00]  ; = window handle
+ LDR R4,save_handle
+ CMP R3,R4
+ LDREQ R3,[R1,#24]
+ CMPEQ R3,#13:BEQ OK_clicked
+
+.no_key_pressed
+ CMP R0,#6:BNE no_mouse
+ LDR R2,[R1,#8]    ; button status
+ LDR R3,[R1,#12]   ; window handle (TEST if not in a window)
+ LDR R4,info_handle
+ LDR R5,save_handle
+ LDR R6,opt_handle
+ LDR R7,play_handle
+
+ CMP R3,R4:CMPNE R3,R5:CMPNE R3,R6:CMPNE R3,R7:BEQ no_bar
+
+ CMP R2,#2   : BEQ open_menu ; test if menu selected
+ CMP R2,#4   : BEQ start_game
+B polly
+
+.no_bar
+ CMP R3,R5   : BEQ click_savebox
+
+ CMP R3,R4
+  CMPNE R3,R7
+   STREQ R3,close_block
+   FNsetflag("EQ")
+   FNadr(1,close_block)
+   SWIEQ "Wimp_CloseWindow"
+   MVNEQ R1,#0
+   SWIEQ "Wimp_CreateMenu"  ; close all menus
+B no_mouse
+
+.click_savebox
+ CMP R2,#&40 : BEQ dragging
+
+ ADR R1,user_buffer
+ STR R5,[R1,#0]
+ MOV R2,#2        ; "OK" icon
+ STR R2,[R1,#4]
+ SWI "Wimp_GetIconState"
+ LDR R1,[R1,#8+16]
+ TST R1,#1<<21:BNE OK_clicked
+
+B polly
+
+.dragging
+   ADR R0,getmodeinfo
+   ADD R1,R0,#(5*4)
+   SWI "OS_ReadVduVariables"
+   LDR R2,[R1,#8] : ADD R2,R2,#1 : LDR R3,[R1,#0] : MOV R10,R2,LSL R3
+   LDR R2,[R1,#12]: ADD R2,R2,#1 : LDR R3,[R1,#4] : MOV R11,R2,LSL R3
+   ADR R1,user_buffer
+   LDR R0,save_handle : STR R0,[R1] : SWI "Wimp_GetWindowState"
+   LDR R2,[R1,#4] : LDR R3,[R1,#20] : SUB R8,R2,R3
+   LDR R2,[R1,#16]: LDR R3,[R1,#24] : SUB R9,R2,R3
+   MOV R0,#3 : STR R0,[R1,#4] : SWI "Wimp_GetIconState"
+
+   LDR R0,save_handle : STR R0,[R1,#40]
+   MOV R0,#5          : STR R0,[R1,#44]
+   LDR R0,[R1,#8] : ADD R0,R0,R8 : STR R0,[R1,#48]
+   LDR R0,[R1,#12]: ADD R0,R0,R9 : STR R0,[R1,#52]
+   LDR R0,[R1,#16]: ADD R0,R0,R8 : STR R0,[R1,#56]
+   LDR R0,[R1,#20]: ADD R0,R0,R9 : STR R0,[R1,#60]
+   MOV R6,R1 : SWI "OS_Mouse"
+   LDR R3,[R6,#48] : SUB R3,R3,R0 : STR R3,[R6,#64]
+   LDR R3,[R6,#52] : SUB R3,R3,R1 : STR R3,[R6,#68]
+   LDR R3,[R6,#56] : ADD R3,R3,R10 : SUB R3,R3,R0 : STR R3,[R6,#72]
+   LDR R3,[R6,#60] : ADD R3,R3,R11 : SUB R3,R3,R1 : STR R3,[R6,#76]
+   ADD R1,R6,#40 : SWI "Wimp_DragBox"
+B polly
+
+.getmodeinfo
+ EQUD 4 : EQUD 5 : EQUD 11 : EQUD 12 : EQUD -1
+ EQUD 0 : EQUD 0 : EQUD 0 : EQUD 0 : EQUD 0
+
+.no_mouse
+ CMP R0,#9:LDREQ R2,[R1,#0]:CMPEQ R2,#5:BEQ exit_app  ; quit selected
+ CMP R0,#9:LDREQ R2,[R1,#0]:CMPEQ R2,#4               ; restart
+                             BLEQ Init_Game
+B polly
+
+.redraw_window
+
+SWI "Wimp_RedrawWindow"
+.loop_redraw_window
+ CMP R0,#0:BEQ polly
+ SWI "Wimp_BorderWindow"
+ SWI "Wimp_GetRectangle"
+B loop_redraw_window
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.save_ack
+
+ ADR R1,user_buffer
+ SWI "Wimp_GetPointerInfo"
+ LDR R0,[R1]     : STR R0,[R1,#28]
+ LDR R0,[R1,#4]  : STR R0,[R1,#32]
+ LDR R0,[R1,#12] : STR R0,[R1,#20]
+ LDR R2,save_handle : CMP R0,R2 : BEQ polly ; dropped on my window
+ LDR R0,[R1,#16] : STR R0,[R1,#24]
+ MOV R0,#0 : STR R0,[R1,#12] : MOV R0,#1 : STR R0,[R1,#16]
+ MOV R0,#0 : STR R0,[R1,#36] : LDR R0,filetype : STR R0,[R1,#40]
+
+ LDR R5,save_name      ; pathname pointer
+ MOV R6,R5
+
+.loop_skip_path_1
+ LDRB R3,[R5],#1
+ CMP R3,#13:BGT loop_skip_path_1
+ SUB R5,R5,#2
+.loop_skip_path_2
+ CMP R5,R6
+ LDRB R3,[R5],#-1
+ CMPPL R3,#48:BPL loop_skip_path_2
+ ADD R5,R5,#2
+
+ MOV R4,#44            ; len+44
+ .loop_rd1
+   LDRB R6,[R5],#1
+   STRB R6,[R1,R4]
+   CMP R6,#13
+ ADDGT R4,R4,#1
+ BGT loop_rd1
+ MOV R0,#0 : STRB R0,[R1,R4]
+
+ CMP R4,#44 : BEQ polly  ; empty string!
+
+ ADD R4,R4,#4 : BIC R4,R4,#3 : STR R4,[R1]
+
+ MOV R0,#17 : LDR R2,[R1,#20] : LDR R3,[R1,#24] : SWI "Wimp_SendMessage"
+
+B polly
+
+.OK_clicked
+ LDR R1,save_name
+B save_file_now
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.receive
+ LDR R2,[R1,#16]
+ CMP R2,#0 : BEQ exit_app
+ CMP R2,#2 : BEQ save_now
+ CMP R2,#3 : BEQ load_now
+B polly
+
+.save_now
+ LDR R0,[R1,#36] : CMN R0,#1 : BEQ end_of_receive
+ ADD R1,R1,#44
+
+.save_file_now
+ STR R1,whole_pathname
+ BL encode_datasave_block
+
+ MOV R0,#&0A            ; SAVE FILE
+ LDR R2,filetype
+ FNadr(4,start_mainbuffer)
+ FNldr(5,saveblock_end)
+ SWI "XOS_File"
+ BVS end_of_receive     ; error?
+
+ ADR R1,user_buffer      ; write whole pathname in save window
+ FNldr(0,save_handle)
+ STR R0,[R1,#0]
+ MOV R0,#1
+ STR R0,[R1,#4]
+ SWI "Wimp_GetIconState"
+ LDR R0,[R1,#28]
+ LDR R1,whole_pathname
+.loop_copy_pathname
+ LDRB R2,[R1],#1
+ STRB R2,[R0],#1
+ CMP R2,#13:BGT loop_copy_pathname
+
+ LDR R1,save_handle
+ STR R1,close_block
+ ADR R1,close_block
+ SWI "Wimp_CloseWindow"
+
+ MVN R1,#0
+ SWI "Wimp_CreateMenu"  ; close all menus
+
+.end_of_receive
+B polly
+
+.load_now
+ LDR R2,[R1,#40]  ; check file type
+ LDR R3,filetype
+ CMP R2,R3:BNE exit_load_file
+ ADD R1,R1,#44
+
+.load_now_and_set
+
+ MOV R12,R1
+ FNadr(1,user_buffer)
+ LDR R0,save_handle
+ MOV R2,#1
+ STMIA R1,{R0,R2}
+ SWI "Wimp_GetIconState"
+ LDR R0,[R1,#28]
+ MOV R1,R12
+.loop_copy_pathname_
+ LDRB R2,[R1],#1
+ STRB R2,[R0],#1
+ CMP R2,#13:BGT loop_copy_pathname_
+ MOV R1,R12
+
+  MOV R0,#&FF
+  FNadr(2,start_mainbuffer)
+  MOV R3,#0
+  SWI "OS_File"
+
+  BL Init_Game
+  BL decode_datasave_block
+  BL set_options
+B polly
+
+.exit_load_file
+
+B polly
+
+.whole_pathname EQUD 0
+.close_block    EQUD 0
+                EQUD 0
+.user_buffer    FNram(1024+512)
+.indir_buffer   FNram(1024+512)
+.endindir_buffer
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.set_options
+FNin
+
+ MOV R3,#2              ; sound icon
+ LDR R0,sound_status
+ CMP R0,#0
+  BL set_opt_instance
+
+ MOV R3,#3              ; FL ctrl icon
+ FNldr(0,FL_ctrl_instruction)
+ MVN R0,R0
+ TST R0,#1<<28
+  BL set_opt_instance
+
+ MOV R3,#4              ; tunnel icon
+ LDR R0,tunnel_status
+ CMP R0,#0
+  BL set_opt_instance
+
+FNout
+
+.set_opt_instance       ; according to Z flag
+ FNadr(1,user_buffer)
+ FNldr(2,opt_handle)
+ MOVEQ R4,#1<<21
+ MOVNE R4,#0
+ MOV R5,#1<<21
+ STMIA R1,{R2-R5}
+ SWI "Wimp_SetIconState"
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.compile_windows
+FNin
+ FNadr(1,user_buffer)
+ FNldr(0,play_handle)
+ STR R0,[R1,#0]
+ MOV R0,#3
+ BL icon_address
+ ADD R1,R1,#10             ; skip the COMMANDER prefix
+
+ FNldr(5,save_name)
+ MOV R6,R5
+.loop_skip_path_3
+ LDRB R3,[R5],#1
+ CMP R3,#13:BGT loop_skip_path_3
+ SUB R5,R5,#2
+.loop_skip_path_4
+ CMP R5,R6
+ LDRB R3,[R5],#-1
+ CMPPL R3,#48:BPL loop_skip_path_4
+ ADD R5,R5,#2
+
+ MOV R6,#10
+.loop_copy_path            ; write professor name
+ SUBS R6,R6,#1
+ LDRB R3,[R5],#1
+ STRB R3,[R1],#1
+ CMPGT R3,#13:BGT loop_copy_path
+
+ MOV R0,#4:BL icon_address ; address for planet name
+ ADD R1,R1,#6              ; skip "is on" prefix
+
+ FNldr(2,curr_planet)      ; write planet name
+ FNadr(3,planetnames_str)
+ ADD R3,R3,R2,LSL#4
+.next_wr_char
+ LDRB R4,[R3],#1:STRB R4,[R1],#1
+ CMP R4,#13:BNE next_wr_char
+
+ MOV R0,#9:BL icon_address ; address for time name
+
+ FNldr(2,frozen_time)      ; write time
+
+  FNldr(3,time_unit_1):BL Ascii_base_counter
+   STRB R0,[R1,#3]
+  FNldr(3,time_unit_2):BL Ascii_base_counter
+   STRB R0,[R1,#4]
+  FNldr(3,time_unit_3):BL Ascii_base_counter
+   STRB R0,[R1,#6]
+  FNldr(3,time_unit_4):BL Ascii_base_counter
+   STRB R0,[R1,#7]
+  MOV R3,#60*10*2     :BL Ascii_base_counter
+   STRB R0,[R1,#9]
+  MOV R3,#60*2        :BL Ascii_base_counter
+   STRB R0,[R1,#10]
+  MOV R3,#20          :BL Ascii_base_counter
+   STRB R0,[R1,#12]
+  MOV R3,#2           :BL Ascii_base_counter
+   STRB R0,[R1,#13]
+
+ MOV R0,#7:BL icon_address ; address for SUN %
+
+ FNldr(2,SUN_radius)
+ MOV R2,R2,ASR#16
+
+  MOV R3,#100         :BL Ascii_base_counter
+   CMP R0,#ASC("0"):MOVEQ R0,#ASC(" ")
+   STRB R0,[R1,#0]
+  MOV R3,#10          :BL Ascii_base_counter
+   CMPEQ R0,#ASC("0"):MOVEQ R0,#ASC(" ")
+   STRB R0,[R1,#1]
+  MOV R3,#1           :BL Ascii_base_counter
+   STRB R0,[R1,#2]
+
+ MOV R0,#8:BL icon_address ; address for ALGOL %
+
+ FNldr(2,ALGOL_power)
+
+  MOV R3,#100         :BL Ascii_base_counter
+   CMP R0,#ASC("0"):MOVEQ R0,#ASC(" ")
+   STRB R0,[R1,#0]
+  MOV R3,#10          :BL Ascii_base_counter
+   CMPEQ R0,#ASC("0"):MOVEQ R0,#ASC(" ")
+   STRB R0,[R1,#1]
+  MOV R3,#1           :BL Ascii_base_counter
+   STRB R0,[R1,#2]
+
+ MOV R0,#10:BL icon_address   ; address for ROCKETS
+
+ LDR R2,algol_missile_ready
+ CMP R2,#0
+  MOVEQ R0,#ASC("N"):STREQB R0,[R1,#0]
+  MOVEQ R0,#ASC("O"):STREQB R0,[R1,#1]
+  FNexitEQ
+
+  MOV R3,#10          :BL Ascii_base_counter
+   CMP R0,#ASC("0"):MOVEQ R0,#ASC(" ")
+   STRB R0,[R1,#0]
+  MOV R3,#1           :BL Ascii_base_counter
+   STRB R0,[R1,#1]
+
+FNout
+
+.icon_address              ; input R0=icon #
+ FNadr(1,user_buffer)
+ STR R0,[R1,#4]
+ SWI "Wimp_GetIconState"
+ LDR R1,[R1,#28]
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;END OF WIMP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.intromusic_file FNstring("<Alde$Dir>.intro_song")
+
+.start_game
+ FNexec_options
+
+ FNreadmode
+ FNaldemode
+
+ BL Init_StartScr
+ BL SetScreen
+ BL ViewScreen
+ BL mouse_colors
+ BL pointer_definitions
+ BL mouse_normal_box
+
+ LDR R14,start_game_var
+ CMN R14,#1
+ BNE continue_game
+  MOV R0,#0:STR R0,start_game_var
+  FNload_intromusic
+  BL begin_animation
+  FNkill_intromusic
+  BL load_fractaland
+  BL MakeDivs
+
+.continue_game
+ MOV R0,#myScape+48*1024
+ LDR R1,sound_status
+ SWI "Sou_InitSample"
+
+ BL init_rnd_values
+ BL unfreeze_time
+ B enter_brain        ; enter ALDEBARAN
+
+.return_to_DESKTOP
+ BL freeze_time
+
+ SWI "Sou_KillSample"
+
+ FNsetmode
+B polly
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.cs_3begin
+
+.Init_Game
+FNin
+ MVN R0,#0
+ STR R0,start_game_var
+
+ MOV R0,#0
+ FNstr(0,14,prot_curr_pos)    ; pos in entered string
+ MOV R0,#13
+ FNstr(0,14,prot_entry_str)   ; reset entry string
+
+ BL mail_reset
+
+ BL init_simul_datas
+ BL init_FL_datas
+ BL init_SUN_datas
+ BL init_planets_movement
+ BL init_sun_diagram
+ BL init_game_variables
+ BL init_rawmat_matrix
+ BL init_already_executed_table
+ BL set_pos_string            ; CHECK SUM!
+ BL reset_time
+ BL freeze_time
+
+ MOV R0,#3                    ; welcome commander
+ BL mail_send
+
+FNout
+
+.cs_3end
+
+FNbin
+
+;;;;;;;;;;;;;;;;;
+;MAIN VARIABLES ;
+;;;;;;;;;;;;;;;;;
+
+.riscos_mode    EQUD 00
+.start_game_var EQUD -1 ; -1=start game , 0 otherwise
+.sound_status   EQUD -1 ; 0=off   ; -1=on
+.tunnel_status  EQUD -1 ; 0=off   ; -1=on
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\GAME VARIABLES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.invaders_scanner_card EQUD 0    ; 0=no card installed
+.algol_missile_ready   EQUD 0    ; 0=not ready (otherwise instances #)
+.algol_diamonds_number EQUD 3    ; 3,2,1 or 0
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.init_game_variables
+ MOV R0,#0
+  STR R0,invaders_scanner_card
+  STR R0,algol_missile_ready
+ MOV R0,#3
+  STR R0,algol_diamonds_number
+ MOV R0,#1
+  FNstr(0,1,curr_planet)         ; start on NUBIUM
+MOVS PC,R14
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNreadmode
+[OPT PASS
+ MOV R0,#&87
+ SWI "OS_Byte"
+ STR R2,riscos_mode
+]
+=0
+
+DEFFNsetmode
+[OPT PASS
+ LDR R0,riscos_mode
+ SWI "Wimp_SetMode"
+ SWI "OS_RestoreCursors"
+]
+=0
+
+DEFFNaldemode
+[OPT PASS
+ SWI 256+22:SWI 256+15  ; mode 15
+ SWI 256+22:SWI 256+13  ; mode 13
+ SWI "OS_RemoveCursors"
+]
+=0
+
+DEFFNload_intromusic
+[OPT PASS
+
+ LDR R0,sound_status
+ CMP R0,#0:BEQ no_intromusic
+
+ BL SwapScreens
+
+ MOV R0,#&FF
+ ADR R1,intromusic_file
+ FNldr(2,BASESCR)
+ MOV R3,#0
+ SWI "OS_File"
+
+ FNldr(0,BASESCR)
+ FNadr(1,start_mainbuffer)
+ ADD R2,R1,#120*1024
+ SWI "LZWD_Decompress"
+ FNadr(0,start_mainbuffer)
+ SWI "Sou_InitMusic"
+
+ BL SwapScreens
+
+.no_intromusic
+
+]
+=0
+
+DEFFNkill_intromusic
+[OPT PASS
+
+ LDR R0,sound_status
+ CMP R0,#0
+ SWINE "Sou_KillMusic"
+]
+=0
+
+DEFFNmenu(A%,B%,C%,S$)
+PZ%=P%
+OZ%=O%
+[OPT PASS
+ EQUD A%
+ EQUD B%
+ EQUD C%
+ EQUS S$+CHR$13
+]
+P%=PZ%+24
+O%=OZ%+24
+=0
+
+DEFFNload_template(wind_name%)
+[OPT PASS
+ FNadr(1,user_buffer)
+ ADD R3,R1,#endindir_buffer-user_buffer
+ MVN R4,#0
+ ADR R5,wind_name%
+ MOV R6,#0
+ SWI "Wimp_LoadTemplate"
+]
+=0
+
+DEFFNexec_options
+[OPT PASS
+ FNadr(1,user_buffer)
+
+ FNldr(0,opt_handle)
+ STR R0,[R1,#00]
+ MOV R0,#2              ; sound icon
+ STR R0,[R1,#04]
+ SWI "Wimp_GetIconState"
+ LDR R0,[R1,#8+16]
+ TST R0,#1<<21
+  MOVNE R0,#0
+  MVNEQ R0,#0
+  STR R0,sound_status
+
+ FNldr(0,opt_handle)
+ STR R0,[R1,#00]
+ MOV R0,#4              ; tunnel icon
+ STR R0,[R1,#04]
+ SWI "Wimp_GetIconState"
+ LDR R0,[R1,#8+16]
+ TST R0,#1<<21
+  MOVNE R0,#0
+  MVNEQ R0,#0
+  STR R0,tunnel_status
+
+ FNldr(0,opt_handle)
+ STR R0,[R1,#00]
+ MOV R0,#3              ; ctrl icon
+ STR R0,[R1,#04]
+ SWI "Wimp_GetIconState"
+ LDR R0,[R1,#8+16]
+ TST R0,#1<<21
+  LDR R0,[PC,#4]
+  ADDNE R0,R0,#1<<28    ; modify instruction "cc flag" AL >> NV
+  MOV PC,PC
+  RSB R1,R1,#0
+  FNstr(0,1,FL_ctrl_instruction)
+
+]
+=0

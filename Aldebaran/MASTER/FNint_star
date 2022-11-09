@@ -1,0 +1,122 @@
+REM >MASTER.FNint_star
+_________________________________________________________________________
+
+DEFFNinter_stars
+[OPT PASS
+
+.threeD_stars
+]
+FOR z%=0 TO 159
+[OPT PASS : EQUD 2.3*256*10/(10+z%) : ]
+NEXT
+[OPT PASS
+
+.claimInterrupt
+ LDR R0,Interrupt_STATUS
+ RSBS R0,R0,#1:MOVEQ PC,R14
+ STR R0,Interrupt_STATUS
+
+ MOV R0,#&10
+ ADR R1,starSky
+ MOV R2,#0
+ SWI "OS_Claim"
+
+ MOV R0,#14
+ MOV R1,#4
+ SWI "OS_Byte"
+
+MOV R15,R14
+
+.stopInterrupt
+ LDR R0,Interrupt_STATUS
+ RSBS R0,R0,#1:MOVNE PC,R14
+ STR R0,Interrupt_STATUS
+
+ MOV R0,#13
+ MOV R1,#4
+ SWI "OS_Byte"
+
+ MOV R0,#&10
+ ADR R1,starSky
+ MOV R2,#0
+ SWI "OS_Release"
+
+MOV R15,R14
+
+.Interrupt_STATUS EQUD 0   ; 0 = disabled
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.starSpeed EQUD 2
+.starAbs   EQUD 0
+
+.starSky
+CMP R0,#4:MOVNES PC,R14
+
+ADR R0,temp_memo:STMIA R0,{R1-R11,R14} ; save all regs
+
+BL SwapScreens
+
+LDR R0,starSpeed:LDR R9,starAbs
+SUBS R9,R9,R0:ADDMI R9,R9,#160:STR R9,starAbs
+
+ADR R0,starData
+FNadr(2,threeD_stars)
+ADR R7,starcol
+MOV R8,#0               ; erased star col
+FNldr(11,BASESCR)       ; je dessine les stars sur l'ecran visible
+
+MOV R1,#40
+.stLoop
+
+LDMIA R0!,{R4,R5,R10}
+
+CMP R10,#65*1024:STRCCB R8,[R11,R10]   ; and erase star
+
+SUBS R3,R9,R1,LSL#2:ADDMI R3,R3,#160 ; move star
+
+LDR R6,[R2,R3,LSL#2]       ;load perspective
+MUL R5,R6,R5:ADD R5,R5,#128<<8:CMP R5,#208<<8:STRCS R11,[R0,#-4]:BCS noS2
+MUL R4,R6,R4:ADD R4,R4,#160<<8:CMP R4,#320<<8:STRCS R11,[R0,#-4]:BCS noS2
+MOV R5,R5,ASR#8                             ;;;
+                                             ; store a big value (R11)
+ADD R4,R11,R4,ASR#8                          ; to say   "no star to erase"
+ADD R4,R4,R5,LSL#8                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+LDRB R6,[R4,R5,LSL#6]!     ; plot star
+
+CMP R6,#0:LDREQB R6,[R7,R3,ASR#4]:STREQB R6,[R4],-R11
+
+STREQ R4,[R0,#-4]:STRNE R11,[R0,#-4] ; save star position for next frame
+
+.noS2
+SUBS R1,R1,#1:BNE stLoop
+
+BL ViewScreen_OS
+BL SwapScreens
+
+ADR R0,temp_memo:LDMIA R0,{R1-R11,PC} ;restore regs
+
+.starcol
+EQUB 255:EQUB 254:EQUB 253:EQUB 252
+EQUB 211:EQUB 210:EQUB 209:EQUB 208
+EQUB 47:EQUB 46:EQUB 45:EQUB 44
+
+.temp_memo
+EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0
+
+.starData
+]
+FOR star%=0TO 39
+REPEAT
+ xs=RND(400)-RND(400):ys=RND(400)-RND(400)
+UNTIL xs*xs+ys*ys>200*200
+[OPT PASS
+ EQUD xs
+ EQUD ys
+ EQUD -1
+]
+NEXT
+
+=0

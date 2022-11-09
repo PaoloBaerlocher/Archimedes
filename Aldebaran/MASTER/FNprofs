@@ -1,0 +1,1376 @@
+REM >MASTER.FNprofs
+END
+________________________________________________________________________
+
+Il existe 3 categories d'objets:
+
+  professeurs
+
+  objets   (ideas)
+
+  matieres (rawmat)
+_____________________________________________________
+
+DEFFNprofs
+
+ REM notes% are in [0..9]
+
+ REM notes% are given in
+  REM : computer science
+  REM : electronics
+  REM : mecanics
+  REM : astrophysics
+
+ REM where% (planet #) is in [1..12] or 0 if in mainship
+ REM if bit 31 is set then the object is selected
+
+ REM to set a professor DEAD,then put it on "paradise" planet (# 14)
+ REM to set a professor KIDNAPPED,new_where%=old_where%+16
+
+            : existant%   =0
+            : inexistant% =-1
+ none%  =0  : finished%   =+1
+              executable% =+2
+
+ prof_number%=0
+ idea_number%=0
+ rawm_number%=0
+
+ IF PASS=PASSone DIM raw_needed(8)
+                 raw_needed()=0
+
+ Type_num% =00
+ Data_ptr% =04
+ Notes%    =08
+ Needs%    =12
+ Idea_time%=00
+ Idea_type%=04
+ Idea_perc%=08
+ Idea_id%  =24
+ Idea_stat%=28
+
+[OPT PASS
+
+.PinarSrahlec FNprofessor(9,5,7,3,PS_data)
+.SuzyTzwerkyl FNprofessor(1,2,3,4,ST_data)
+.LiamMoons    FNprofessor(5,5,5,5,LM_data)
+.EithneMoige  FNprofessor(1,6,4,5,EM_data)
+.TheodoreFax  FNprofessor(4,7,2,8,TF_data)
+.GiovanniRoma FNprofessor(5,5,6,1,GR_data)
+.BjornTris    FNprofessor(3,6,7,6,BT_data)
+.NickMaionese FNprofessor(3,5,6,4,NM_data)
+.DiegoTorero  FNprofessor(5,8,1,3,DT_data)
+.XungThenBang FNprofessor(7,9,7,5,XT_data)
+.JanHundert   FNprofessor(4,2,9,6,JH_data)
+.GeorgyStroh  FNprofessor(4,3,5,9,GS_data)
+.AmosApple    FNprofessor(3,5,7,8,AA_data)
+.DeaEsmerald  FNprofessor(2,9,2,6,DE_data)
+.FabiennePins FNprofessor(3,1,6,3,FP_data)
+
+.idea_type_pointer   ; input R0=idea #
+ ADR R2,ideas_base
+ ADD R2,R2,R0,LSL#5  ; x7 words
+ SUB R2,R2,R0,LSL#2
+MOVS PC,R14
+
+;; WEAPON IDEAS
+;;;;;;;;;;;;;;;
+
+.ideas_base
+
+FNidea(4,7,4,0,       FNraw(Kreetzal,7),FNraw(Tecroxen,5),FNraw(Thortz,8),FNraw(Zorglon,9),PC_wea)
+FNidea(4,4,5,2,       FNraw(Breon,8),FNraw(Cloonex,6),FNraw(Shmartz,8),-1,LI_wea)
+FNidea(1,1,8,0,       FNraw(Kreetzal,14),FNraw(Thortz,5),-1,-1,SU_wea)
+FNidea(8,5,5,0, BraM, FNraw(Shmartz,16),FNraw(Tecroxen,5),-1,SR_wea)
+FNidea(3,8,5,5, Magn, FNraw(Kreetzal,15),-1,-1,MD_wea)
+FNidea(6,4,7,2, IntG, FNraw(Cosmium,5),FNraw(Shmartz,12),FNraw(Zorglon,2),TR_wea)
+FNidea(1,2,5,2, HigB, FNraw(Shmartz,16),FNraw(Breon,3),-1,AL_wea)
+FNidea(1,2,6,2,       FNraw(Shmartz,14),FNraw(Cosmium,6),-1,-1,GR_wea)
+FNidea(1,1,9,3, HigB, FNraw(Cloonex,3),FNraw(Zorglon,4),-1,GM_wea)
+FNidea(3,3,7,3, CorM, FNraw(Thortz,7),-1,-1,AC_wea)
+FNidea(0,0,4,4,       FNraw(Breon,9),FNraw(Cloonex,6),-1,-1,SB_wea)
+FNidea(2,8,3,3, BosA, FNraw(Tecroxen,7),-1,-1,ES_wea)
+FNidea(4,2,2,7, AlpM, FNraw(Cloonex,6),FNraw(Tecroxen,4),FNraw(Cosmium,4),MR_wea)
+FNidea(2,4,2,6, InpP, FNraw(Cosmium,4),FNraw(Zorglon,4),-1,AS_wea)
+FNidea(9,2,0,0, TelC, -1,-1,-1,CV_wea)
+FNidea(1,0,7,2, CloG, FNraw(Cloonex,10),-1,-1,DT_wea)
+
+;; PROTECT IDEAS
+;;;;;;;;;;;;;;;;
+
+FNidea(1,1,5,5, IntG, FNraw(Tecroxen,7),FNraw(Zorglon,5),-1,RS_pro)
+FNidea(1,1,4,7,       FNraw(Breon,7),FNraw(Cosmium,4),FNraw(Kreetzal,6),FNraw(Zorglon,7),VS_pro)
+FNidea(2,1,1,9, AlpM, FNraw(Cosmium,10),-1,-1,GI_pro)
+FNidea(4,3,3,4, WavF, FNraw(Tecroxen,7),FNraw(Thortz,4),-1,FS_pro)
+FNidea(2,2,2,6, MasA, FNraw(Thortz,5),-1,-1,GD_pro)
+FNidea(0,6,2,7, Magn, FNraw(Thortz,5),FNraw(Zorglon,10),-1,MR_pro)
+FNidea(3,0,1,3, VitG, FNraw(Shmartz,5),FNraw(Cloonex,8),-1,VB_pro)
+FNidea(1,0,2,4, CloG, FNraw(Cloonex,9),-1,-1,CF_pro)
+FNidea(3,4,4,6, InpP, FNraw(Zorglon,10),-1,-1,EA_pro)
+FNidea(6,8,1,5, LigP, FNraw(Tecroxen,8),-1,-1,LT_pro)
+FNidea(1,1,1,8, TauG, FNraw(Breon,5),-1,-1,PM_pro)
+FNidea(0,0,9,4,       FNraw(Breon,8),FNraw(Cosmium,5),FNraw(Thortz,5),-1,SH_pro)
+FNidea(4,7,5,3, InpP, FNraw(Shmartz,8),FNraw(Thortz,5),-1,EL_pro)
+FNidea(2,1,7,2,       FNraw(Cloonex,10),FNraw(Thortz,4),FNraw(Zorglon,6),-1,AE_pro)
+FNidea(1,1,2,9, MasA, FNraw(Cosmium,8),FNraw(Tecroxen,5),-1,BM_pro)
+FNidea(0,0,4,5,       FNraw(Breon,8),FNraw(Cosmium,5),FNraw(Shmartz,6),FNraw(Thortz,4),PS_pro)
+
+;; BUILDS IDEAS
+;;;;;;;;;;;;;;;;
+
+.DetR FNidea(2,4,5,0, FNraw(Cloonex,10),FNraw(Zorglon,5),-1,-1,RM_bui)
+.AlpM FNidea(7,7,2,0, FNraw(Tecroxen,5),FNraw(Zorglon,5),-1,-1,MC_bui)
+.BraM FNidea(6,8,1,1, FNraw(Tecroxen,10),FNraw(Breon,6),-1,-1,BM_bui)
+.CloG FNidea(2,3,6,3, FNraw(Kreetzal,7),-1,-1,-1,CG_bui)
+.LigP FNidea(2,7,2,0, FNraw(Shmartz,14),FNraw(Tecroxen,4),-1,-1,LS_bui)
+.IntG FNidea(3,1,7,5, FNraw(Breon,2),FNraw(Thortz,2),FNraw(Cosmium,2),-1,GY_bui)
+.HigB FNidea(0,4,4,2, FNraw(Shmartz,8),FNraw(Tecroxen,5),FNraw(Cloonex,2),FNraw(Zorglon,2),HD_bui)
+.CorM FNidea(0,0,6,4, FNraw(Cosmium,3),FNraw(Thortz,7),-1,-1,CM_bui)
+.TelC FNidea(3,3,1,6, FNraw(Kreetzal,10),-1,-1,-1,TC_bui)
+.Magn FNidea(1,4,2,8, FNraw(Tecroxen,3),FNraw(Thortz,5),-1,-1,MG_bui)
+.TauG FNidea(0,1,6,7, FNraw(Breon,15),FNraw(Zorglon,2),FNraw(Cloonex,2),-1,TG_bui)
+.VitG FNidea(0,0,3,4, FNraw(Kreetzal,3),FNraw(Zorglon,5),-1,-1,VP_bui)
+.WavF FNidea(0,2,6,7, FNraw(Cosmium,6) ,FNraw(Shmartz,9),-1,-1,WF_bui)
+.MasA FNidea(0,0,8,6, FNraw(Tecroxen,3),FNraw(Thortz,5),-1,-1,MA_bui)
+.BosA FNidea(1,4,2,7, FNraw(Cloonex,1),FNraw(Cosmium,1),FNraw(Thortz,1),FNraw(Zorglon,1),BA_bui)
+.InpP FNidea(3,5,4,6, FNraw(Breon,1),FNraw(Thortz,2),FNraw(Kreetzal,3),-1,IP_bui)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.Breon    FNrawmat(BR_dataraw)
+.Cloonex  FNrawmat(CL_dataraw)
+.Cosmium  FNrawmat(CO_dataraw)
+.Kreetzal FNrawmat(KR_dataraw)
+.Shmartz  FNrawmat(SH_dataraw)
+.Tecroxen FNrawmat(TE_dataraw)
+.Thortz   FNrawmat(TH_dataraw)
+.Zorglon  FNrawmat(ZO_dataraw)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.access_prof   ; INPUT R0=prof # ; OUTPUT R2=prof address
+ ADR R2,profs_row
+ ADD R2,R2,R0,LSL#4
+MOVS PC,R14
+
+.profs_row
+ FNprof_instance(PinarSrahlec,none%  ,0)  ; same order as types!
+ FNprof_instance(SuzyTzwerkyl,none%  ,0)
+ FNprof_instance(LiamMoons   ,none%  ,0)
+ FNprof_instance(EithneMoige ,none%  ,0)
+ FNprof_instance(TheodoreFax ,none%  ,0)
+ FNprof_instance(GiovanniRoma,none%  ,0)
+ FNprof_instance(BjornTris   ,none%  ,0)
+ FNprof_instance(NickMaionese,none%  ,0)
+ FNprof_instance(DiegoTorero ,none%  ,0)
+ FNprof_instance(XungThenBang,none%  ,0)
+ FNprof_instance(JanHundert  ,none%  ,0)
+ FNprof_instance(GeorgyStroh ,none%  ,0)
+ FNprof_instance(AmosApple   ,none%  ,0)
+ FNprof_instance(DeaEsmerald ,none%  ,0)
+ FNprof_instance(FabiennePins,none%  ,0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.activate_project ; project # R0 on planet # R12
+FNin
+ BL access_idea
+ FNexitEQ
+ CMP R0,#executable%:FNexitNE
+ LDR R0,[R1,#Idea_type%]
+ CMP R0,#33:FNexitCS
+
+  CMP R0,#4                      ; trying to activate FL weapon:
+   BPL activate_not_a_FL_weapon  ; only possible if on current planet!
+   FNldr(2,curr_planet)
+   CMP R2,R12:FNexitNE
+
+.activate_not_a_FL_weapon
+ MVN R2,#0
+ STR R2,[R1,#Idea_stat%]         ; status%=inexistant%
+ BL exec_idea
+ BL rebuild_all_stacks
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.rebuild_all_stacks
+FNin
+ MOV R12,#12
+.next_stack
+ BL rebuild_stack
+ SUBS R12,R12,#1
+ BGT next_stack
+FNout
+
+.rebuild_stack    ; input R12=planet #=[1..12]
+ ADR R0,ideas_row-32*4
+ ADD R0,R0,R12,LSL#5+2
+]
+ FOR test_inst%=0TO 2
+[OPT PASS
+ LDR R2,[R0,#Idea_stat%]
+ ADD R0,R0,#32
+ CMN R2,#1
+  LDMEQIA R0,{R3-R10}
+  STMEQDB R0,{R3-R10}
+  STREQ R2,[R0,#Idea_stat%]
+]
+NEXT
+[OPT PASS
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.find_free_idea         ; input R12=planet #=[1..12]
+                        ; output R1=pointer to instance or -1 if not found
+FNin
+ MOV R0,#0:BL access_idea:FNexitEQ
+ MOV R0,#1:BL access_idea:FNexitEQ
+ MOV R0,#2:BL access_idea:FNexitEQ
+ MOV R0,#3:BL access_idea:FNexitEQ
+ MVN R1,#0              ; not found
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.find_identifier_idea   ; input R12=planet #=[1..12]  ; R5=identifier
+                        ; output R1=pointer to instance or -1 if not found
+FNin
+MOV R0,#0:BL access_idea
+  MVNEQ R1,#0
+  LDRNE R14,[R1,#Idea_id%]
+  CMPNE R14,R5:FNexitEQ
+ MOV R0,#1:BL access_idea
+  MVNEQ R1,#0
+  LDRNE R14,[R1,#Idea_id%]
+  CMPNE R14,R5:FNexitEQ
+ MOV R0,#2:BL access_idea
+  MVNEQ R1,#0
+  LDRNE R14,[R1,#Idea_id%]
+  CMPNE R14,R5:FNexitEQ
+ MOV R0,#3:BL access_idea
+  MVNEQ R1,#0
+  LDRNE R14,[R1,#Idea_id%]
+  CMPNE R14,R5:FNexitEQ
+  MVN R1,#0             ; not found
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.access_idea      ; input R12=planet #=[1..12]
+                  ;        R0=idea position in stack =[0..3]
+                  ; output R1=pointer to idea # R0 & Z flag
+
+ ADR R1,ideas_row-32*4
+ ADD R1,R1,R12,LSL#5+2
+ ADD R1,R1,R0,LSL#5
+ LDR R0,[R1,#Idea_stat%]
+ CMN R0,#-inexistant%
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.ideas_on_planet  ; input R12=planet #=[1..12]
+                  ; output R2=ideas # =[0..4]
+ MOV R2,#0
+ ADR R1,ideas_row-32*4
+ ADD R1,R1,R12,LSL#5+2
+ LDR R3,[R1,#0*32+Idea_stat%]:CMN R3,#-inexistant%:ADDNE R2,R2,#1
+ LDR R3,[R1,#1*32+Idea_stat%]:CMN R3,#-inexistant%:ADDNE R2,R2,#1
+ LDR R3,[R1,#2*32+Idea_stat%]:CMN R3,#-inexistant%:ADDNE R2,R2,#1
+ LDR R3,[R1,#3*32+Idea_stat%]:CMN R3,#-inexistant%:ADDNE R2,R2,#1
+MOVS PC,R14
+
+.direct_access_idea  ; input R0=idea #=[0..47]
+ ADR R1,ideas_row
+ ADD R1,R1,R0,LSL#5
+MOVS PC,R14
+
+FNbin
+
+.ideas_row     ; 4 ideas on every planet        ; liste with base
+ FNidea_instance_row(0,inexistant%, 48)         ; on first instance
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.find_free_taurus_idea  ; output R1=pointer to instance or -1 if not found
+FNin
+ MOV R3,#0
+.find_free_taurus_idea_loop
+ MOV R0,R3:BL access_taurus_idea:FNexitEQ
+ ADD R3,R3,#1
+ CMP R3,#16:BNE find_free_taurus_idea_loop
+ MVN R1,#0              ; not found
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.access_taurus_idea     ; input R0=idea # = [0..15]
+ ADR R1,taurus_ideas_row
+ ADD R1,R1,R0,LSL#5
+ LDR R0,[R1,#Idea_stat%]
+ CMN R0,#-inexistant%
+MOV PC,R14
+
+.taurus_ideas_row
+ FNidea_instance_row(0,inexistant%, 16)
+
+.taurus_idea_number  EQUD 0  ; =[0..16]= # of projects in Taurus
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.taurus_load_instance   ; from FL to Taurus
+FNin                    ; input R1=pointer to existing instance in FL
+
+ MOV R2,R1
+ LDR R0,taurus_idea_number
+ CMP R0,#16:FNexitEQ    ; Taurus full
+ BL find_free_taurus_idea
+ FNmove_project
+
+ LDR R0,taurus_idea_number
+ ADD R0,R0,#1
+ STR R0,taurus_idea_number
+
+ FNdecr(0,14,FL_ideas_how_much)
+
+FNout
+
+.taurus_unload_instance ; from Taurus to FL
+FNin                    ; input R1=pointer to existing instance in Taurus
+
+ MOV R2,R1
+ BL find_free_FL_idea
+ FNexitNE               ; already 2 instances in FL...
+ FNmove_project
+
+ LDR R0,taurus_idea_number
+ SUB R0,R0,#1
+ STR R0,taurus_idea_number
+
+ FNincr(0,14,FL_ideas_how_much)
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.find_free_FL_idea      ; output R1=pointer to instance or -1 if not found
+FNin
+ MOV R0,#0:BL access_FL_idea:FNexitEQ
+ MOV R0,#1:BL access_FL_idea:FNexitEQ
+ MVN R1,#0              ; not found
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.access_FL_idea         ; input R0=idea # = [0..1]
+ ADR R1,FL_ideas_row
+ ADD R1,R1,R0,LSL#5
+ LDR R0,[R1,#Idea_stat%]
+ CMN R0,#-inexistant%
+MOV PC,R14
+
+.FL_ideas_row
+ FNidea_instance_row(0,inexistant%,  2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.rebuild_FL_stack
+ ADR R0,FL_ideas_row
+ LDR R2,[R0,#Idea_stat%]
+ ADD R0,R0,#32
+ CMN R2,#1
+  LDMEQIA R0,{R3-R10}
+  STMEQDB R0,{R3-R10}
+  STREQ R2,[R0,#Idea_stat%]
+MOVS PC,R14
+
+.load_instance_in_FL    ; input R1=pointer to existing instance in base
+FNin
+
+ MOV R2,R1
+ MOV R0,#0:BL access_FL_idea
+ MOVNE R0,#1:BLNE access_FL_idea:FNexitNE ; already 2 instances in FL...
+ FNmove_project
+
+ FNincr(0,14,FL_ideas_how_much)
+
+FNout
+
+.unload_instance_from_FL   ; input R1=pointer to existing instance in FL
+FNin
+
+ MOV R2,R1
+ FNldr(12,curr_planet)
+ BL find_free_idea
+ CMN R1,#1:FNexitEQ
+ FNmove_project
+
+ FNdecr(0,14,FL_ideas_how_much)
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.access_rawmat       ; IN R0=rawmat ; OUT R2=rawmat address
+ FNldr(2,curr_planet)
+ SUB R2,R2,#1
+ CMP R2,#12
+ MOVPL R2,R0         ; to avoid abort on Algol - just to read type addr
+ ADDMI R2,R0,R2,LSL#3
+ ADD R2,PC,R2,LSL#3
+MOVS PC,R14
+
+.rawmat_matrix                   ; one block for every planet
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+ FNrawmat_block
+
+; Note that the Shmartz is mainly collectable by shooting aliens down
+; Its presence on the planets should be therefore limited.
+
+.init_rawmat_matrix_values      ;SHMARTZ                          ;LESS...
+ EQUB  2:EQUB 19:EQUB 17:EQUB 18:EQUB  2:EQUB 16:EQUB 15:EQUB 14  ;Breon
+ EQUB 11:EQUB 12:EQUB 13:EQUB 14:EQUB  1:EQUB 15:EQUB 16:EQUB 17
+ EQUB 19:EQUB 14:EQUB 16:EQUB 15:EQUB  2:EQUB 17:EQUB 18:EQUB  2  ;Zorglon
+ EQUB 17:EQUB 11:EQUB 12:EQUB 13:EQUB  1:EQUB 14:EQUB 15:EQUB 16
+ EQUB 18:EQUB 17:EQUB 14:EQUB 16:EQUB  2:EQUB  2:EQUB 19:EQUB 15  ;Tecroxe
+ EQUB 14:EQUB 15:EQUB  2:EQUB 17:EQUB  1:EQUB 19:EQUB 16:EQUB 18  ;Cosmium
+ EQUB 16:EQUB 17:EQUB 11:EQUB 12:EQUB  3:EQUB 13:EQUB 14:EQUB 15
+ EQUB 15:EQUB 16:EQUB 19:EQUB  2:EQUB  1:EQUB 14:EQUB 17:EQUB 18  ;Kreetza
+ EQUB 16:EQUB 14:EQUB 18:EQUB 17:EQUB  1:EQUB 15:EQUB  2:EQUB 19  ;Thortz
+ EQUB 14:EQUB 15:EQUB 16:EQUB 17:EQUB  2:EQUB 11:EQUB 12:EQUB 13
+ EQUB 12:EQUB 13:EQUB 14:EQUB 15:EQUB  3:EQUB 16:EQUB 17:EQUB 11
+ EQUB 15:EQUB  2:EQUB 17:EQUB 19:EQUB  1:EQUB 18:EQUB 14:EQUB 16  ;Cloonex
+
+; En moyenne 170 units de chaque resource
+; En moyenne 100 units par planete
+
+.init_rawmat_matrix
+ ADR R0,rawmat_matrix+4
+ ADR R1,init_rawmat_matrix_values
+ MOV R2,#12*8
+.loop_init_rawmat_matrix
+ LDRB R3,[R1],#1
+ STR R3,[R0],#8
+ SUBS R2,R2,#1:BNE loop_init_rawmat_matrix
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.access_curr_base_resources
+ FNldr(12,curr_planet)
+
+.access_base_resources  ; input R0=raw #  ; R12=planet # or curr_planet
+ SUB R2,R12,#1
+ ADD R2,R0,R2,LSL#3
+ ADD R2,PC,R2,LSL#2
+MOVS PC,R14
+
+.base_resources
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0 ; planet 1
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0 ; planet 2
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0 ;  ...
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ FNmove_instances
+
+ FNinit_simulation_datas
+
+ FNprofs_processor
+
+ FNexec_operational_ideas
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNinit_simulation_datas
+[OPT PASS
+
+.init_simul_datas
+
+ SWI "OS_ReadMonotonicTime"
+ MOV R12,R0                      ; pseudo-rnd value
+
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+
+ FNadr(0,base_resources)         ; init resources in bases = 0
+ MOV R1,#0
+ MOV R2,#12*8
+.loop_init_A
+ STR R1,[R0],#4
+ SUBS R2,R2,#1:BNE loop_init_A
+
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+
+ FNadr(0,profs_row+8)            ; init activity% value for professors
+ MOV R1,#none%
+ MOV R2,#15
+.loop_init_B
+ STR R1,[R0],#16
+ SUBS R2,R2,#1:BNE loop_init_B
+
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+
+ MVN R1,#0                       ; =inexistant%
+
+ FNadr(0,ideas_row+Idea_stat%)   ; init status% value for projects
+ MOV R2,#48
+.loop_init_D
+ STR R1,[R0],#32
+ SUBS R2,R2,#1:BNE loop_init_D
+
+ FNadr(0,taurus_ideas_row+Idea_stat%)
+ MOV R2,#16
+.loop_init_E
+ STR R1,[R0],#32
+ SUBS R2,R2,#1:BNE loop_init_E
+
+ FNadr(0,FL_ideas_row+Idea_stat%)
+ STR R1,[R0,#00]
+ STR R1,[R0,#32]
+
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+
+ FNadr(0,profs_row+12)           ; init where% value for professors
+ MOV R2,#15                      ; = planet # = [1..12]
+.loop_init_F
+ ADDS R12,R12,R12,ASR#1
+ SBC R12,R12,R12,ROR#23
+ EOR R12,R12,R12,ROR#17
+ MOV R1,R12,LSR#32-4
+ CMP R1,#12:SUBPL R1,R1,#12
+ ADD R1,R1,#1                    ; =[1..12]
+ STR R1,[R0],#16
+ SUBS R2,R2,#1:BNE loop_init_F
+
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+
+ FNadr(0,taurus_resources)       ; init resources in Taurus = 0
+ MOV R1,#0
+ MOV R2,#8
+.loop_init_G
+ STR R1,[R0],#4
+ SUBS R2,R2,#1:BNE loop_init_G
+
+ MOV R0,#0:STR R0,taurus_idea_number
+
+MOVS PC,R14
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNmove_instances
+[OPT PASS
+
+.move_Taurus_TO_FL
+FNin
+
+ FNldr(3,curr_planet)
+ ORR R3,R3,#1<<31 ; selected
+
+ MOV R0,#14
+.loop_move_Taurus_TO_FL_1
+ BL access_prof
+ LDR R1,[R2,#12]  ;where%
+ CMP R1,#1<<31    ;if selected in Taurus then go to FlashLight
+ STREQ R3,[R2,#12]
+SUBS R0,R0,#1:BPL loop_move_Taurus_TO_FL_1
+
+ MOV R0,#7
+.loop_move_Taurus_TO_FL_3
+ BL access_FL_resources
+ LDR R1,[R2]
+ BL access_taurus_resources
+ LDR R3,[R2]
+ SUB R3,R3,R1                 ; Taurus cargo=Taurus cargo - FL cargo
+ STR R3,[R2]
+SUBS R0,R0,#1:BPL loop_move_Taurus_TO_FL_3
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.move_FL_TO_Taurus
+FNin
+
+ MOV R3,#1<<31    ;Taurus code (selected)
+
+ MOV R0,#14
+.loop_move_FL_TO_Taurus_1
+ BL access_prof
+ LDR R1,[R2,#12]  ;where%
+ TST R1,#1<<31    ;if selected then go to Taurus
+ STRNE R3,[R2,#12]
+SUBS R0,R0,#1:BPL loop_move_FL_TO_Taurus_1
+
+ MOV R0,#7
+.loop_move_FL_TO_Taurus_3
+ BL access_FL_resources       ; read FL cargo
+ LDR R1,[R2]
+ BL access_taurus_resources
+ LDR R3,[R2]
+ ADD R3,R3,R1                 ; increment Taurus cargo
+ STR R3,[R2]
+SUBS R0,R0,#1:BPL loop_move_FL_TO_Taurus_3
+
+ BL update_ideas  ; to interrupt professors (ideas gone)
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.move_FL_TO_Base
+FNin
+
+ MOV R0,#7
+.loop_move_FL_TO_Base
+ BL access_FL_resources       ; read FL cargo
+ LDR R1,[R2]
+ FNldr(12,curr_planet)
+ BL access_base_resources
+ LDR R3,[R2]
+ ADD R3,R3,R1                 ; increment Base resources
+ STR R3,[R2]
+SUBS R0,R0,#1:BPL loop_move_FL_TO_Base
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.move_Base_TO_FL
+FNin
+
+ MOV R0,#7
+.loop_move_Base_TO_FL
+ BL access_FL_resources       ; read FL cargo
+ LDR R1,[R2]
+ FNldr(12,curr_planet)
+ BL access_base_resources
+ LDR R3,[R2]
+ SUB R3,R3,R1                 ; decrement Base resources
+ STR R3,[R2]
+SUBS R0,R0,#1:BPL loop_move_Base_TO_FL
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.select_instance     ; input R0=where% ; R1=instances counter
+ TST R0,#1<<31:MOVNES PC,R14
+ CMP R1,#max_profs_on_FL%
+ ORRMI R0,R0,#1<<31
+ ADDMI R1,R1,#1
+MOVS PC,R14
+
+.deselect_instance
+ TST R0,#1<<31:MOVEQS PC,R14
+ BIC R0,R0,#1<<31
+ SUB R1,R1,#1
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.update_FL_raw_selection
+FNin
+
+ MOV R0,#7
+.loop_update_FL_raw_selection
+
+ BL access_curr_base_resources
+ LDR R3,[R2]
+ BL access_FL_resources
+ LDR R4,[R2]
+
+  CMP R4,R3       ; if too much selection then reduce it
+  STRGT R3,[R2]
+
+SUBS R0,R0,#1:BPL loop_update_FL_raw_selection
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.move_FL_TO_Cemetery
+FNin
+
+ MOV R1,#14                      ; =paradise planet
+ MOV R0,#14
+.loop_move_FL_TO_Cemetery_1
+ BL access_prof
+ LDR R3,[R2,#12]                 ; =where%
+ TST R3,#1<<31
+ STRNE R1,[R2,#12]
+SUBS R0,R0,#1:BPL loop_move_FL_TO_Cemetery_1
+
+ FNadr(1,FL_ideas_row)
+ MVN R14,#0                      ; =inexistant%
+ STR R14,[R1,#Idea_stat%+0*32]   ; abort projects on FlashLight
+ STR R14,[R1,#Idea_stat%+1*32]
+
+ MOV R1,#0
+ MOV R0,#7
+.loop_move_FL_TO_Cemetery_2
+ BL access_FL_resources
+ STR R1,[R2]
+SUBS R0,R0,#1:BPL loop_move_FL_TO_Cemetery_2
+
+MOV R0,#0                        ; reset counters
+ FNstr(0,14,FL_profs_how_much)
+ FNstr(0,14,FL_ideas_how_much)
+
+FNout
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNprofessor(note1%,note2%,note3%,note4%,data_ptr%)
+[OPT PASS
+ EQUD prof_number%   ;type code (but useless)
+ EQUD data_ptr%
+ EQUB note1%      ; exprime capacites de professeur
+ EQUB note2%
+ EQUB note3%
+ EQUB note4%
+]
+ prof_number%+=1
+=0
+
+DEFFNidea(note1%,note2%,note3%,note4%,need1%,need2%,need3%,need4%,data_ptr%)
+[OPT PASS
+ EQUD idea_number%   ;type code
+ EQUD data_ptr%
+ EQUB note1%      ; exprime difficulte de la construction
+ EQUB note2%
+ EQUB note3%
+ EQUB note4%
+ EQUD need1%      ; -1 if no need
+ EQUD need2%      ; otherwise idea or rawmat pointer(defined with FNraw)
+ EQUD need3%
+ EQUD need4%
+]
+ idea_number%+=1
+=0
+
+DEFFNrawmat(data_ptr%)
+[OPT PASS
+ EQUD rawm_number%
+ EQUD data_ptr%
+]
+ rawm_number%+=1
+=0
+
+DEFFNraw(what%,how_much%)
+ IF how_much%<=0 OR how_much%>255 THEN ERROR 1," ### ERROR : out of range in FNraw"
+
+ CASE what% OF
+  WHEN Breon   : raw_needed(1)+=how_much%
+  WHEN Cloonex : raw_needed(2)+=how_much%
+  WHEN Cosmium : raw_needed(3)+=how_much%
+  WHEN Kreetzal: raw_needed(4)+=how_much%
+  WHEN Shmartz : raw_needed(5)+=how_much%
+  WHEN Tecroxen: raw_needed(6)+=how_much%
+  WHEN Thortz  : raw_needed(7)+=how_much%
+  WHEN Zorglon : raw_needed(8)+=how_much%
+ ENDCASE
+
+=what% OR (how_much%<<24)
+_______________________________________________________
+
+DEFFNprof_instance(who%,activity%,where%)
+[OPT PASS
+ EQUD 0
+ EQUD who%
+ EQUD activity%      ; (could be none% or idea identifier)
+ EQUD where%
+]
+=0
+
+DEFFNidea_instance(type_number%,status%)
+perc1%=0:perc2%=0:perc3%=0:perc4%=0
+[OPT PASS
+ EQUD TIME/200 ; time in half seconds
+ EQUD type_number%   ; = [0..47]
+ EQUD perc1%
+ EQUD perc2%
+ EQUD perc3%
+ EQUD perc4%
+ EQUD 0              ; = instance idendifier (=time)
+ EQUD status%
+]
+=0
+
+DEFPROCrawmat_infos
+PRINT "RAW QUANTITIES"
+PRINT "=============="
+FOR C%=1 TO 8:PRINT raw_needed(C%);:NEXT
+PRINT
+ENDPROC
+
+DEFFNrawmat_instance(what%,how_much%)
+[OPT PASS
+ EQUD what%
+ EQUD how_much%
+]
+=0
+
+DEFFNrawmat_block
+[OPT PASS
+ FNrawmat_instance(Breon   ,0):FNrawmat_instance(Cloonex ,0)
+ FNrawmat_instance(Cosmium ,0):FNrawmat_instance(Kreetzal,0)
+ FNrawmat_instance(Shmartz ,0):FNrawmat_instance(Tecroxen,0)
+ FNrawmat_instance(Thortz  ,0):FNrawmat_instance(Zorglon ,0)
+]
+=0
+
+DEFFNname(S$)
+ PROCconvert_str(S$)
+ S$+=CHR$13
+ IF LEN(S$)>28 THEN ERROR 1," ### ERROR : string too long in FNname"
+ [OPT PASS : EQUS S$ : FNram(28-LEN(S$)) :]
+=0
+_____________________________________________________
+
+DEFFNprofs_processor
+[OPT PASS
+
+.kidnap_prof         ; input R0=prof # ; R1=where%
+FNin
+ BL access_prof
+ LDR R14,[R2,#12]    ; =where%
+ CMP R1,R14:FNexitNE ; no professor to kidnap here!
+
+ ADD R14,R14,#16     ; set "kidnap" code
+ STR R14,[R2,#12]
+
+ MOV R0,#1
+ LDR R1,[R2,#04]     ; =who%
+ LDR R1,[R1,#04]     ; =name pointer
+ BL mail_send
+
+ BL update_ideas
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.update_ideas
+FNin2
+ BL read_time:MOV R3,R0
+
+ FNadr(13,profs_row)
+ MOV R10,#prof_number%
+.loop_update_ideas
+ LDMIA R13!,{R0,R4,R5,R6}
+ CMP R5,#0:BLE none_prof
+
+ ADD R4,R4,#8                       ; point notes% in professor definition
+
+ BICS R12,R6,#1<<31                 ; on Taurus
+  BEQ unlink_professor
+ CMP R12,#12
+  BGT unlink_professor              ; dead/kidnapped
+ BL find_identifier_idea
+ CMN R1,#1
+  BNE linked_professor
+
+.unlink_professor
+ MOV R8,#none%:STR R8,[R13,#-8]     ; professor stops work
+ B none_prof
+
+.linked_professor
+ LDR R0,[R1,#Idea_type%]
+ BL idea_type_pointer
+ ADD R2,R2,#Notes%                     ; pointer to difficulty datas
+
+ LDR R0,[R1,#Idea_time%]:SUB R0,R3,R0  ; delta time
+ ADD R1,R1,#Idea_perc%
+
+ MOV R8,#finished%
+
+ MOV R7,#4
+.loop_update_percent
+ LDR R5,[R1]:LDRB R6,[R4],#1        ; load percent% and note%
+  MUL R6,R0,R6:ADD R5,R5,R6,LSR#3   ; new percent%
+  LDRB R6,[R2],#1
+   CMP R5,R6,LSL#13
+   MOVGT R5,R6,LSL#13               ; dont overflow!
+   MOVMI R8,#existant%
+ STR R5,[R1],#4
+SUBS R7,R7,#1:BNE loop_update_percent
+
+STR R8,[R1,#4]                      ; store idea status
+
+.none_prof
+SUBS R10,R10,#1:BNE loop_update_ideas
+
+ MOV R10,#idea_number%-1
+.loop_update_time
+  MOV R0,R10
+  BL direct_access_idea
+  STR R3,[R1,#Idea_time%]           ; store new time reference in idea
+  LDR R14,[R1,#Idea_stat%]
+  CMP R14,#finished%
+  BNE no_fin_idea
+  MOV R14,#executable%
+  STR R14,[R1,#Idea_stat%]          ; new status%
+
+  BL  stop_professors
+
+  LDR R0,[R1,#Idea_type%]
+  BL idea_type_pointer
+  LDR R2,[R2,#Data_ptr%]            ; =name% pointer
+  FNadr(1,planetnames_str)
+
+  MOV R14,R10,LSR#2
+  ADD R14,R14,#1                    ; =planet #
+
+  ADD R1,R1,R14,LSL#4
+  MOV R0,#0
+  BL mail_send
+
+.no_fin_idea
+ SUBS R10,R10,#1:BPL loop_update_time
+FNout2
+
+.stop_professors
+ LDR R6,[R1,#Idea_id%]
+ FNadr(7,profs_row)
+ MOV R4,#prof_number%
+.loop_stop_professors
+ LDR R5,[R7,#8]
+ CMP R5,R6        ; test if finished idea was assigned to professor
+  MOVEQ R5,#none%
+  STREQ R5,[R7,#8]
+  ADD R7,R7,#16
+ SUBS R4,R4,#1:BNE loop_stop_professors
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.assign_project   ; in R0=prof # ; R1=idea pos=[0..3] ; R12=planet #
+FNin
+
+ STR R0,ass_par_0
+ STR R1,ass_par_1
+ STR R12,ass_par_2
+
+  BL update_ideas
+
+ LDR R0,ass_par_1
+ LDR R12,ass_par_2
+ BL access_idea
+ CMP R0,#existant%
+ FNexitNE
+
+ LDR R0,ass_par_0 ; =prof #
+ BL access_prof
+ LDR R14,[R2,#12] ; load where% is the prof
+ BIC R14,R14,#1<<31
+ CMP R14,R12      ; test if prof is near project
+ FNexitNE
+
+ LDR R1,[R1,#Idea_id%]
+ STR R1,[R2,#8] ; set new activity%
+
+FNout
+
+.ass_par_0 EQUD 0
+.ass_par_1 EQUD 0
+.ass_par_2 EQUD 0
+
+.remove_project   ; in R0=prof #
+FNin
+
+ BL access_prof
+ MOV R1,#none%
+ STR R1,[R2,#8]   ; set new status%
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.take_rawmat      ; in R0=rawmat #
+FNin
+  BL access_FL_resources
+ LDR R14,[R2,#0]
+ ADD R14,R14,#1
+ STR R14,[R2,#0]
+  BL boom_rawmat
+FNout
+
+.boom_rawmat      ; in R0=rawmat #
+FNin
+  BL access_rawmat
+ LDR R14,[R2,#4]
+ SUB R14,R14,#1
+ STR R14,[R2,#4]
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.search_idea      ; in R0=idea type # ; R12=planet # ; out FLAG [EQ/NE]
+FNin
+ MOV R3,R0
+
+ MOV R0,#0:BL existing_idea
+ MOV R0,#1:BL existing_idea
+ MOV R0,#2:BL existing_idea
+ MOV R0,#3:BL existing_idea
+.not_existing_idea
+  CMN PC,PC             ; return NE flag
+.quit_search_idea
+FNout
+
+.existing_idea          ; input R0=idea position=[0..3]
+FNin
+
+  BL access_idea
+  BEQ not_existing_idea
+  CMP R0,#executable%
+  LDREQ R0,[R1,#Idea_type%]
+  CMPEQ R0,R3:BEQ quit_search_idea  ; idea exists
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.full_search_idea    ; in R0=idea type # ; R12=planet # ; out FLAG [EQ/NE]
+FNin                 ; Search in FL cargo too!
+
+ BL search_idea:FNexitEQ   ; found in laboratories
+
+ MOV R0,#0:BL full_existing_idea
+ MOV R0,#1:BL full_existing_idea
+
+.not_full_existing_idea
+  CMN PC,PC                ; return NE flag
+.quit_full_search_idea
+FNout
+
+.full_existing_idea        ; input R0=idea position=[0..1]
+FNin
+
+  BL access_FL_idea
+  BEQ not_full_existing_idea
+  CMP R0,#executable%
+  LDREQ R0,[R1,#Idea_type%]
+  CMPEQ R0,R3:BEQ quit_full_search_idea   ; idea exists
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.test_and_schedule_idea             ; ctrl if idea possible,then if yes
+FNin                                ; decrement ingredients,unset auxiliar
+ BL test_idea                       ; ideas,and prepare the new idea datas
+ BLEQ schedule_idea                 ; input R12=planet #
+FNout
+
+.test_idea                          ; in R0=idea # ; R12=planet #
+FNin
+
+ MOV R9,R0        ; remember idea #
+
+ BL find_free_idea
+ CMN R1,#1:BNE free_left            ; plus de place libre?
+
+ MOV R0,R9                          ; peut-etre existe-t-il un BB
+ BL idea_type_pointer               ; qui va etre utilise par le projet?
+
+ LDR R3,[R2,#Needs%]                ; first need%
+ TST R3,#&FF<<24                    ; no BB!
+ LDREQ R0,[R3]
+ BLEQ search_idea
+ BNE no_schedule_idea               ; BB not found
+
+.free_left
+ MOV R0,R9
+ BL idea_type_pointer
+ ADD R1,R2,#Needs%-4
+
+ MOV R5,#4        ; max 4 needs
+.loop_need
+ LDR R3,[R1,#4]!
+ CMN R3,#1:BEQ ok_schedule_idea
+ ANDS R4,R3,#&FF<<24
+ BICNE R3,R3,#&FF<<24
+ LDR R0,[R3]      ; load header (=type #)
+ BEQ ctrl_idea
+
+.ctrl_rawmat
+ BL access_base_resources
+ LDR R2,[R2]      ; load how_much%
+ CMP R2,R4,LSR#24 ; test avec quantite necessaire
+ BMI no_schedule_idea
+ B next_need
+
+.ctrl_idea
+ MOV R4,R1        ; protect R1
+ BL full_search_idea
+ MOV R1,R4
+ BNE no_schedule_idea
+
+.next_need
+SUBS R5,R5,#1:BNE loop_need
+
+ ADD R1,R1,#4
+.ok_schedule_idea
+                  CMP R0,R0      ; ok flag = EQual
+.quit_schedule_idea
+FNout
+
+.no_schedule_idea CMN PC,PC:B quit_schedule_idea
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.schedule_idea    ; input R1=output pointer from test_idea
+FNin              ;       R5,R9
+
+.loop_need_unset
+ CMP R5,#4:BEQ quit_needs
+  ADD R5,R5,#1
+
+ LDR R3,[R1,#-4]!
+ ANDS R4,R3,#&FF<<24
+ BICNE R3,R3,#&FF<<24
+ LDR R0,[R3]      ; load header (=type #)
+ BEQ unset_idea
+
+.unset_rawmat
+ BL access_base_resources
+ LDR R14,[R2]     ; load how_much%
+ SUB R14,R14,R4,LSR#24
+ STR R14,[R2]
+ B loop_need_unset
+
+.unset_idea
+ MOV R4,R1                 ; protect R1
+ BL full_search_idea
+ MVN R14,#0                ; =inexistant%
+ STR R14,[R1,#Idea_stat%]  ; reset status%
+ MOV R1,R4
+ B loop_need_unset
+
+.quit_needs                         ; now creates new instance
+
+ BL read_time
+ MOV R10,R0                         ; =curr_time
+ BL find_free_idea
+
+ STR R9,[R1,#Idea_type%]
+ STR R10,[R1,#Idea_time%]           ; store current time ;
+ STR R10,[R1,#Idea_id%]             ; set idea identifier;
+                                                         ;
+ MOV R0,#0:STR R0,[R1,#08]          ; reinit percents    ; CHANGE DATAS
+           STR R0,[R1,#12]                               ; OF ACTIVATED
+           STR R0,[R1,#16]                               ; IDEA
+           STR R0,[R1,#20]                               ;
+ MOV R0,#existant%                                       ;
+ STR R0,[R1,#Idea_stat%]            ; existant% status   ;
+
+ BL update_FL_raw_selection         ; to avoid emmerdes
+
+FNout
+
+FNbin
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNexec_operational_ideas
+[OPT PASS
+
+.exec_idea                       ; input R0=idea #=[0..47]
+ CMP R0,#03:BLE set_FL_weapon    ; weapons for FlashLight
+ CMP R0,#05:BEQ exec_taurus_rockets
+ CMP R0,#32:BEQ exec_map
+ CMP R0,#15:BLE exec_w           ; general weapons
+ CMP R0,#31:BLE exec_p
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.set_FL_weapon
+ FNadr(1,FL_wea_1)
+ LDR R4,[R1,R0,LSL#2]
+ ADD R4,R4,#10          ; 10 new instances
+ STR R4,[R1,R0,LSL#2]   ; set value with new instances #
+;B exec_w
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.exec_w
+FNin
+
+ BL read_and_set_already_executed
+
+ ADR R1,weapons_table
+ LDRB R1,[R1,R0]
+
+ MOVNE R1,R1,LSR#1      ; if already scheduled then half effect
+
+ BL decrement_ALGOL_power  ; by R1
+ BL update_sun
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.exec_p
+FNin
+
+ BL read_and_set_already_executed
+
+ SUB R0,R0,#16
+ ADR R1,protections_table
+ LDRB R1,[R1,R0]
+
+ ADDNE R1,R1,#256
+ MOVNE R1,R1,LSR#1   ; if already scheduled then half power (by mean)
+
+ MOV R0,#0           ; delta time from now
+ BL insert_sun_event
+ MOV R2,R1           ; invert factor
+ MOV R1,#1
+ BL divide
+
+ SWI "OS_ReadMonotonicTime"
+ AND R0,R0,#&7E      ; = random delta time for "end of effect"
+ ADD R0,R0,#&3F      ; = [ 4 - 12 heures ]
+ MOV R0,R0,LSL#9
+
+ MOV R1,R12
+ BL insert_sun_event
+
+ BL update_sun
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.weapons_table
+ EQUB 0                 ; FL weapons not used here
+ EQUB 0
+ EQUB 0
+ EQUB 0
+
+ EQUB 12                ; decrement power #
+ EQUB 00                ; TAURUS ROCKET (exception)
+ EQUB 10
+ EQUB 08
+ EQUB 10
+ EQUB 15
+ EQUB 07
+ EQUB 10
+ EQUB 11
+ EQUB 09
+ EQUB 13
+ EQUB 08
+
+.protections_table
+ EQUB 064               ; factor (x256)
+ EQUB 192               ; 0=maximum effect ; 256=no effect
+ EQUB 080
+ EQUB 128
+ EQUB 032
+ EQUB 128
+ EQUB 090
+ EQUB 192
+ EQUB 150
+ EQUB 040
+ EQUB 128
+ EQUB 220
+ EQUB 100
+ EQUB 128
+ EQUB 160
+ EQUB 064
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.exec_taurus_rockets
+FNin
+ FNmodify(1,4,algol_missile_ready,10)
+ BL exec_w
+ MOV R0,#11:BL mail_send
+FNout
+
+.exec_map
+ MVN R1,#0
+ FNstr(1,4,invaders_scanner_card)
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.init_already_executed_table
+ MOV R1,#0
+ STR R1,already_executed_table
+MOVS PC,R14
+
+.read_and_set_already_executed   ; input R0=idea # ; output FLAG Z
+ MOV R1,#1
+ MOV R2,R1,LSL R0
+ LDR R1,already_executed_table
+ TST R1,R2
+ ORR R1,R1,R2
+ STR R1,already_executed_table
+MOV PC,R14
+
+.read_already_executed           ; input R0=idea # ; output FLAG Z
+ MOV R1,#1
+ MOV R2,R1,LSL R0
+ LDR R1,already_executed_table
+ TST R1,R3
+MOV PC,R14
+
+.already_executed_table          ; for WEAPONS and PROTECTIONS only!
+ FNram(4)                        ; 0=never been ; &FF=already executed
+
+FNbin
+
+]
+=0
+__________________________________________________________________________
+
+DEFFNidea_instance_row(type_number%,status%, times%)
+FOR C%=1 TO times%
+ [OPT PASS
+  FNidea_instance(type_number%,status%)
+ ]
+NEXT
+=0
+__________________________________________________________________________
+
+DEFFNmove_project
+[OPT PASS
+ LDMIA R2,{R3-R10}
+ STMIA R1,{R3-R10}
+ MVN R3,#0              ; = inexistant%
+ STR R3,[R2,#Idea_stat%]
+]
+=0

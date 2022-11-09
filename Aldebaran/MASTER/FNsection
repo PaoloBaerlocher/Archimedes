@@ -1,0 +1,274 @@
+REM >MASTER.FNsection
+
+LIBRARY "MASTER.FNmakeDiv"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNadr"
+
+REM **************************
+
+MODE 15:MODE 13:OFF
+
+DIM cde 90000
+FOR PASS=4 TO 6 STEP 2
+P%=cde
+O%=cde
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.m13 EQUD 0
+.m14 EQUD 0
+
+.rigolo
+STR R13,m13
+STR R14,m14
+
+BL PutSection
+
+LDR R13,m13
+LDR R15,m14
+
+.BASESCR EQUD &1FD8000
+
+FNsectionRoutine
+
+FNcreate_div_table
+
+.Divis
+
+]
+PROCendinout
+NEXT
+
+CALL MakeDivs
+
+COLOUR 199
+
+REPEAT
+B%=120+50*COS(TIME/50)+160*SIN(TIME/200):C%=150+63*SIN(TIME/30)
+D%=B%+44+6+6*SIN(TIME/023)              :E%=150+63*COS(TIME/50)
+
+WAIT
+CLS
+CALL rigolo
+UNTIL FALSE
+
+END
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+REM largeur maximale pour la section : env 64 pixels
+
+DEFFNsectionRoutine
+[OPT PASS
+
+.PutSection             ;parametres =(R1,R2) & (R3,R4) = 2 points
+STR R14,MEMO14S
+
+FNadr(13,Divis)
+
+CMP R2,R4:BMI noSwp1S
+CMPEQ R1,R3:BMI noSwp1S
+                     MOV R9,R2:MOV R2,R4:MOV R4,R9
+                     MOV R9,R1:MOV R1,R3:MOV R3,R9
+.noSwp1S
+
+SUBS R11,R3,R1       ; dx AB
+ADDPL R12,R13,R11,LSL#2
+SUBMI R12,R13,R11,LSL#2
+ADD R12,R12,R4,LSL#9  ; dy AB
+LDR R12,[R12,-R2,LSL#9]
+ RSBMI R12,R12,#640<<16
+
+ MOV R12,R12,LSR#1
+
+;;;;;;Test border ;;;;;;;;;;;;;;;;
+
+CMP R4,#208:CMPCC R2,#208
+CMPCC R3,#320:CMPCC R1,#320
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ADD R1,R1,R2,LSL#6:ADD R1,R1,R2,LSL#8
+
+MOV R14,#0:MOV R8,R14   ; the color for filling
+
+LDR R3,BASESCR:ADD R10,R3,R1
+
+BCS clippedS
+
+.noclippedS
+
+RSB R13,R4,#207   ; deltaY for second part
+
+SUBS R9,R4,R2  ;R9=deltaY
+MOV R1,#&4000
+MOVEQ R2,R11,LSL#15:BEQ nextOneS
+MOV R2,#&4000
+
+CMP R11,#0:MOVMI R11,R12:MOVMI R12,#320<<15:MOVPL R11,#320<<15
+
+ADD R5,PC,#16
+.loop1S
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ MOV R0,R2,LSR#15
+ SUBS R0,R0,R1,LSR#15
+ BGT fillS
+SUBS R9,R9,#1:BNE loop1S
+
+;;;;;;;;;;;;;;;;;;;;;;;
+
+.nextOneS
+CMP R13,#0:LDRLE PC,MEMO14S
+
+ MOV R0,R2,LSR#15
+ SUB R0,R0,R1,LSR#15
+ MOV R9,R0
+
+MOV R2,#0:MOV R3,#0:MOV R5,#0:MOV R6,#0:MOV R12,#0  ;for giga fill
+
+.loop2S
+ ADD R1,R1,#320<<15
+
+FNgigaFill
+
+SUBS R13,R13,#1:BNE loop2S
+
+;;;;;;;;;;;;;;;;;;;;;;;
+
+LDR R15,MEMO14S   ; quitDraw
+
+;;;;;;;;;;;; Clipped polygon  ;;;;;;;;;;;;;;;;;
+
+.clippedS
+               ADD R6,R3,R2,LSL#8:ADD R6,R6,R2,LSL#6
+
+RSB R13,R4,#207   ; deltaY for second part
+
+SUBS R9,R4,R2  ;R9=deltaY
+MOV R1,#&4000
+MOVEQ R2,R11,LSL#15:BEQ nextOneCS
+MOV R2,#&4000
+
+CMP R11,#0:MOVMI R11,R12:MOVMI R12,#320<<15:MOVPL R11,#320<<15
+
+ADD R5,PC,#8
+.loop1CS
+ ADD R1,R1,R11
+ ADD R2,R2,R12
+ B fillClipS
+SUBS R9,R9,#1:BNE loop1CS
+
+;;;;;;;;;;;;;;;;;;;;;;;
+.nextOneCS
+CMP R13,#0:LDRLE PC,MEMO14S
+
+ADD R5,PC,#8
+.loop2CS
+ ADD R1,R1,#320<<15
+ ADD R2,R2,#320<<15
+ B fillClipS
+SUBS R13,R13,#1:BNE loop2CS
+
+LDR PC,MEMO14S
+
+  ; ************ How to fill an hline
+
+.fillS
+
+ ADD R4,R10,R1,LSR#15 ; start fill
+
+RSBS R7,R0,#10:BPL drawLittleS
+
+.superFillS
+
+MOVS R7,R4,LSL#30:BEQ noBoundS
+
+EORS R7,R7,R7,LSL#1
+SUB R0,R0,R7,LSR#30
+
+STRCCB R8,[R4],#1
+STRMIB R14,[R4],#1
+STRB   R8,[R4],#1
+.noBoundS
+
+RSB R7,R0,#7*8+7
+ADD PC,PC,R7,LSR#1
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+STMIA R4!,{R8,R14}:STMIA R4!,{R8,R14}
+
+TEQP PC,R0,LSL#29
+ STRMI R8,[R4],#4
+ STREQB R8,[R4],#1
+ STREQB R14,[R4],#1
+ STRCSB R8,[R4]
+MOV PC,R5
+
+.fillClipS
+ MOV R0,R2,LSR#15
+ SUB R0,R0,R1,LSR#15
+
+ ADD R6,R6,#320
+
+ ADD R4,R10,R1,LSR#15 ; start fill
+
+ SUBS R7,R4,R6:BPL noLeftS    ; left margin
+ ADDS R0,R0,R7:MOVGT R4,R6
+ B okMarginS
+.noLeftS
+ ADD R7,R7,R0
+ RSBS R7,R7,#320  ; right margin
+ ADDLES R0,R0,R7
+.okMarginS
+ MOVLE PC,R5      ; out of border
+
+ SUBS R7,R4,R3:MOVMI PC,R5          ; out of Vborder UP
+ CMP R7,#65*1024:LDRPL PC,MEMO14S   ; test of Vborder DOWN
+RSBS R7,R0,#10:BMI superFillS
+
+.drawLittleS
+
+ADD PC,PC,R7,LSL#2
+STRB R8,[R4,#10]:STRB R14,[R4,#09]:STRB R8,[R4,#08]
+STRB R14,[R4,#07]:STRB R8,[R4,#06]:STRB R14,[R4,#05]
+STRB R8,[R4,#04]:STRB R14,[R4,#03]:STRB R8,[R4,#02]
+STRB R14,[R4,#01]:STRB R8,[R4,#00]
+MOV PC,R5
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.MEMO14S EQUD 0
+]
+=0
+
+DEFFNgigaFill
+[OPT PASS         ; very high speed line filling,for non-clipped section
+                  ; with a minimum of 40 pixels to draw
+                  ; and a maximum of 58 pixels
+
+ ADD R4,R10,R1,LSR#15 ; start fill
+
+MOVS R7,R4,LSL#30:BEQ noBoundG
+
+EORS R7,R7,R7,LSL#1
+SUB R9,R0,R7,LSR#30
+
+STRCCB R8,[R4],#1
+STRMIB R8,[R4],#1
+STRB   R8,[R4],#1
+
+.noBoundG
+
+STMIA R4!,{R3,R6,R8,R12,R14}
+TEQP PC,R9,LSL#28
+ STMMIIA R4!,{R3,R6,R8,R12,R14}
+ STMPLIA R4!,{R2,R3,R5,R6,R8,R12,R14}
+ STREQ R3,[R4],#4
+ STRCSB R8,[R4],#1
+ STRCSB R8,[R4],#1
+ STRVSB R8,[R4]
+]
+=0

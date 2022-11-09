@@ -1,0 +1,146 @@
+REM >MASTER.FNfunction
+REM written by P Baerlocher
+END
+__________________________________________________________________________
+
+DEFFNdefine(label%,kind%,cShad%,labshad%)
+FrameDef%=label%+8
+currDef%=kind%
+[OPT PASS
+ EQUD cShad% OR (kind%<<1) ; when FNendxyz found,add (SurfDef-xyzDef)<<22
+ EQUD labshad%
+]
+=0
+
+DEFFNendxyz
+ labAddr%=FrameDef%+O%-P%
+[OPT PASS
+ EQUD eod
+]
+ labAddr%!-8=(labAddr%!-8) OR (P%-FrameDef%)<<22
+=0
+
+DEFFNquad(c%,b%,s%,p1%,p2%,p3%,p4%)
+ labAddr%=FrameDef%+O%-P%
+[OPT PASS
+
+ EQUD (c%*3) OR (b%<<31) OR (0<<30) OR (s%<<29)
+                      ;info color-backface-kind (bit 30=0=quadra)
+
+ EQUD p1%*12+buf2Dobj
+ EQUD p2%*12+buf2Dobj
+ EQUD p3%*12+buf2Dobj
+ EQUD p4%*12+buf2Dobj
+]
+
+v1x%=!(labAddr%+p1%*12+0)-!(labAddr%+p2%*12+0)
+v1y%=!(labAddr%+p1%*12+4)-!(labAddr%+p2%*12+4)
+v1z%=!(labAddr%+p1%*12+8)-!(labAddr%+p2%*12+8)
+v2x%=!(labAddr%+p1%*12+0)-!(labAddr%+p3%*12+0)
+v2y%=!(labAddr%+p1%*12+4)-!(labAddr%+p3%*12+4)
+v2z%=!(labAddr%+p1%*12+8)-!(labAddr%+p3%*12+8)
+v3x%=v1y%*v2z%-v1z%*v2y%
+v3y%=v1z%*v2x%-v1x%*v2z%
+v3z%=v1x%*v2y%-v1y%*v2x%
+v3n=-SQR(v3x%^2+v3y%^2+v3z%^2)/256
+
+[OPT PASS
+ EQUD v3x%/v3n
+ EQUD v3y%/v3n
+ EQUD v3z%/v3n
+]
+=0
+
+DEFFNline(c%,s%,p1%,p2%)
+[OPT PASS
+
+ EQUD (c%*3) OR (1<<30) OR (s%<<29)  ; info color-kind-shadow (bit 30=1=line)
+
+ EQUD p1%*12+buf2Dobj               ; color multiplie' par 3 pour un
+ EQUD p2%*12+buf2Dobj               ; acces aise' au tableau
+]
+=0
+
+DEFFNrect(c%,b%,s%, p1%,p2%,p3%,p4%)
+[OPT PASS
+ FNline(c%,s%, p1%,p2%)
+ FNline(c%,s%, p2%,p3%)
+ FNline(c%,s%, p3%,p4%)
+ FNline(c%,s%, p4%,p1%)
+]
+=0
+
+DEFFNtria(c%,b%,s%, p1%,p2%,p3%)
+[OPT PASS
+ FNline(c%,s%, p1%,p2%)
+ FNline(c%,s%, p2%,p3%)
+ FNline(c%,s%, p3%,p1%)
+]
+=0
+
+DEFFNquadSh(p1%,p2%,p3%,p4%) =FNquad(0,0,1,p1%,p2%,p3%,p4%)
+DEFFNlineSh(p1%,p2%) =FNline(0,1,p1%,p2%)
+
+DEFFNrectSh(p1%,p2%,p3%,p4%)
+[OPT PASS
+ FNlineSh(p1%,p2%):FNlineSh(p2%,p3%):FNlineSh(p3%,p4%):FNlineSh(p4%,p1%)
+]
+=0
+
+DEFFNtriaSh(p1%,p2%,p3%)
+[OPT PASS
+ FNlineSh(p1%,p2%):FNlineSh(p2%,p3%):FNlineSh(p3%,p1%)
+]
+=0
+
+DEFFNpointerPoint(p%)
+[OPT PASS
+EQUD FrameDef%+12*p%
+]
+=0
+
+DEFFNBackFace
+[OPT PASS
+   SUB R14,R1,R5           ; this is the BackFace calculation
+   SUBS R13,R4,R6
+   MULNE R13,R14,R13
+
+   RSBS R14,R3,R5
+   SUBNE R7,R2,R6
+   MLAS R14,R7,R14,R13
+]
+=0
+
+DEFFNxyz(Px%,Py%,Pz%)      :REM in atom units
+[OPT PASS
+EQUD Px%:EQUD Py%:EQUD Pz%
+]
+=0
+
+DEFFNxyz_rot(Px%,Py%,Pz%, rot%)  :REM rotation sur (x,y)
+ cr=COSRADrot%:sr=SINRADrot%
+[OPT PASS
+EQUD Px%*cr+Py%*sr:EQUD -Px%*sr+Py%*cr:EQUD Pz%
+]
+=0
+
+DEFFNhidden(lab%,n%)       :REM lab% indicates the surf def for the shadow
+IF n%>0 THEN n%=2^(n%-1)   :REM # of planes coded in power of two
+[OPT PASS
+ EQUD n% OR (lab%<<8)
+]
+=0
+
+DEFFNhplane(p1%,p2%,p3%)
+[OPT PASS
+ EQUD p1%*12+buf2Dobj
+ EQUD p2%*12+buf2Dobj
+ EQUD p3%*12+buf2Dobj
+]
+=0
+__________________________________________________________________________
+
+DEFFNq(A,B,C,D,E) =FNquad(A,1,1,B,C,D,E)  :REM quadra with BackFace,Shadow
+DEFFNQ(A,B,C,D,E) =FNq(A, C,B,E,D)        :REM inverted backface
+DEFFNr(A,B,C,D,E) =FNquad(A,1,0,B,C,D,E)  :REM quadra with BackFace,noShadow
+DEFFNR(A,B,C,D,E) =FNr(A, C,B,E,D)        :REM inverted backface

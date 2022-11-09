@@ -1,0 +1,389 @@
+REM >MASTER.FNlanding
+
+LIBRARY "MASTER.FNline"
+LIBRARY "MASTER.FNint_star"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+
+MODE 15:MODE 13:OFF
+
+SYS 6,112,2
+*SCREENLOAD ZARCH_TWO.PANEL
+SYS 6,112,0
+*SCREENLOAD ZARCH_TWO.PANEL
+
+DIM SPACE 80000
+FOR PASS=4TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.sun_cde FNload("ZARCH_TWO.sun_cde")
+
+FNgraf_lib
+
+FNinter_stars
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FNlineRoutine
+
+FNlanding
+
+.sinus FNlookup_sin
+
+.MegaShades FNload("ZARCH_TWO.MEGASHADES")
+
+]
+PROCendinout
+NEXT
+
+CALL enter_takeoff
+
+END
+
+DEFFNlanding
+[OPT PASS
+
+.enter_landing
+FNin
+
+ BL claimInterrupt
+
+ FNcheck_checksum(bind_exit_mainship)
+
+ MVN R0,#191:STR R0,draw_Landing_z   ; init path
+
+.landing_mainloop
+ FNwait
+ BL clear_scr
+ BL moveLanding
+ BL drawLanding
+ BL SwapScreens
+
+ LDR R0,draw_Landing_z
+ CMP R0,#128:BNE landing_mainloop
+
+ BL stopInterrupt
+
+FNout
+
+.enter_takeoff
+FNin
+
+ BL claimInterrupt
+
+ MOV R0,#128:STR R0,draw_Landing_z   ; init path
+
+.takeoff_mainloop
+ FNwait
+ BL clear_scr
+ BL moveTakeoff
+ BL drawLanding_planet
+ BL SwapScreens
+
+ LDR R0,draw_Landing_z
+ CMN R0,#192:BNE takeoff_mainloop
+
+ BL stopInterrupt
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.draw_Landing_alfa EQUD 0
+.draw_Landing_beta EQUD 0
+.draw_Landing_z    EQUD -192
+
+.landing_deltaY    EQUD 0
+
+.moveLanding
+
+ LDR R2,draw_Landing_z
+ ADD R2,R2,#1
+ STR R2,draw_Landing_z
+
+ CMN R2,#128
+ MVNMI R0,#1<<25
+ BMI ok_deltaY
+
+ FNadr(0,sinus+64*4)
+
+ CMP R2,#0                                   ; exprime mouvement
+ LDRMI R0,[R0,-R2,LSL#2]:MOVMI R0,R0,LSL#17
+ LDRPL R0,[R0,R2,LSL#2]:MOVPL R0,R0,LSL#15:ADDPL R0,R0,#(1<<25)-(1<<23)
+
+.ok_deltaY
+ STR R0,landing_deltaY
+
+ LDR R0,draw_Landing_alfa
+  ADD R0,R0,#1
+ STR R0,draw_Landing_alfa
+
+ LDR R0,draw_Landing_beta
+  ADD R0,R0,#2
+ STR R0,draw_Landing_beta
+
+MOV PC,R14
+
+.moveTakeoff
+ LDR R2,draw_Landing_z
+ SUB R2,R2,#2
+ STR R2,draw_Landing_z
+
+ MOV R0,#0
+ STR R0,landing_deltaY
+
+ LDR R0,draw_Landing_alfa
+  ADD R0,R0,#1
+ STR R0,draw_Landing_alfa
+
+ LDR R0,draw_Landing_beta
+  ADD R0,R0,#2
+ STR R0,draw_Landing_beta
+
+MOV PC,R14
+
+.drawLanding
+FNin
+ BL drawLanding_planet
+ MOV R1,#000:BL drawLanding_guide
+ MOV R1,#025:BL drawLanding_guide
+ MOV R1,#050:BL drawLanding_guide
+ MOV R1,#075:BL drawLanding_guide
+ MOV R1,#100:BL drawLanding_guide
+ MOV R1,#125:BL drawLanding_guide
+ MOV R1,#150:BL drawLanding_guide
+ MOV R1,#175:BL drawLanding_guide
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.drawLanding_planet
+FNin
+
+FNadr(9,sinus):ADD R10,R9,#64*4
+
+ LDRB R6,draw_Landing_beta
+ LDR R5,[R9,R6,LSL#2]:LDR R6,[R10,R6,LSL#2]  ; sin(rot),cos(rot)
+
+ADR R12,minimemo_Landing:STMIA R12,{R5,R6,R8,R9,R10}
+
+MOV R8,#256
+.Llbeta
+
+CMP R8,#256       ; set flag to know if we should calc the 3rd point
+
+STR R8,minimemo_Landing+8
+
+LDR R4,draw_Landing_alfa
+MOV R8,R8,LSL#24
+ADD R8,R8,R4,LSL#24
+
+LDR R0,draw_Landing_z
+ADR R3,data_Landingquadra
+FNadr(4,lan_prosp+640)
+ADD R4,R4,R0,LSL#2
+LDR R12,landing_deltaY
+
+LDR R0,[R9,R8,LSR#22]:LDR R8,[R10,R8,LSR#22]  ; sin(beta),cos(beta)
+
+MOV R7,#128<<24    :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+                   :BL rotatingL
+
+FNldr(12,MegaShades+92+21*96)
+
+BEQ no_horiz_land
+
+ ADR R0,data_Landingquadra+8
+ FNtrace_line
+ FNtrace_line
+ FNtrace_line
+ FNtrace_line
+ FNtrace_line
+ FNtrace_line
+ FNtrace_line
+
+.no_horiz_land
+
+ADR R0,data_Landingquadra
+ LDMIA R0!,{R1-R4}
+BL PutLine
+ LDMIA R0!,{R1-R4}
+BL PutLine
+ LDMIA R0!,{R1-R4}
+BL PutLine
+ LDMIA R0,{R1-R4}
+BL PutLine
+ ADD R0,R0,#8
+ LDMIA R0,{R1-R4}
+BL PutLine
+ LDMDB R0!,{R1-R4}
+BL PutLine
+ LDMDB R0!,{R1-R4}
+BL PutLine
+ LDMDB R0 ,{R1-R4}
+BL PutLine
+
+ ADR R0,data_Landingquadra
+ ADD R3,R0,#9*8
+ LDMIA R0!,{R4-R13}:STMIA R3!,{R4-R13}
+ LDMIA R0, {R4-R11}:STMIA R3 ,{R4-R11}
+
+ADR R10,minimemo_Landing:LDMIA R10,{R5,R6,R8,R9,R10}
+
+SUBS R8,R8,#16:BPL Llbeta
+
+FNout
+
+.rotatingL
+ FNrotatingL(1,2)
+ STMIA R3!,{R1,R2}
+ SUB R7,R7,#16<<24
+MOVS PC,R14
+
+.projectLguide
+ FNrotatingLL(1,2)
+ STMIA R3!,{R1,R2}
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.drawLanding_guide   ; input R1=z-delta from centre
+FNin
+
+LDR R0,draw_Landing_z
+ADD R0,R0,R1
+CMP R0,#160:MOVCS PC,R14            ; clip
+
+ADR R3,data_Landingquadra
+
+FNadr(13,lan_prosp+640)
+LDR R13,[R13,R0,LSL#2]              ; load perspective factor
+
+LDR R12,landing_deltaY
+SUB R12,R12,#140<<17 ; y-delta
+
+MOV R8,#104   :BL projectLguide     ; (x=160,y)
+SUB R8,R8,#208:BL projectLguide
+
+FNadr(12,MegaShades+44+01*96)
+LDR R12,[R12,R0,ASR#2]
+
+ADR R3,data_Landingquadra
+LDMIA R3,{R1-R3}
+MOV R4,R2
+ BL PutLine
+
+ADR R3,data_Landingquadra+4
+LDMIA R3,{R2-R4}
+MOV R1,R3
+ BL PutLine
+
+ADR R3,data_Landingquadra
+LDMIA R3,{R1-R4}
+MOV R2,R4
+ BL PutLine
+
+ADR R3,data_Landingquadra
+LDMIA R3,{R1-R4}
+MOV R3,R1
+ BL PutLine
+
+FNout
+
+FNbin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.minimemo_Landing EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+
+.data_Landingquadra
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+ EQUD 0:EQUD 0
+
+
+]
+FOR z%=-64 TO -1
+[OPT PASS : EQUD 1024*9/(10+319-z%) : ]
+NEXT
+[OPT PASS
+.lan_prosp
+
+]
+FOR z%=0 TO 319
+[OPT PASS : EQUD 1024*9/(10+319-z%) : ]
+NEXT
+=0
+
+DEFFNrotatingL(regx,regy)                    :REM R12=deltaY ;R4=lan_prosp
+[OPT PASS
+LDR R11,[R9,R7,LSR#22]:LDR regy,[R10,R7,LSR#22]  ; sin(alfa),cos(alfa)
+                                             ; calc x,y,z=(regy,R13,regx)
+MOV regy,regy,LSL#8
+MUL R13,R11,R0
+MUL regx,R11,R8
+
+MUL R11,R5,regy:RSB R11,R11,#0:MLA R11,R6,R13,R11
+MLA regy,R6,regy,R12:          MLA regy,R5,R13,regy
+MOV regy,regy,ASR#8
+
+MOV R13,R11,ASR#19
+LDR R13,[R4,R13,LSL#2]
+
+MUL regx,R13,regx:MUL regy,R13,regy
+MOV regx,regx,ASR#9+7:MOV regy,regy,ASR#9+7
+
+ADD regx,regx,#160:ADD regy,regy,#104              ; centre
+]
+=0
+
+DEFFNrotatingLL(regx,regy)
+[OPT PASS
+
+ADD regy,R8,R12,ASR#15
+
+ADD regx,R13,R13,LSL#2  ; x160/5
+MUL regy,R13,regy
+MOV regx,regx,ASR#9-5:MOV regy,regy,ASR#9
+
+CMP R8,#104
+ADDNE regx,regx,#160:ADD regy,regy,#104              ; centre
+RSBEQ regx,regx,#160
+]
+=0
+
+DEFFNtrace_line
+[OPT PASS
+ LDMIA R0!,{R1-R2}
+ ADD R14,R0,#8*8
+ LDMIA R14,{R3-R4}
+ BL PutLine
+]
+=0

@@ -1,0 +1,202 @@
+REM >MASTER.FNplanet
+
+LIBRARY "MASTER.FNquadra"
+LIBRARY "MASTER.FNgraf_lib"
+LIBRARY "MASTER.FNint_stars"
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNmakediv"
+
+MODE 15:MODE 13:OFF
+
+SYS 6,112,2
+*SCREENLOAD GRA*.SC*.1
+SYS 6,112,0
+*SCREENLOAD GRA*.SC*.1
+
+DIM SPACE 150000
+FOR PASS=4TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.sinus FNlookup_sin
+
+.sun_cde FNload("ZARCH_TWO.sun_cde")
+
+FNinter_stars
+
+FNgraf_lib
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FNquadraRoutine
+
+.zozo
+FNin2
+ BL clear_scr
+ BL movePlanet
+ FNadr(0,land)
+ BL drawPlanet
+FNout2
+
+FNplanetView
+
+.MegaShades FNload("ZARCH_TWO.MegaShades")
+
+.land FNram(48*1024)
+
+FNcreate_div_table
+
+EQUD 0:EQUD 0:EQUD 0
+EQUD 0:EQUD 0:EQUD 0
+.Divis
+
+]
+PROCendinout
+NEXT
+
+CALL MakeDivs
+
+OSCLI("LOAD !ALDE*.LANDSCAPES.A "+STR$~land)
+FOR E%=land+128*128 TO land+128*128*2
+?E%=RND(47)
+NEXT
+
+CALL claimInterrupt
+REPEAT
+WAIT
+CALL zozo
+A%=!BASESCR:CALL sun_cde
+CALL SwapScreens
+
+UNTIL INKEY(-99)
+CALL stopInterrupt
+END
+
+DEFFNplanetView
+[OPT PASS
+
+.planet_zpos     EQUD 0
+.pdx_light EQUD 0
+.pdy_light EQUD 0
+
+.movePlanet
+ SWI "OS_ReadMonotonicTime"
+ FNadr(1,sinus)
+
+ MOV R4,R0           ; = planet rotation
+
+ MOV R2,R0,LSR#2
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ ADD R2,R2,#512
+ MOV R2,R2,ASR#1
+ SUB R2,R2,R2,ASR#2
+ STR R2,planet_zpos
+
+ MOV R2,R0,LSR#1
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ MOV R2,R2,ASR#1
+ SUB R2,R2,#160*2
+ STR R2,pdx_light
+
+ MOV R2,R0,LSR#3
+ ADD R2,R2,R2,LSR#1
+ AND R2,R2,#&FF
+ LDR R2,[R1,R2,LSL#2]
+ MOV R2,R2,ASR#1
+ SUB R2,R2,#104*2
+ STR R2,pdy_light
+
+MOV PC,R14
+
+.drawPlanet       ; input R0=planet
+FNin
+
+LDR R13,planet_zpos
+
+ADD R0,R0,#128*128   ; colors
+
+FNadr(9,sinus):ADD R10,R9,#64*4
+
+MOV R7,#128<<24
+.lalfa
+
+LDR R11,[R9,R7,LSR#22]:LDR R12,[R10,R7,LSR#22]  ; sin(alfa),cos(alfa)
+MUL R1,R13,R12
+MOV R1,R1,ASR#10-8+8
+ADD R1,R1,#104
+STR R1,y_coord_up
+
+ADD R1,R7,#8<<24
+LDR R11,[R9,R1,LSR#22]:LDR R12,[R10,R1,LSR#22]  ; sin(alfa+),cos(alfa+)
+MUL R1,R13,R12
+MOV R1,R1,ASR#10-8+8
+ADD R1,R1,#104
+STR R1,y_coord_down
+
+MOV R8,#32
+.lbeta
+
+ADR R12,minimemo_p:STMIA R12,{R0,R4,R7-R10,R13}
+
+ADD R8,R4,R8,LSL#3
+MOVS R8,R8,LSL#24:BMI noEarth
+
+                 FNrotating(1)
+ADD R8,R8,#8<<24:FNrotating(3)
+ADD R7,R7,#8<<24:FNrotating(5)
+SUB R8,R8,#8<<24:FNrotating(7)
+
+LDR R2,y_coord_up  :MOV R4,R2
+LDR R6,y_coord_down:MOV R8,R6
+
+FNadr(14,MegaShades+92)               ; sunlight
+
+ADD R13,R1,R5:LDR R11,pdx_light:ADD R13,R13,R11:MUL R12,R13,R13
+ADD R13,R2,R6:LDR R11,pdy_light:ADD R13,R13,R11:MLA R12,R13,R13,R12
+
+CMP R12,#88<<9:MOVGT R12,#88<<9
+SUB R14,R14,R12,ASR#9   ; calc intensity
+
+LDRB R12,[R0]
+ADD R12,R12,R12,LSL#1
+LDR R12,[R14,R12,LSL#5]
+BL PutQuadra
+
+.noEarth
+ADR R10,minimemo_p:LDMIA R10,{R0,R4,R7-10,R13}
+
+ADD R0,R0,#4   ; next square
+
+SUBS R8,R8,#1:BNE lbeta
+ADD R0,R0,#7*128
+SUBS R7,R7,#8<<24:BNE lalfa
+
+FNout
+
+FNbin
+
+.minimemo_p
+EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0:EQUD 0
+
+.y_coord_up   EQUD 0
+.y_coord_down EQUD 0
+
+]
+=0
+
+DEFFNrotating(regx)
+[OPT PASS
+ LDR R11,[R9,R7,LSR#22]   ; sin(alfa)
+ LDR R14,[R10,R8,LSR#22]  ; cos(beta)
+ MUL regx,R11,R14
+ MUL regx,R13,regx
+ MOV regx,regx,ASR#10+8
+ ADD regx,regx,#160
+]
+=0
+

@@ -1,0 +1,3230 @@
+REM >MASTER.FNbrain
+_________________________________________________________________________
+
+DEFFNbrain
+[OPT PASS
+
+.fade_table FNload("ZARCH_TWO.fadeTable")
+
+.enter_brain
+
+ BL interrupt_speak
+
+.cs_6begin
+
+ BL update_ideas
+ BL update_sun
+
+ BL eval_entry_matrix
+ FNprot_test_entry(0,1)
+
+ FNbeep(2,23)  ; welcome
+
+ BL mouse_normal_box
+ BL mouse_pos_quarter
+ BL put_ordiBoard
+ MVN R0,#0
+ STR R0,brain_curr_opt
+ BL empty_stack
+ FNadr(0,aldeBar_1)
+ BL program_icon_installation
+
+\\\\\\\\\\\\\\\\\\\\\
+                    \
+.mainloop_brain     \
+ FNwait             \
+ BL pointer_animate \
+ BL SwapScreens     \
+ BL draw_onboard_time
+ BL work_icons      \
+ BL brain_mouse     \
+ BL clear_scr       \
+ BL brain_executor  \
+.resume_mainloop    \
+ BL print_speak     \
+ BL ViewScreen      \
+B mainloop_brain    \
+                    \
+.quit_brain         \
+ FNcheck            \
+ FNldr(14,damage_on_FL)
+ CMP R14,#100       \
+ BMI bind_exit_brain
+                    \
+ MOV R0,#1          \
+ MOV R1,#1          \
+ BL send_speak      \
+ MVN R0,#0          \
+ STR R0,brain_curr_opt
+                    \
+ BL Headboom_animate
+ B resume_mainloop  \
+                    \
+\\\\\\\\\\\\\\\\\\\\\
+
+.cs_6end
+
+FNexecutor
+
+FNkeyboard
+
+FNinfo_profs
+
+FNinfo_sun
+
+FNinfo_ideas
+
+FNact_ideas
+
+FNFL_ctrl
+
+FNtools
+
+FNspeaker
+
+FNmailtools
+
+.planetnames_str
+ FNtotstring("TAURUS"  ,16)   ; 0 code = in Taurus
+ FNtotstring("NUBIUM"  ,16)
+ FNtotstring("VELA"    ,16)
+ FNtotstring("IMBRIUM" ,16)
+ FNtotstring("UMBRIEL" ,16)
+ FNtotstring("BOREAS"  ,16)
+ FNtotstring("ZEPHRYUS",16)
+ FNtotstring("AFRICUS" ,16)
+ FNtotstring("UNDARUM" ,16)
+ FNtotstring("ASTRA"   ,16)
+ FNtotstring("PHOEBUS" ,16)
+ FNtotstring("ROSETUM" ,16)
+ FNtotstring("ETERNUM" ,16)
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNexecutor
+ REM les icones sont numerotes de 0 a' 127
+
+ REM l'icone 15 est le quit
+ REM l'icone 19 est l'icone virtuel DESKTOP (symbole Archie)
+
+[OPT PASS
+
+.brain_curr_opt  EQUD -1
+.brain_init_flag EQUD 0    ; -1 = init phase now ; 0 when init finished
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.brain_mouse
+FNin
+
+ LDR R0,icons_status
+ CMP R0,#0:FNexitNE              ; aldeBar still moving
+
+ MOV R2,#0:STR R2,ideas_act_flag                      ; reset PARAMETERS
+           STR R2,FL_repair
+
+ BL pushed_icon
+ CMP R2,#2:MVNEQ R2,#0:STREQ R2,brain_init_flag ; if menu pressed,reinit
+ CMN R0,#1:FNexitEQ
+
+  CMP R0,#13:STREQ R0,ideas_act_flag:FNexitEQ         ; PARAMETERS
+  CMP R0,#14:STREQ R0,FL_repair:FNexitEQ
+
+  LDR R1,brain_curr_opt
+  CMP R0,R1
+  STRNE R0,brain_curr_opt
+  MVNNE R1,#0:STRNE R1,brain_init_flag
+  BLNE interrupt_speak
+
+  LDREQ R1,brain_init_flag
+  CMPEQ R1,#0
+  MVNEQ R1,#0:STREQ R1,brain_init_flag
+
+FNout
+
+.brain_executor
+ LDR R0,brain_ticker
+  ADD R0,R0,#1
+ STR R0,brain_ticker
+
+ LDR R0,brain_curr_opt
+ ADD PC,PC,R0,LSL#2
+ B   Headboom_animate   ; -1 = no option activated
+ B   infos_menu         ; 0
+ B   sun_information    ;
+ B   profs_information  ;
+ B   ideas_menu         ;
+ B   flashlight_menu    ;
+ B   up_structure       ; 5
+ B   ideas_mainmenu     ;
+ B   ideas_infos        ;
+ B   ideas_infos        ;
+ B   ideas_infos        ;
+ B   ideas_sel          ; 10
+ B   ideas_sel          ;
+ B   ideas_sel          ;
+ B   0                  ;      parameter
+ B   0                  ;      parameter
+ B   quit_brain         ; 15
+ B   flashlight_load    ;
+ B   flashlight_status  ;
+ B   0                  ;      parameter
+ B   return_to_DESKTOP  ; 19
+ B   cargo_prof         ; 20
+ B   cargo_idea         ;
+ B   0                  ;      ABORTED
+ B   0                  ;      ABORTED
+ B   cargo_raw          ; 24
+ B   brain_invaders     ;
+ B   raws_info_menu     ; 26
+ B   mail_box           ; 27
+ B   left_raw_instance  ; 28
+ B   right_raw_instance ; 29
+ B   raws_information   ; 30
+ B   planet_menu        ; 31
+
+.brain_ticker EQUD 0    ; for flashing purposes
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.planet_menu
+FNin
+ LDR R14,brain_init_flag
+ CMN R14,#1:BNE projects_info_see
+ BL planet_screen
+ FNexit
+.projects_info_see
+ BL put_selected_instance
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.mail_box
+FNin
+
+ LDR R14,brain_init_flag
+ CMN R14,#1:MOVEQ R14,#0:STREQ R14,brain_init_flag
+            MVNEQ R14,#0:STREQ R14,mail_curr_mail
+            BLEQ update_ideas
+
+ ADR R0,select_mail_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ MOV R10,#max_mails%-1
+.loop_draw_mail_box
+
+ MOV R0,R10
+ BL mail_status
+  CMP R1,#0:BEQ no_mail
+  TST R1,#&10
+  MOV R11,R1,LSR#8   ; = time stamp
+  MOV R0,#16
+  FNmov(1,320*48+36)
+  ADD R1,R1,R10,LSL#5
+  BLEQ draw_idea
+  BLNE draw_half_idea
+
+  MOVEQ R4,#252:MOVEQ R5,#253:MOVEQ R6,#254:MOVEQ R7,#255
+  MOVNE R4,#208:MOVNE R5,#209:MOVNE R6,#210:MOVNE R7,#211
+
+  TST R10,#%1
+  FNldr(1,BASESCR)
+  ADD R1,R1,#320*38
+  ADDNE R1,R1,#320*36
+  ADD R1,R1,#28
+  ADD R1,R1,R10,LSL#5
+
+  MOV R2,R11
+
+ LDR R3,time_unit_1:BL base_counter
+ LDR R3,time_unit_2:BL base_counter
+
+ LDR R3,time_unit_3:BL base_counter
+ BL draw_char:ADD R1,R1,#8
+ LDR R3,time_unit_4:BL base_counter
+ BL draw_char:ADD R1,R1,#8
+
+ MOV R0,#ASC("g") ; double dot
+ BL draw_char
+ ADD R1,R1,#8
+
+ MOV R3,#60*10*2   :BL base_counter
+ BL draw_char:ADD R1,R1,#8
+ MOV R3,#60   *2   :BL base_counter
+ BL draw_char
+
+.no_mail
+ SUBS R10,R10,#1:BPL loop_draw_mail_box
+
+BL pushed_mail
+ CMN R0,#1
+ STRNE R0,mail_curr_mail
+
+LDR R0,mail_curr_mail
+ CMN R0,#1
+ BLNE mail_view
+
+ MOV R0,#0
+ MOV R1,#88
+ MOV R2,#320
+ MOV R3,#88
+ BL draw_window
+
+ FNcheck
+
+FNout
+
+.mail_curr_mail  EQUD -1
+.select_mail_str FNstring("MAIL BOX")
+
+.pushed_mail
+ FNmouse
+ CMP R2,#4:BNE no_pushed_mail
+
+ SUB R3,R1,#4*184
+  CMP R3,#4*24
+ SUBCC R3,R0,#4*36
+  CMPCC R3,#4*(32*7+24):BCS no_pushed_mail
+
+  AND R4,R3,#127
+  CMP R4,#96:BPL no_pushed_mail
+  MOV R0,R3,LSR#2+5
+MOVS PC,R14
+
+.no_pushed_mail MVN R0,#0:MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.up_structure
+FNin
+ MVN R0,#0:STR R0,brain_curr_opt
+
+ LDR R3,icons_bar    ; return to right bar
+
+  FNadr(0,aldeBar_1)
+
+ FNadr(1,aldeBar_3)
+ CMP R3,R1
+  FNsetflag("EQ")
+  FNadr(0,aldeBar_2)
+
+ FNadr(1,aldeBar_6)
+ CMP R3,R1
+  FNsetflag("EQ")
+  FNadr(0,aldeBar_5)
+
+ FNadr(1,aldeBar_7)
+ CMP R3,R1
+  FNsetflag("EQ")
+  FNadr(0,aldeBar_2)
+
+ FNadr(1,aldeBar_4)
+ CMP R3,R1
+  BNE dont_restore_rawbar
+
+ FNldr(12,curr_planet)        ; restore rawbar with datas of curr planet
+ BL put_ordiraws
+ BL SwapScreens
+ BL put_ordiraws
+ BL SwapScreens
+ FNadr(0,aldeBar_1)
+.dont_restore_rawbar
+
+ BL program_icon_installation
+ BL rebuild_all_stacks        ; just in case stacks have been corrupted...
+ BL rebuild_FL_stack
+ BL Headboom_animate
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.infos_menu
+FNin
+ MVN R0,#0:STR R0,brain_curr_opt
+
+ FNadr(0,aldeBar_2)
+ BL program_icon_installation
+ BL Headboom_animate
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.ideas_menu
+FNin
+ MVN R0,#0:STR R0,brain_curr_opt
+
+ FNadr(0,aldeBar_3)
+ BL program_icon_installation
+ BL Headboom_animate
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.profs_information
+FNin
+
+ LDR R14,brain_init_flag
+ CMN R14,#1:BNE profs_info_see
+
+ BL put_all_profs
+ BL pushed_photo
+ CMP R2,#4:FNexitNE
+ CMN R0,#1
+  STRNE R0,profs_selected
+  MOVNE R1,#0
+  STRNE R1,brain_init_flag
+ FNexit
+.profs_info_see
+ LDR R0,profs_selected
+ BL put_infopage_prof
+
+ FNcheck_checksum(bind_exit_planet)
+
+FNout
+
+.profs_selected EQUD 0
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.ideas_infos
+FNin
+
+ LDR R14,brain_init_flag
+ CMN R14,#1:BNE ideas_info_see
+
+ LDR R0,brain_curr_opt
+ BL put_all_ideas
+
+ BL pushed_idea
+ CMP R2,#4:FNexitNE
+ CMN R0,#1
+  STRNE R0,ideas_selected
+  MOVNE R1,#0
+  STRNE R1,brain_init_flag
+ FNexit
+.ideas_info_see
+ LDR R0,ideas_selected
+ BL put_infopage_idea
+
+FNout
+
+.ideas_selected EQUD 0
+.ideas_act_flag EQUD 0
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.ideas_sel
+FNin
+
+ LDR R14,brain_init_flag
+ CMN R14,#1:BNE ideas_sel_see
+
+ LDR R0,brain_curr_opt
+ BL put_all_tested_ideas
+
+ BL pushed_idea
+ CMP R2,#4:FNexitNE
+ CMN R0,#1
+  STRNE R0,ideas_selected
+  MOVNE R1,#0
+  STRNE R1,brain_init_flag
+ FNexit
+
+.ideas_sel_see
+
+ LDR R0,ideas_act_flag
+ CMP R0,#0:BEQ no_tst_and_sch
+
+ LDR R0,ideas_selected
+ FNldr(12,curr_linked_planet)
+ BL test_idea
+ BNE no_tst_and_sch
+  LDR R0,ideas_selected
+  BL test_and_schedule_idea
+  BL put_ordiraws
+  BL SwapScreens
+  BL put_ordiraws
+  BL SwapScreens
+  MOV R0,#31:STR R0,brain_curr_opt  ;idea scheduled->return to planet menu
+  MVN R0,#0: STR R0,brain_init_flag
+  BL planet_menu
+ FNexit
+
+.no_tst_and_sch
+ LDR R0,ideas_selected
+ BL put_selected_idea
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.ideas_mainmenu
+FNin
+ MOV R0,#31:STR R0,brain_curr_opt
+
+ ADR R0,aldeBar_4
+ BL program_icon_installation
+
+ BL init_planet_screen
+
+ BL update_ideas
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.flashlight_menu
+FNin
+ MVN R0,#0:STR R0,brain_curr_opt
+
+ ADR R0,aldeBar_5
+ BL program_icon_installation
+ BL Headboom_animate
+FNout
+
+.flashlight_load
+FNin
+ MVN R0,#0:STR R0,brain_curr_opt
+
+ BL init_alternate_values
+
+ ADR R0,aldeBar_6
+ BL program_icon_installation
+ BL Headboom_animate
+
+ FNcheck
+
+FNout
+
+.FL_repair EQUD 0
+
+.brain_invaders
+FNin
+ LDR R0,brain_init_flag
+ CMN R0,#1:MOVEQ R0,#96
+           SUBNE R0,R0,#1
+ STR R0,brain_init_flag
+
+ CMP R0,#0:BEQ enter_invaders
+  CMP R0,#96:MOVEQ R0,#0:MOVEQ R1,#14:BLEQ send_speak
+  BL Headboom_animate
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.raws_info_menu
+FNin
+ MOV R0,#30:STR R0,brain_curr_opt
+
+ ADR R0,aldeBar_7
+ BL program_icon_installation
+
+FNout
+
+.raws_information
+FNin
+
+ ADR R0,raws_info_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ LDR R0,curr_raw_instance
+
+ MOV R0,R0,LSR#29
+ BL access_rawmat
+ LDR R13,[R2,#00]
+ LDR R0,[R13,#04]
+
+ MOV R2,#192
+ MOV R3,#34
+ BL CentredString
+
+ LDR R0,[R13,#04]
+ ADD R0,R0,#28    ; point to description
+ MOV R2,#32
+ MOV R3,#36
+ BL send_text
+
+ FNadr(14,Coords)
+ MOV R0,#16:STR R0,[R14,#08]  ; FinX
+ MOV R0,#00:STR R0,[R14,#12]  ; FinY
+ MOV R0,#117
+           STR R0,[R14,#00]   ; PosX
+ MOV R0,#121
+           STR R0,[R14,#04]   ; PosY
+
+ BL calcRealPos
+
+FNadr(9,myScape)
+LDRB R9,[R9,#129]     ; read base h
+ADD  R9,R9,R9,ASR#1   ; x1.5
+SUB  R9,R9,#160*1.5   ; delta between real base and "reference" base
+ ADD R0,R9,#348
+ RSB R0,R0,#0
+ FNstr(0,14,Elevation)
+
+ SWI "OS_ReadMonotonicTime"
+ FNadr(2,sinus)
+ MOV R0,R0,LSR#1
+ AND R0,R0,#255
+ LDR R1,[R2,R0,LSL#2]!
+ LDR R2,[R2,#64*4]
+ MOV R1,R1,LSL#18
+ MOV R2,R2,LSL#17
+ ADD R1,R1,#(3*32)<<20
+ ADD R2,R2,#(4*32)<<20
+
+ LDR R0,curr_raw_instance
+ MOV R0,R0,LSR#29
+ MOV R0,R0,LSL#1
+ ADD R0,R0,#1        ; select right object
+ BL ReadObjectAddress
+ BL DrawObject
+
+FNout
+
+.left_raw_instance
+ LDR R0,curr_raw_instance
+ SUB R0,R0,#1<<(32-6)
+ STR R0,curr_raw_instance
+
+ MOV R0,#30:STR R0,brain_curr_opt
+B raws_information
+
+.right_raw_instance
+ LDR R0,curr_raw_instance
+ ADD R0,R0,#1<<(32-6)
+ STR R0,curr_raw_instance
+
+ MOV R0,#30:STR R0,brain_curr_opt
+B raws_information
+
+.raws_info_str FNstring("RESOURCES")
+.curr_raw_instance EQUD 0
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNinfo_profs
+[OPT PASS
+
+.put_all_profs
+FNin
+
+ ADR R0,select_profs_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ MOV R11,#2
+ .loop_put_all_profs_Y
+  MOV R12,#4
+ .loop_put_all_profs_X
+
+   ADD R0,R12,R11,LSL#2
+   ADD R0,R0,R11
+
+   MOV R1,#320*32
+   ADD R1,R1,#+16
+   ADD R1,R1,R12,LSL#0+6
+   ADD R1,R1,R11,LSL#8+6
+   ADD R1,R1,R11,LSL#6+6
+
+   BL draw_prof
+
+ SUBS R12,R12,#1:BPL loop_put_all_profs_X
+SUBS R11,R11,#1:BPL loop_put_all_profs_Y
+
+FNout
+
+.select_profs_str FNstring("THE PROFESSORS")
+
+.pushed_photo           ; return R0=-1 if no press or the # of pushed icon
+ FNmouse                ; also return R2=mouse buttons
+ CMP R2,#0:BEQ no_photo ; no button activated
+
+ SUBS R0,R0,#064:BMI no_photo
+ AND R3,R0,#255
+ CMP R3,#128    :BPL no_photo                ; out of X-domain
+
+ SUBS R1,R1,#256:BMI no_photo
+ AND R3,R1,#255
+ CMP R3,#128    :BPL no_photo                ; out of Y-domain
+
+ MOV R0,R0,LSR#8
+ MOV R1,R1,LSR#8
+ RSB R1,R1,#2
+ ADD R0,R0,R1,LSL#2                          ; place%=x+5*y
+ ADD R0,R0,R1
+
+MOV PC,R14
+
+.no_photo MVN R0,#0:MOV PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_histogram       ; input R0=prof/idea pointer
+FNin
+ FNldr(8,BASESCR)
+ ADD R8,R8,#284
+
+ ADR R9,histogram_cols
+
+ LDRB R2,[R0,#08]:LDMIA R9!,{R3,R4}:ADD R1,R8,#00:BL put_histobar
+ LDRB R2,[R0,#09]:LDMIA R9!,{R3,R4}:ADD R1,R8,#08:BL put_histobar
+ LDRB R2,[R0,#10]:LDMIA R9!,{R3,R4}:ADD R1,R8,#16:BL put_histobar
+ LDRB R2,[R0,#11]:LDMIA R9 ,{R3,R4}:ADD R1,R8,#24:BL put_histobar
+FNout
+
+.put_histobar        ; input R1=scr pos ; R2=note% ; (R3,R4)=col
+ FNadr(10,MegaShades+96*26+92)
+
+ MOV R7,#36
+.loop_put_histobar
+ CMP R7,R2,LSL#2:MOVMI R5,R4:MOVMI R6,R3
+                 LDRPL R5,[R10],#-2:MOVPL R6,R5
+
+ STMIA R1,{R5,R6}
+ ADD R1,R1,#320
+
+SUBS R7,R7,#1:BNE loop_put_histobar
+MOV PC,R14
+
+.histogram_cols
+ EQUD &00FDFEFF:EQUD &FFFFFFFE
+ EQUD &00EDEEEF:EQUD &EFEFEFEE
+ EQUD &006D6E6F:EQUD &6F6F6F6E
+ EQUD &001D1E1F:EQUD &1F1F1F1E
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_infopage_prof   ; input R0=prof #
+FNin
+
+ BL access_prof
+ MOV R13,R2
+
+ LDR R0,[R2,#08]     ; =activity%
+
+ CMP R0,#0:MOVGT R1,#5  ; message code WORKING
+           MOVEQ R1,#6  ;              INACTIVE
+
+ LDR R0,[R2,#12]     ; =where%
+ CMP R0,#14          ; on paradise planet?
+           MOVEQ R1,#8
+ SUB R2,R0,#16       ; kidnapped?
+ CMP R2,#15
+           MOVCC R1,#7
+           SUBCC R0,R0,#16
+
+ FNadr(2,planetnames_str)
+ ADD R2,R2,R0,LSL#4  ; pointer to planet name
+ FNadr(0,tmp_string)
+ BL create_message
+
+ FNadr(0,tmp_string)
+ MOV R2,#194
+ MOV R3,#19
+ BL send_text
+
+ LDR R0,[R13,#04]    ; pointer to type
+ BL put_histogram
+
+ MOV R13,R0
+ LDR R0,[R13,#00]
+ MOV R1,#320*4
+ ADD R1,R1,#4
+ BL draw_prof
+
+ LDR R0,[R13,#04]    ; point to name
+ BL put_aligned_name
+
+ LDR R0,[R13,#04]
+ ADD R0,R0,#28       ; point to description
+ MOV R2,#48
+ MOV R3,#36
+ BL send_text
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.draw_prof        ; in R0=prof #=[0..15] ; R1=screen pos
+ ADR R2,photoProfs
+ ADD R0,R2,R0,LSL#10
+
+ FNldr(2,BASESCR)
+ ADD R1,R2,R1
+
+ MOV R10,#32
+.loop_draw_prof
+ LDMIA R0!,{R2-R9}:STMIA R1,{R2-R9}
+ ADD R1,R1,#320
+ SUBS R10,R10,#1:BNE loop_draw_prof
+MOVS PC,R14
+
+
+.draw_half_prof   ; in R0=prof #=[0..15] ; R1=screen pos
+ ADR R2,photoProfs
+ ADD R0,R2,R0,LSL#10
+
+ FNldr(2,BASESCR)
+ ADD R1,R2,R1
+
+  FNadr(7,fade_table)
+
+ MOV R10,#32
+.loop_draw_half_prof
+ MOV R5,#32
+.loop_draw_half_prof2
+
+  LDMIA R0!,{R2,R6}
+
+  ANDS R3,R2,#&FF:    LDRNEB R3,[R7,R3]
+  ANDS R4,R2,#&FF00:  LDRNEB R4,[R7,R4,LSR#8] :ORRNE R3,R3,R4,LSL#8
+  ANDS R4,R2,#&FF0000:LDRNEB R4,[R7,R4,LSR#16]:ORRNE R3,R3,R4,LSL#16
+                      LDRB R4,[R7,R2,LSR#24]  :ORR R3,R3,R4,LSL#24
+
+  ANDS R8,R6,#&FF:    LDRNEB R8,[R7,R8]
+  ANDS R4,R6,#&FF00:  LDRNEB R4,[R7,R4,LSR#8] :ORRNE R8,R8,R4,LSL#8
+  ANDS R4,R6,#&FF0000:LDRNEB R4,[R7,R4,LSR#16]:ORRNE R8,R8,R4,LSL#16
+                      LDRB R4,[R7,R6,LSR#24]  :ORR R8,R8,R4,LSL#24
+
+  STMIA R1!,{R3,R8}
+
+ SUBS R5,R5,#8:BNE loop_draw_half_prof2
+ ADD R1,R1,#320-32
+ SUBS R10,R10,#1:BNE loop_draw_half_prof
+MOVS PC,R14
+
+.draw_small_prof  ; in R0=prof #=[0..15] ; R1=screen pos
+ CMP R0,#15
+
+ FNadr(2,photoSmallProfs)
+ ADD R0,R2,R0,LSL#8
+
+ FNldr(2,BASESCR)
+ ADD R1,R2,R1
+
+ BEQ draw_small_light
+
+ MOV R10,#16
+.loop_draw_small_prof
+ LDMIA R0!,{R2-R5}
+ STMIA R1,{R2-R5}
+ ADD R1,R1,#320
+ SUBS R10,R10,#1:BNE loop_draw_small_prof
+MOVS PC,R14
+
+.draw_small_light ; 12 pixels de large
+
+ MOV R10,#16
+.loop_draw_small_light
+ LDMIA R0!,{R2-R5}
+ STMIB R1,{R2-R4}
+ ADD R1,R1,#320
+ SUBS R10,R10,#1:BNE loop_draw_small_light
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+FNbin
+
+.photoProfs      FNload("ZARCH_TWO.photoProfs")
+.photoSmallProfs FNload("ZARCH_TWO.smallProfs")
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNinfo_sun
+[OPT PASS
+
+.sun_information
+FNin
+
+ LDR R0,sun_phase
+ CMP R0,#3<<3
+ ADDNE R0,R0,#1
+ MOVEQ R0,#0
+ STR R0,sun_phase
+ MOV R0,R0,LSR#3
+ MOV R2,#24
+ BL draw_sun_generic
+
+ ADR R0,inform_sun_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ FNcheck
+
+ ADR R0,radius_sun_str
+ MOV R2,#32
+ MOV R3,#36
+ BL CentredString
+
+ ADR R0,radius_sun_val
+ FNldr(2,SUN_radius)
+ MOV R2,R2,LSR#16
+ BL set_num_in_str
+ MOV R2,#44
+ MOV R3,#13
+ BL CentredString
+
+ ADR R0,time_sun_str
+ MOV R2,#72
+ MOV R3,#36
+ BL CentredString
+
+ BL foresee_supernova
+
+  FNldr(3,time_unit_1):BL base_counter
+   STRB R0,time_sun_val+7
+  FNldr(3,time_unit_2):BL base_counter
+   STRB R0,time_sun_val+8
+  FNldr(3,time_unit_3):BL base_counter
+   STRB R0,time_sun_val+10
+  FNldr(3,time_unit_4):BL base_counter
+   STRB R0,time_sun_val+11
+  MOV R3,#60*10*2     :BL base_counter
+   STRB R0,time_sun_val+13
+  MOV R3,#60*2        :BL base_counter
+   STRB R0,time_sun_val+14
+
+ ADR R0,time_sun_val
+
+ MOV R2,#84
+ MOV R3,#13
+ BL CentredString
+
+ BL paint_sun_diagram
+
+FNout
+
+.sun_phase      EQUD 0
+.time_sun_str   FNstring("EXPECTED SUPERNOVA TIME")
+.time_sun_val   FNstring("iii    ab cdgdc    iii")
+.inform_sun_str FNstring("THE ALDEBARAN STATUS")
+.radius_sun_str FNstring("iii CURRENT RADIUS iii")
+.radius_sun_val FNstring("xxxx MILLIONS KILOMETRES")
+
+.paint_sun_diagram
+FNin
+
+ FNldr(1,BASESCR)
+ FNadd(1,(208-100-4)*320+128)
+
+ ADR R6,sun_diagram
+ LDR R7,sun_diagram_pntr
+
+ MOV R5,#160
+.loop_paint_sun_diagram
+
+ LDRB R0,[R6,R7]  ; read sun_diagram value
+ BL draw_sun_line
+ ADD R1,R1,#1
+
+ ADD R7,R7,#1     ; next sun value
+ CMP R7,#160
+ MOVEQ R7,#0
+
+ SUBS R5,R5,#1:BNE loop_paint_sun_diagram
+
+FNout
+
+FNbin
+
+.draw_sun_line    ; input R0=value=[0..100] ; R1=scr addr
+
+ADR R2,sun_line_types
+MOV R3,#100
+.loop_draw_sun_line
+
+ CMP R0,R3:ADDEQ R2,R2,#100   ; change colour?
+
+  LDRB R4,[R2],#1
+
+ STRB R4,[R1],#320
+
+SUBS R3,R3,#1:BNE loop_draw_sun_line
+ SUB R1,R1,#320*100
+MOVS PC,R14
+
+.sun_line_types
+ FNsun_cols(25)
+ FNsun_cols(1)
+
+.init_sun_diagram
+ MOV R0,#100
+ MOV R1,#160
+ ADR R2,sun_diagram
+.loop_init_sun_diagram
+ STRB R0,[R2],#1
+ SUBS R1,R1,#1:BNE loop_init_sun_diagram
+ MOV R0,#0:STR R0,sun_diagram_pntr
+MOVS PC,R14
+
+.add_sun_line              ; input R0=new value
+ LDR R1,sun_diagram_pntr
+ ADR R2,sun_diagram
+ STRB R0,[R2,R1]
+ ADD R1,R1,#1
+ CMP R1,#160
+  MOVEQ R1,#0
+ STR R1,sun_diagram_pntr
+MOVS PC,R14
+
+.sun_diagram_pntr EQUD 0   ; =[0..159]=last value chronologiquement
+
+.sun_diagram FNram(160)
+]
+=0
+_________________________________________________________________________
+
+DEFFNinfo_ideas
+[OPT PASS
+
+.put_all_ideas          ; input R0=kind of idea=weapons/protect/builds
+FNin
+
+  FNadr(14,lookup_icon_grf)
+  LDRB R0,[R14,R0]
+
+  MOV R1,#+16      :BL draw_idea
+  MOV R1,#320-16-24:BL draw_idea
+
+ CMP R0,#8
+  ADRMI R0,select_weapon_str : MOVMI R13,#0  ; R13=base for idea #
+  ADREQ R0,select_protec_str : MOVEQ R13,#16
+  ADRGT R0,select_builds_str : MOVGT R13,#32
+
+  STR R13,idea_basenum
+
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+.loop_put_all_ideas
+ MOV R3,#46          ; colour
+
+ MOV R0,R13
+ BL idea_type_pointer
+ LDR R0,[R2,#04]     ; pointer to name%
+
+ MOV R2,#16+11
+ AND R14,R13,#15
+ ADD R2,R2,R14,LSL#3 ; x11
+ ADD R2,R2,R14,LSL#1
+ ADD R2,R2,R14
+ BL CentredString
+
+ADD R13,R13,#1:TST R13,#%1111:BNE loop_put_all_ideas
+
+FNout
+
+.put_all_tested_ideas   ; input R0=kind of idea=weapons/protect/builds
+FNin
+
+  FNadr(14,lookup_icon_grf)
+  LDRB R0,[R14,R0]
+
+  MOV R1,#+16      :BL draw_idea
+  MOV R1,#320-16-24:BL draw_idea
+
+ CMP R0,#8
+  ADRMI R0,select_weapon_str : MOVMI R13,#0  ; R13=base for idea #
+  ADREQ R0,select_protec_str : MOVEQ R13,#16
+  ADRGT R0,select_builds_str : MOVGT R13,#32
+
+  STR R13,idea_basenum
+
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+.loop_put_all_tested_ideas
+ MOV R0,R13
+ FNldr(12,curr_linked_planet)
+ BL test_idea
+  MOVEQ R3,#13       ; select right colour (undertakable or not)
+  MOVNE R3,#01
+
+ MOV R0,R13
+ BL idea_type_pointer
+ LDR R0,[R2,#04]     ; pointer to name%
+
+ MOV R2,#16+11
+ AND R14,R13,#15
+ ADD R2,R2,R14,LSL#3 ; x11
+ ADD R2,R2,R14,LSL#1
+ ADD R2,R2,R14
+ BL CentredString
+
+ADD R13,R13,#1:TST R13,#%1111:BNE loop_put_all_tested_ideas
+
+FNout
+
+.select_weapon_str FNstring("WEAPONS")
+.select_protec_str FNstring("PROTECTIONS")
+.select_builds_str FNstring("BUILDING BLOCKS")
+
+.draw_idea  ; input R0=kind of idea ; R1=screen pos
+ FNadr(2,icons_grf)
+ ADD R3,R0,R0,LSL#3
+ ADD R2,R2,R3,LSL#6
+
+ FNldr(3,BASESCR)
+ ADD R1,R1,R3
+
+ MOV R3,#24
+.loop_draw_idea
+  LDMIA R2!,{R4-R9}:STMIA R1,{R4-R9}
+  ADD R1,R1,#320
+ SUBS R3,R3,#1:BNE loop_draw_idea
+MOVS PC,R14
+
+.draw_half_idea  ; input R0=kind of idea ; R1=screen pos
+ FNadr(2,icons_grf)
+ ADD R3,R0,R0,LSL#3
+ ADD R2,R2,R3,LSL#6
+
+ FNldr(3,BASESCR)
+ ADD R1,R1,R3
+
+ FNadr(7,fade_table)
+
+ MOV R6,#24
+.loop_draw_idea1
+ MOV R5,#24
+.loop_draw_idea2
+
+  LDR R8,[R2],#4
+  AND R4,R8,#&FF:     LDRB R3,[R7,R4]
+  ANDS R4,R8,#&FF00:  LDRNEB R4,[R7,R4,LSR#8] :ORRNE R3,R3,R4,LSL#8
+  ANDS R4,R8,#&FF0000:LDRNEB R4,[R7,R4,LSR#16]:ORRNE R3,R3,R4,LSL#16
+                      LDRB R4,[R7,R8,LSR#24]  :ORR R3,R3,R4,LSL#24
+  STR R3,[R1],#4
+
+ SUBS R5,R5,#4:BNE loop_draw_idea2
+  ADD R1,R1,#320-24
+ SUBS R6,R6,#1:BNE loop_draw_idea1
+MOVS PC,R14
+
+.pushed_idea            ; return R0=-1 if no press or the # of pushed icon
+ FNmouse                ; also return R2=mouse buttons
+ CMP R2,#0:BEQ no_idea  ; no button activated
+
+ SUB R1,R1,#55*4
+ CMP R1,#11*16*4:BCS no_idea
+
+ ADD R1,R1,R1,LSL#1  ; /11
+ RSB R1,R1,R1,LSL#5
+ MOV R0,R1,LSR#10+2
+ RSB R0,R0,#15
+
+ LDR R1,idea_basenum
+ ADD R0,R0,R1
+
+MOV PC,R14
+
+.no_idea MVN R0,#0:MOV PC,R14
+
+.put_infopage_idea
+FNin
+
+ BL idea_type_pointer
+ MOV R13,R2          ; pointer to idea type
+
+ BL put_executed_status
+
+ MOV R0,R13
+ BL put_histogram
+
+ LDR R0,[R13,#04]    ; point to name
+ BL  put_aligned_idea
+
+ LDR R0,[R13,#04]
+ ADD R0,R0,#28       ; point to description
+ MOV R2,#48
+ MOV R3,#36
+ BL send_text
+
+ BL put_infoneeds
+
+FNout
+
+.put_executed_status    ; input R0=idea type=[0..47]
+FNin
+
+ CMP R0,#32:FNexitCS
+
+ BL read_already_executed
+  ADREQ R0,status_not_yet_ex_str
+  ADRNE R0,status_already_ex_str
+
+ MOV R1,#40+4*12
+ MOV R2,#4+22
+ MOV R3,#17
+ BL  PutString
+
+FNout
+
+.put_infoneeds       ; input R13
+FNin
+
+ ADD R4,R13,#12      ; load needs and write them in strip string
+ LDMIA R4,{R4,R5,R6,R7}
+ BL set_ordi_raws_idea
+
+ LDR R0,[R13,#12]    ; need1% (the only one containing a project need)
+ TST R0,#&FF<<24
+ BNE no_project_need
+
+ LDR R0,[R0,#04]
+ MOV R2,#190-16
+ MOV R3,#26          ; need colour
+ BL  CentredString
+
+ ADR R0,needs_str
+ MOV R2,#190-16-16
+ MOV R3,#47
+ BL CentredString
+
+.no_project_need
+ FNldr(0,brain_curr_opt)
+ FNadr(1,lookup_icon_grf)
+ LDRB R0,[R1,R0]
+ FNmov(1,320*8+4):BL draw_idea
+
+ BL put_raw_strip
+
+FNout
+
+.idea_basenum          EQUD 0
+
+.status_already_ex_str FNstring("ALREADY EXECUTED")
+.status_not_yet_ex_str FNstring(" NEVER EXECUTED")
+.needs_str             FNstring("NEEDED")
+.schedulable_str       FNstring("PROJECT UNDERTAKABLE")
+.notschedulable_str    FNstring("PROJECT NOT UNDERTAKABLE")
+.general_percent       FNstring("xxl")
+FNbin
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNact_ideas
+ left_justify%=152
+[OPT PASS
+
+.curr_linked_planet    EQUD 1
+.exec_project_counter  EQUD 0    ; 0 = no double click started
+.mouse_stopped         EQUD 0    ; 0 = mouse not stopped
+.curr_instance_pos     EQUD 0    ; =[0..3]
+
+.init_planet_screen
+ FNldr(0,curr_planet)
+ STR R0,curr_linked_planet
+ MOV R0,#0
+ STR R0,mouse_stopped
+
+ FNcheck
+
+MOVS PC,R14
+
+.planet_screen
+FNin
+
+ LDR R14,exec_project_counter    ; used for double-click control
+ SUBS R14,R14,#1
+ STRPL R14,exec_project_counter
+
+ ADR R0,proj_manag_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ LDR R12,curr_linked_planet
+ BL put_ordiraws
+
+ BL planet_profs_message
+ BL planet_info_list
+ BL planet_projects
+
+ LDR R14,mouse_stopped
+ CMP R14,#0:SWINE "OS_Mouse"
+            STRNE R2,mouse_stopped
+            FNexitNE
+
+ BL planet_push         :CMN R1,#1:STRNE R1,curr_linked_planet
+ BL project_push        :CMN R1,#1:FNexitEQ
+                         MOV R0,R1
+                         MOV R2,R1
+                         LDR R12,curr_linked_planet
+                         BL access_idea:FNexitEQ
+                         STR R2,curr_instance_pos
+                         LDR R1,[R1,#Idea_stat%]
+                         CMP R1,#existant%
+                         FNsetflag("EQ")
+                         FNstr(1,14,brain_init_flag)  ; b_i_f=R1=0
+                         FNexitEQ        ; project not finished
+
+                         LDR R14,exec_project_counter ; read...
+                         MOV R12,#10                  ; and reset counter
+                         STR R12,exec_project_counter ; for double click
+
+                         CMP R14,#0:FNexitEQ
+                         CMP R14,#8
+                          STRMI R14,mouse_stopped     ; act->stop mouse
+                          MOVMI R0,R2                 ; project pos=[0..3]
+                          LDRMI R12,curr_linked_planet
+                          BLMI activate_project
+FNout
+
+.proj_manag_str FNstring("PROJECTS MANAGEMENT")
+.ready_proj_str FNstring("PROJECT READY")
+.under_proj_str FNstring("UNDER DEVELOPMENT")
+
+.planet_info_list
+FNin
+
+ MOV R13,#1
+.planet_name_list_loop
+ FNadr(0,PlanetNames)
+ ADD R0,R0,R13,LSL#3
+ ADD R0,R0,R13
+ MOV R1,#16
+ MOV R2,R13,LSL#3    ; x12
+ ADD R2,R2,R13,LSL#2
+ ADD R2,R2,#32
+ FNldr(14,curr_planet)
+ CMP R13,R14
+  MOVEQ R3,#21       ; background colour
+  MOVNE R3,#33
+ FNldr(14,curr_linked_planet)
+ CMP R13,R14
+  MOVEQ R3,#47       ; highlight colour
+ BL PutString
+ADD R13,R13,#1:CMP R13,#13:BMI planet_name_list_loop
+
+FNout
+
+.project_info_block  ; input R0=idea pos =[0..3] ; (R10,R11)=(x,y)
+FNin                 ;                or =[4..5] for projects in FL
+
+ STR R0,curr_instance_pos
+
+ FNldr(12,curr_linked_planet)
+
+ CMP R0,#4:BPL info_case
+  BL access_idea
+  B end_info_case
+.info_case
+  AND R0,R0,#1
+  BL access_FL_idea
+.end_info_case
+ BNE proj_exists        ; when access returns an inexistant% project?
+
+ LDR R0,curr_instance_pos
+ CMP R0,#4
+ ADDPL R1,R10,R11,LSL#8 ; draw "FlashLight" icon if R0=4 or 5
+ ADDPL R1,R1,R11,LSL#6
+ SUBPL R1,R1,#28
+ MOVPL R0,#4
+ BLPL draw_idea
+
+ ADD R1,R10,R11,LSL#8
+ ADD R1,R1,R11,LSL#6
+ MOV R0,#33             ; no-project icon
+ BL draw_idea
+ FNexit
+
+.proj_exists
+ MOV R12,R1             ; remember R1
+
+ LDR R0,curr_instance_pos
+ CMP R0,#4
+ ADDPL R1,R10,R11,LSL#8 ; draw "FlashLight" icon if R0=4 or 5
+ ADDPL R1,R1,R11,LSL#6
+ SUBPL R1,R1,#28
+ MOVPL R0,#4
+ BLPL draw_idea
+
+ ADD R1,R10,R11,LSL#8
+ ADD R1,R1,R11,LSL#6
+ LDR R0,[R12,#Idea_type%]
+ MOV R0,R0,LSR#4
+ ADD R0,R0,#7           ; the right idea icon
+ BL draw_idea
+
+ LDR R0,[R12,#Idea_type%]
+ BL idea_type_pointer
+ LDR R0,[R2,#Data_ptr%] ; = name%
+ BL put_aligned_project ; input (R10,R11)=pos
+
+ LDR R0,[R12,#Idea_stat%]
+ CMP R0,#executable%
+  ADREQ R0,ready_proj_str
+  ADRNE R0,under_proj_str
+ ADD R1,R10,#28
+ ADD R2,R11,#16         ; Y pos
+ MOV R3,#244
+ BL PutMiniString
+
+FNout
+
+.planet_projects
+FNin
+ MOV R10,#left_justify%
+ BL draw_tetra_and_FL_projects
+FNout
+
+.draw_tetra_and_FL_projects   ; R10=x pos
+FNin
+  MOV R11,#36
+ MOV R0,#0:BL project_info_block
+  ADD R11,R11,#28
+ MOV R0,#1:BL project_info_block
+  ADD R11,R11,#28
+ MOV R0,#2:BL project_info_block
+  ADD R11,R11,#28
+ MOV R0,#3:BL project_info_block
+  ADD R11,R11,#28
+ MOV R0,#4:BL project_info_block    ; projects in FL
+  ADD R11,R11,#28
+ MOV R0,#5:BL project_info_block
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.planet_push                     ;output R1=planet #=[1..12] or -1 if none
+ FNmouse
+ CMP R2,#4:BNE no_planet_push                   ; test buttons
+ CMP R0,#4*( 12*10+00):BCS no_planet_push       ; text x pos
+
+ RSB R1,R1,#4*(256-44)                          ; y_top
+ CMP R1,#(4*12)*12                              ; distance between lines
+ BCS no_planet_push
+
+ ADD R1,R1,R1,LSL#4  ; x17
+ ADD R1,R1,R1,LSL#2  ; x5  = x85
+ MOV R1,R1,LSR#8+2+2 ; R1=R1/12
+ ADD R1,R1,#1        ; R1=[1..12]
+MOVS PC,R14
+
+.no_planet_push
+ MVN R1,#0
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.project_push                 ; output R1=project #=[0..3] or -1 if none
+ FNmouse
+ CMP R2,#4:BNE no_project_push                  ; test buttons
+ CMP R0,#4*left_justify%:BMI no_project_push    ; text x_min pos
+
+ RSB R1,R1,#4*(256-36)                          ; y_top
+ CMP R1,#(4*4)*28                               ; distance between lines
+ BCS no_project_push
+
+ ADD R1,R1,R1,LSL#3  ; x9
+ MOV R1,R1,LSR#6+2+2 ; R1=R1/28=[0..3]
+MOVS PC,R14
+
+.no_project_push
+ MVN R1,#0
+MOVS PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.put_selected_idea      ; input R0=idea type #=[0..47]
+FNin
+
+ BL idea_type_pointer
+ MOV R13,R2
+
+ BL put_executed_status
+
+ FNldr(0,brain_curr_opt)
+ FNadr(1,lookup_icon_grf)
+ LDRB R0,[R1,R0]
+ FNmov(1,320*8+4):BL draw_idea
+
+ FNldr(0,ideas_selected)
+ FNldr(12,curr_linked_planet)
+ BL test_idea
+ ADREQ R0,schedulable_str
+ ADRNE R0,notschedulable_str
+ MOV R2,#80
+ MOVEQ R3,#13
+ MOVNE R3,#01
+ BL  CentredString
+
+ LDR R12,curr_linked_planet
+ FNadr(2,planetnames_str)
+ ADD R2,R2,R12,LSL#4 ; pointer to planet name
+ FNadr(0,tmp_string)
+ MOV R1,#9
+ BL create_message
+
+ FNadr(0,tmp_string)
+ MOV R2,#80+12
+ BL send_text
+
+ MOV R0,R13
+ BL put_histogram
+
+ LDR R0,[R13,#04]    ; point to name
+ BL  put_aligned_idea
+
+ BL put_infoneeds
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.put_selected_instance
+FNin
+
+ LDR R0,curr_instance_pos  ; the instance should be undertaken!
+
+ LDR R12,curr_linked_planet
+ BL access_idea
+ FNexitEQ                  ; non-existing instance!
+ MOV R13,R1                ; pointer to instance
+
+ LDR R0,[R1,#Idea_type%]
+ MOV R0,R0,LSR#4
+ ADD R0,R0,#7              ; the right idea icon
+ FNmov(1,320*8+4):BL draw_idea
+
+ FNmov(0,under_proj_str)
+ MOV R1,#40
+ MOV R2,#4+22
+ MOV R3,#17
+ BL  PutString
+
+ FNadr(0,tmp_string)
+ MOV R1,#2
+ LDR R12,curr_linked_planet
+ FNadr(2,planetnames_str)
+ ADD R2,R2,R12,LSL#4
+ BL create_message
+ FNadr(0,tmp_string)
+ MOV R2,#192
+ MOV R3,#46
+ BL  send_text
+
+ BL  put_megahistogram
+
+ ADD R12,R12,R12,LSL#2  ; x100
+ ADD R12,R12,R12,LSL#2
+ MOV R2,R12,ASR#17
+ MOV R3,#10:BL base_counter
+ STRB R0,general_percent+0
+ MOV R3,#01:BL base_counter
+ STRB R0,general_percent+1
+
+ FNadr(0,general_percent)
+ MOV R2,#168
+ MOV R3,#14
+ BL  CentredString
+
+ LDR R0,[R13,#Idea_type%]
+ BL idea_type_pointer
+ MOV R0,R2                 ; pointer to type
+ BL put_histogram
+
+ LDR R0,[R13,#Idea_type%]
+ BL idea_type_pointer      ; R2=pointer to type
+ LDR R0,[R2,#Data_ptr%]    ; R0=pointer to name
+ BL  put_aligned_idea
+
+ BL pushed_team
+ CMN R0,#1:BEQ no_modify_team
+
+ CMP R2,#1:BEQ desel_prof
+ CMP R2,#4
+  LDREQ R1,curr_instance_pos
+  LDREQ R12,curr_linked_planet
+  BLEQ  assign_project
+ B no_modify_team
+
+.desel_prof
+ BL remove_project
+
+.no_modify_team
+ BL put_team
+
+FNout
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_megahistogram   ; input R13=access idea address
+FNin2
+
+ MOV R12,R13:LDR R0,[R13,#Idea_type%]
+ BL idea_type_pointer
+ MOV R0,R2
+
+ FNldr(8,BASESCR)
+ FNadd(8,320*88+160-32)
+
+ ADR R9,megahistogram_cols
+
+ LDRB R2,[R0,#08]:LDR R11,[R12,#08]:LDMIA R9!,{R3,R4,R13}:ADD R1,R8,#00
+  BL put_megahistobar
+ LDRB R2,[R0,#09]:LDR R11,[R12,#12]:LDMIA R9!,{R3,R4,R13}:ADD R1,R8,#16
+  BL put_megahistobar
+ LDRB R2,[R0,#10]:LDR R11,[R12,#16]:LDMIA R9!,{R3,R4,R13}:ADD R1,R8,#32
+  BL put_megahistobar
+ LDRB R2,[R0,#11]:LDR R11,[R12,#20]:LDMIA R9 ,{R3,R4,R13}:ADD R1,R8,#48
+  BL put_megahistobar
+
+ LDRB R1,[R0,#10]
+  ADD R2,R2,R1
+ LDRB R1,[R0,#09]
+  ADD R2,R2,R1
+ LDRB R1,[R0,#08]
+  ADD R2,R2,R1
+
+ LDR R1,[R12,#16]
+  ADD R11,R11,R1
+ LDR R1,[R12,#12]
+  ADD R11,R11,R1
+ LDR R1,[R12,#08]
+  ADD R11,R11,R1
+
+ MOV R1,R11,LSR#10
+ BL  divide          ; output R12=R11/R2=pourcentage general
+
+FNout2
+
+.put_megahistobar    ; input R1=scr pos ; R2=note% ; (R3,R4)=col ;R11=res%
+ FNadr(10,MegaShades+96*26+92)
+
+ MOV R7,#72
+.loop_put_megahistobar
+ CMP R7,R2,LSL#3:MOVMI R5,R4:MOVMI R6,R3
+                 LDRPL R5,[R10],#-1:MOVPL R6,R5
+ CMPMI R11,R7,LSL#10:MOVMI R5,R13:BICMI R6,R13,#&FF<<24
+
+ STR R5,[R1],#4:STMIB R1,{R5,R6}:STR R5,[R1],#320-4
+
+SUBS R7,R7,#1:BNE loop_put_megahistobar
+MOV PC,R14
+
+.megahistogram_cols
+ EQUD &00FCFDFE:EQUD &FFFFFFFF : EQUD &2F2F2F2F
+ EQUD &00ECEDEE:EQUD &EFEFEFEF : EQUD &C0C0C0C0
+ EQUD &006C6D6E:EQUD &6F6F6F6F : EQUD &40404040
+ EQUD &001C1D1E:EQUD &1F1F1F1F : EQUD &10101010
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_team   ; input R13=instance pointer
+FNin
+
+ BL init_team_coroutine
+
+ LDR R12,curr_linked_planet
+ MOV R12,R12,LSL#1
+
+ MOV R11,#0
+.loop_put_team
+
+ MOV R0,R11:BL access_prof ; -> R2=address
+
+ BL team_coroutine
+
+ LDR R3,[R2,#12]           ; =where%
+ CMP R12,R3,LSL#1
+ BNE no_same_place
+  LDR R2,[R2,#8]           ; =activity%
+  LDR R14,[R13,#Idea_id%]
+  CMP R2,R14
+   BLEQ draw_prof
+   BLNE draw_half_prof
+.no_same_place
+ ADD R11,R11,#1:CMP R11,#15:BNE loop_put_team
+
+FNout
+
+.init_team_coroutine
+ MVN R0,#0
+ STR R0,team_coroutine_cnt
+MOVS PC,R14
+
+.team_coroutine
+ LDR R1,team_coroutine_cnt
+ ADD R1,R1,#1
+ STR R1,team_coroutine_cnt
+
+ LDR R1,[PC,R1,LSL#2]
+MOVS PC,R14
+]
+ FOR cor%=0 TO 6 : [OPT PASS : EQUD 320*48+40-16+cor%*40 :] :NEXT
+ FOR cor%=0 TO 1
+  [OPT PASS
+   EQUD 320*(88+cor%*40)+40*1-16
+   EQUD 320*(88+cor%*40)+40*2-16
+   EQUD 320*(88+cor%*40)+40*6-16
+   EQUD 320*(88+cor%*40)+40*7-16
+  ]
+ NEXT
+[OPT PASS
+
+.team_coroutine_cnt EQUD 0
+
+.pushed_team
+ FNmouse                ; also return R2=mouse buttons
+ CMP R2,#0:BEQ no_team  ; no button activated
+
+ SUBS R0,R0,#096   :BMI no_team
+  CMP R0,#4*40*7-32:BPL no_team
+ ADD R0,R0,R0,LSL#4     ; \40
+ ADD R0,R0,R0,LSL#1
+ MOV R0,R0,LSR#13
+
+ SUBS R1,R1,#384   :BMI no_team
+  CMP R1,#4*40*3-32:BPL no_team
+ ADD R1,R1,R1,LSL#4     ; \40
+ ADD R1,R1,R1,LSL#1
+ MOV R1,R1,LSR#13
+
+ MOV R3,R0              ; result
+
+ CMP R1,#1:BGT no_hole_in_team
+           ADDEQ R3,R3,#7
+           ADDMI R3,R3,#11
+
+ CMP R0,#2:CMPNE R0,#3:CMPNE R0,#4:BEQ no_team  ; hole
+ CMP R0,#5:SUBPL R3,R3,#3
+
+.no_hole_in_team
+ CMP R3,#15:BCS no_team
+ MOV R0,R3
+MOV PC,R14
+
+.no_team MVN R0,#0:MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.planet_profs_message
+FNin
+
+ LDR R12,curr_linked_planet
+ MOV R11,#0    ; count how many profs on linked planet
+
+ MOV R0,#14
+.loop_count_linked_profs
+ BL access_prof
+ LDR R14,[R2,#12] ;=where%
+ BIC R14,R14,#1<<31
+ CMP R14,R12
+  ADDEQ R11,R11,#1
+ SUBS R0,R0,#1:BPL loop_count_linked_profs
+
+ MOV R2,R11
+ MOV R3,#10:BL base_counter
+  STRB R0,profs_ind_str
+  CMP R0,#ASC("[")            ; zero?
+ MOV R3,#01:BL base_counter
+  STRB R0,profs_ind_str+1
+
+  ADR R0,profs_ind_str
+  ADDEQ R0,R0,#1
+ MOV R1,#160
+ MOV R2,#20
+ MOV R3,#200
+ BL GenCentredMiniString
+FNout
+
+.profs_ind_str FNstring("xx PROFESSORS")
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNFL_ctrl
+[OPT PASS
+
+.flashlight_status
+FNin
+
+ FNldr(14,FL_repair)
+ CMP R14,#0:BLNE repair_damaged_FL
+
+ FNadr(0,FlashLight)
+ LDR R4,FL_angle
+  ADD R4,R4,#3<<0
+  ADD R4,R4,#2<<8
+  ADD R4,R4,#1<<16
+ STR R4,FL_angle
+
+ FNadr(5,galaga)
+ BL rotateTexPoints
+
+ FNadr(0,FlashLight)
+ MOV R1,#0
+ MOV R2,#160
+ MOV R3,#50
+ FNadr(5,galaga)
+ BL draw3DTexObject
+
+ ADR R0,FL_stat_str
+ MOV R2,#12
+ MOV R3,#41
+ BL CentredString
+
+ FNldr(2,damage_on_FL)
+ CMP R2,#100
+  ADREQ R0,FL_dest_str
+  BEQ put_damage_str
+ CMP R2,#0
+  MOVGT R3,#10
+  BLGT base_counter
+                  STRGTB R0,FL_dama_str+7
+  ADDGT R0,R2,#91:STRGTB R0,FL_dama_str+8
+  ADRGT R0,FL_dama_str
+  ADREQ R0,FL_noda_str
+.put_damage_str
+ MOV R2,#108
+ MOV R3,#14
+ BL CentredString
+
+ BL FL_cargo_value
+ MOV R2,R0
+ ADR R0,FL_carg_str
+ BL set_num_in_str
+
+ MOV R2,#128
+ MOV R3,#47
+ BL CentredString
+
+ ADR R0,FL_weap_str
+ MOV R2,#148
+ MOV R3,#40
+ BL CentredString
+
+ FNldr(12,brain_ticker)
+ TST R12,#%11000:MOVEQ R12,#0
+
+ FNldr(11,FL_curr_wea)
+ FNdraw_weapon(0, 320*164+084)
+ FNdraw_weapon(1, 320*164+116)
+ FNdraw_weapon(2, 320*164+148)
+ FNdraw_weapon(3, 320*164+180)
+ FNdraw_weapon(4, 320*164+212)
+
+ FNmouse
+  CMP R2,#4:BNE quit_flashlight_status
+
+  SUB R1,R1,#4*(256-164-24)
+  CMP R1,#4*24
+   SUBCC R0,R0,#4*084
+    CMPCC R0,#4*(4*32+24)
+     BCS quit_flashlight_status
+
+   MOV R0,R0,LSR#2+5       ; select an existing weapon
+     FNadr(1,FL_wea_0)
+     LDR R1,[R1,R0,LSL#2]
+    CMP R1,#0
+     FNsetflag("NE")
+     FNstr(0,1,FL_curr_wea)
+
+.quit_flashlight_status
+
+ FNcheck
+
+FNout
+
+.FL_angle EQUD 0
+
+.FL_stat_str FNstring("FLASHLIGHT STATUS")
+.FL_dama_str FNstring("DAMAGEgaal")
+.FL_carg_str FNstring("xxxx RESOURCES IN THE CARGO")
+.FL_noda_str FNstring("NO DAMAGE")
+.FL_dest_str FNstring("DESTROYED")
+.FL_weap_str FNstring("CURRENT WEAPON")
+.FL_prof_str FNstring("SELECT PROFESSORS")
+.FL_idea_str FNstring("SELECT PROJECTS")
+.FL_raws_str FNstring("SELECT RESOURCES")
+.FL_wein_str FNstring("xxxx")
+
+.repair_damaged_FL
+FNin
+ FNldr(1,damage_on_FL)
+ SUBS R1,R1,#1
+ FNsetflag("PL")
+ FNstr(1,2,damage_on_FL)
+ MOVPL R2,#128
+ BLPL add_time
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.cargo_prof
+FNin
+
+ ADR R0,FL_prof_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ FNldr(13,curr_planet)
+ MOV R13,R13,LSL#1      ; shift left to skip bit 31 = selection bit
+
+ MOV R11,#2
+ .loop_put_sel_profs_Y
+  MOV R12,#4
+ .loop_put_sel_profs_X
+
+   ADD R0,R12,R11,LSL#2
+   ADD R0,R0,R11
+
+   MOV R1,#320*32
+   ADD R1,R1,#+16
+   ADD R1,R1,R12,LSL#0+6
+   ADD R1,R1,R11,LSL#8+6
+   ADD R1,R1,R11,LSL#6+6
+
+   BL access_prof
+   FNldr(14,brain_ticker)
+   LDR R2,[R2,#12]   ;=where%
+   TST R2,#1<<31
+   BNE prof_sel_bit
+    CMP R13,R2,LSL#1
+   BLEQ draw_prof
+   BLNE draw_half_prof
+  B end_inner_sel_profs
+
+ .prof_sel_bit
+   TST R14,#%11000
+    BLNE draw_prof
+    BLEQ draw_half_prof
+
+ .end_inner_sel_profs
+ SUBS R12,R12,#1:BPL loop_put_sel_profs_X
+SUBS R11,R11,#1:BPL loop_put_sel_profs_Y
+
+ BL pushed_photo                    ; test if a professor photo has
+ CMN R0,#1:BEQ no_sel_FL_prof       ; been pushed for de/selection
+ MOV R12,R2       ;buttons status
+ BL access_prof
+ LDR R0,[R2,#12]  ;=where%
+ CMP R13,R0,LSL#1
+ BNE no_sel_FL_prof
+  FNldr(1,   FL_profs_how_much)
+   CMP R12,#4:BLEQ select_instance
+   CMP R12,#1:BLEQ deselect_instance
+  FNstr(1,14,FL_profs_how_much)
+ STR R0,[R2,#12]
+
+.no_sel_FL_prof
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.init_alternate_values
+ MOV R0,#0:STR R0,alternate_labo
+           STR R0,alternate_FL
+MOVS PC,R14
+
+.full_cargo_flag EQUD 0    ; pour eviter les superswaps avec la mouse
+.alternate_FL    EQUD 0    ; =[0..1] = FL instance to swap with
+.alternate_labo  EQUD 0    ; =[0..3]
+
+.cargo_idea
+FNin
+
+ ADR R0,FL_idea_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ FNldr(12,curr_planet)
+ FNstr(12,14,curr_linked_planet)
+
+ MOV R10,#80
+ BL draw_tetra_and_FL_projects
+
+ FNldr(12,curr_planet)        ; test if labo and FL are both FULL
+ BL find_free_idea
+ BLNE find_free_FL_idea
+ BEQ no_full_labo_and_FL      ; LABO FULL -> CAS PARTICULIER
+
+ LDR R12,full_cargo_flag
+ BL cargo_project_push:STR R2,full_cargo_flag:CMN R1,#1:FNexitEQ
+ CMP R12,#0:FNexitNE
+
+ FNldr(12,curr_planet)
+
+ CMP R1,#4:BPL unload_full_FL
+
+  MOV R0,R1
+  BL access_idea:FNexitEQ
+  FNadr(2,FL_ideas_row)
+   LDR R14,alternate_FL
+   ADD R2,R2,R14,LSL#5
+   RSB R14,R14,#1
+   STR R14,alternate_FL
+  B swap_cargo_instances
+
+.unload_full_FL
+  SUB R0,R1,#4
+  BL access_FL_idea:FNexitEQ
+  FNadr(2,ideas_row-32*4)
+  ADD R2,R2,R12,LSL#5+2
+   LDR R14,alternate_labo
+  ADD R2,R2,R14,LSL#5
+   ADD R14,R14,#1
+   AND R14,R14,#3
+   STR R14,alternate_labo
+.swap_cargo_instances
+   LDMIA R1 ,{R3-R6}:LDMIA R2 ,{R7-R10}
+   STMIA R2!,{R3-R6}:STMIA R1!,{R7-R10}
+   LDMIA R1 ,{R3-R6}:LDMIA R2 ,{R7-R10}
+   STMIA R2 ,{R3-R6}:STMIA R1 ,{R7-R10}
+ FNexit
+
+.no_full_labo_and_FL
+
+ BL cargo_project_push:CMN R1,#1:FNexitEQ
+
+ CMP R1,#4:BPL unload_FL
+
+  MOV R0,R1
+  FNldr(12,curr_planet)
+  BL access_idea
+  BLNE load_instance_in_FL
+  FNexit
+
+.unload_FL
+
+  SUB R0,R1,#4
+  BL access_FL_idea
+  BLNE unload_instance_from_FL
+
+FNout
+
+.cargo_project_push           ; output R1=project #=[0..5] or -1 if none
+ FNmouse
+ CMP R2,#4:BNE no_cargo_project_push            ; test buttons
+
+ RSB R1,R1,#4*(256-36)                          ; y_top
+ CMP R1,#(4*6)*28                               ; distance between lines
+ BCS no_cargo_project_push
+
+ ADD R1,R1,R1,LSL#3  ; x9
+ MOV R1,R1,LSR#6+2+2 ; R1=R1/28=[0..5]
+MOVS PC,R14
+
+.no_cargo_project_push
+ MVN R1,#0
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.cargo_raw
+FNin
+
+ ADR R0,FL_raws_str
+ MOV R2,#4
+ MOV R3,#40
+ BL CentredString
+
+ BL set_ordi_raws_FL
+ BL put_raw_strip
+
+ MOV R0,#7
+.loop_cargo_raw
+  BL paint_rawbar
+ SUBS R0,R0,#1:BPL loop_cargo_raw
+
+ BL mouse_norm_step
+
+ BL pushed_cargo
+ CMN R0,#1:BEQ quit_cargo_raw
+
+ BL access_curr_base_resources
+ LDR R2,[R2]
+ CMP R1,R2:BGT quit_cargo_raw
+ BL access_FL_resources
+ LDR R3,[R2]
+ BL FL_cargo_value
+ SUB R0,R0,R3
+ RSB R0,R0,#cargo_max%  ; = max value for this resource
+ CMP R1,R0:MOVGT R1,R0
+ STR R1,[R2]
+ BL mouse_vert_step
+
+.quit_cargo_raw
+FNout
+
+.paint_rawbar  ; input R0=raw #
+FNin
+
+ FNldr(1,BASESCR)
+ FNadd(1,320*188+12)
+ ADD R1,R1,R0,LSL#5
+ ADD R1,R1,R0,LSL#3
+
+ BL access_curr_base_resources
+ LDR R3,[R2]
+ BL access_FL_resources
+ LDR R4,[R2]
+
+ CMP R3,#42:MOVGT R3,#42
+
+.loop_paint_rawbar
+ SUBS R3,R3,#1:BMI quit_paint_rawbar
+
+ SUBS R4,R4,#1:ADRPL R9,rawbar_cols+2*4*16
+               ADRMI R9,rawbar_cols+1*4*16
+
+ LDMDB R9!,{R5-R8}:STMIA R1,{R5-R8}:SUB R1,R1,#320
+ LDMDB R9!,{R5-R8}:STMIA R1,{R5-R8}:SUB R1,R1,#320
+ LDMDB R9!,{R5-R8}:STMIA R1,{R5-R8}:SUB R1,R1,#320
+ LDMDB R9 ,{R5-R8}:STMIA R1,{R5-R8}:SUB R1,R1,#320
+B loop_paint_rawbar
+
+.quit_paint_rawbar
+FNout
+
+.rawbar_cols FNload("ZARCH_TWO.raw_bars")
+
+.pushed_cargo
+ FNmouse
+ CMP R2,#4:BNE no_pushed_cargo
+
+ SUBS R1,R1,#4*(256-188)-8
+  BMI no_pushed_cargo
+ SUB R0,R0,#4*12
+  ADD R2,R0,R0,LSL#2
+  ADD R0,R2,R0,LSL#3    ; x13
+  MOV R0,R0,LSR#6+3
+  TST R0,#%10
+  MOVEQ R0,R0,LSR#2
+  MOVEQ R1,R1,LSR#2+2
+ MOVEQS PC,R14
+
+.no_pushed_cargo
+ MVN R0,#0:MOVS PC,R14
+
+FNbin
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNflashlight_datas
+[OPT PASS
+
+.init_FL_datas
+ MOV R0,#0:STR R0,FL_curr_wea       ; spinfire=default
+           STR R0,FL_wea_1
+           STR R0,FL_wea_2
+           STR R0,FL_wea_3
+           STR R0,FL_wea_4
+           STR R0,damage_on_FL
+           STR R0,FL_profs_how_much
+           STR R0,FL_ideas_how_much
+ MOV R1,#0:ADR R2,FL_resources
+           STMIA R2!,{R0,R1}
+           STMIA R2!,{R0,R1}
+           STMIA R2!,{R0,R1}
+           STMIA R2 ,{R0,R1}
+MOVS PC,R14
+
+;; DESCRIPTION DU SHIP
+;;;;;;;;;;;;;;;;;;;;;;
+
+.FL_curr_wea EQUD 0 ; 0,1,2,3 or 4     ; init with 0=spinfire
+
+.FL_wea_0 EQUD 2^24 ; spinfire (default;infinite spinfires)
+.FL_wea_1 EQUD 0    ; prof taker        (0=no weapon ; OTHERWISE inst #)
+.FL_wea_2 EQUD 0    ; lightning
+.FL_wea_3 EQUD 0    ; supershield
+.FL_wea_4 EQUD 0    ; smart rocket
+
+.damage_on_FL      EQUD 0  ; [0..100]
+
+.FL_profs_how_much EQUD 0  ; from 0 TO 2
+.FL_ideas_how_much EQUD 0  ; from 0 TO 2
+
+.FL_cargo_value
+ ADR R0,FL_resources
+ LDMIA R0,{R0,R4-R10}
+ ADD R0,R0,R4
+ ADD R0,R0,R5
+ ADD R0,R0,R6
+ ADD R0,R0,R7
+ ADD R0,R0,R8
+ ADD R0,R0,R9
+ ADD R0,R0,R10
+MOVS PC,R14
+
+.access_FL_resources       ; input R0=raw #
+ ADD R2,PC,R0,LSL#2
+MOVS PC,R14
+
+.FL_resources
+ EQUD 0
+ EQUD 0
+ EQUD 0
+ EQUD 0
+ EQUD 0
+ EQUD 0
+ EQUD 0
+ EQUD 0
+
+.more_Shmartz
+ LDR R0,FL_resources+4*0
+ LDR R1,FL_resources+4*1:ADD R0,R0,R1
+ LDR R1,FL_resources+4*2:ADD R0,R0,R1
+ LDR R1,FL_resources+4*3:ADD R0,R0,R1
+ LDR R1,FL_resources+4*4:ADD R0,R0,R1
+ LDR R1,FL_resources+4*5:ADD R0,R0,R1
+ LDR R1,FL_resources+4*6:ADD R0,R0,R1
+ LDR R1,FL_resources+4*7:ADD R0,R0,R1
+ CMP R0,#40
+  LDRMI R0,FL_resources+4*4
+  ADDMI R0,R0,#1
+  STRMI R0,FL_resources+4*4
+MOVS PC,R14
+
+]
+=0
+
+DEFFNsun_datas
+[OPT PASS
+
+.init_SUN_datas
+ MOV R0,#100      :STR R0,ALGOL_power
+ MOV R0,#100*65536:STR R0,ALGOL_effect
+                  :STR R0,SUN_radius
+ MOV R0,#0        :STR R0,last_update
+ MVN R0,#0        :STR R0,list_of_sun_events
+
+MOVS PC,R14
+
+.ALGOL_power    EQUD 100         ; out of 100
+.ALGOL_effect   EQUD 100*65536   ; out of 100*65536
+.SUN_radius     EQUD 100*65536   ; out of 100*65536
+.last_update    EQUD 0           ; time
+
+.decrement_ALGOL_power           ; input R1
+ LDR R0,ALGOL_power
+ SUBS R0,R0,R1:BLE happy_end
+ STR R0,ALGOL_power
+MOVS PC,R14
+
+.update_sun
+FNin
+ BL read_time
+
+ LDR R11,last_update                         ; time cursor
+ SUB R14,R0,R11
+ MOVS R12,R14,LSR#10:FNexitEQ                ; R12=# of lines to add
+ ADD R14,R11,R12,LSL#10
+ STR R14,last_update
+
+ LDR R3,SUN_radius
+.loop_add_sun_lines
+
+ BL exec_past_events
+
+ LDR R4,ALGOL_effect
+ LDR R5,ALGOL_power
+ MUL R4,R5,R4
+ SUB R3,R3,R4,LSR#14
+ MOVS R0,R3,ASR#16
+  BLE sad_end                                ; end of game - radius <= 0
+ BL add_sun_line
+
+ ADD R11,R11,#1<<10                          ; move time cursor
+
+ SUBS R12,R12,#1:BNE loop_add_sun_lines
+
+ STR R3,SUN_radius
+
+FNout
+
+.foresee_supernova   ; output R2
+FNin
+ LDR R1,ALGOL_effect
+ LDR R2,ALGOL_power
+ MUL R2,R1,R2
+
+ LDR R1,SUN_radius
+ MOV R1,R1,LSR#16-3
+ MOV R2,R2,LSR#16
+ BL  divide
+ LDR R4,last_update
+ ADD R2,R4,R12,LSL#8-3
+FNout
+
+.exec_past_events
+FNin
+.next_past_event
+ BL empty_sun_list
+ FNexitEQ
+ BL read_sun_event
+ CMP R0,R11:BPL quit_exec_past_events  ; in the future
+ BL pop_sun_event
+  LDR R14,ALGOL_effect
+  MUL R14,R1,R14
+  MOV R14,R14,LSR#8
+  STR R14,ALGOL_effect
+ B next_past_event
+.quit_exec_past_events
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.factor_event EQUD 0
+
+.insert_sun_event    ; input R0=relative time;R1=factor (uncorrupted)
+FNin
+
+ STR R1,factor_event
+
+ MOV R10,R0
+ MOV R11,R1
+ BL read_time
+ ADD R10,R10,R0      ; absolute time
+
+ ADR R14,list_of_sun_events
+.loop_through_sun_events
+ LDR R12,[R14,#00]
+ CMN R12,#1:STMEQIA R14,{R10,R11,R12}:BEQ quit_insert_sun_event
+ CMP R12,R10:ADDMI R14,R14,#8:BMI loop_through_sun_events
+
+.loop_incr_list
+ LDMIA R14,{R0,R1}
+ STMIA R14!,{R10,R11}
+ CMN R10,#1
+ MOVNE R10,R0:MOVNE R11,R1:BNE loop_incr_list
+
+.quit_insert_sun_event
+ LDR R1,factor_event
+FNout
+
+.pop_sun_event       ; return R0=time,R1=factor (x256)
+                     ; to call only when NOT empty_sun_list
+ ADR R2,list_of_sun_events
+ LDMIA R2,{R0,R1}
+ ADD R6,R2,#8
+.loop_decr_list
+ LDMIA R6!,{R4,R5}
+ STMIA R2!,{R4,R5}
+ CMN R4,#1
+BNE loop_decr_list
+MOVS PC,R14
+
+.read_sun_event
+ ADR R0,list_of_sun_events
+ LDMIA R0,{R0,R1}
+MOVS PC,R14
+
+.empty_sun_list
+ LDR R0,list_of_sun_events
+ CMN R0,#1
+MOV PC,R14
+
+.list_of_sun_events  ; sentinel=-1
+ FNram(8*48)
+
+]
+=0
+_________________________________________________________________________
+
+
+DEFFNkeyboard
+ REM gestion du aldeBAR du cerveau central relie' par aldeNET
+[OPT PASS
+
+\ BASIC ROUTINES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.work_icons
+FNin
+
+ LDR R1,icons_clock
+  CMP R1,#4
+  ADDNE R1,R1,#1
+  MOVEQ R1,#0
+ STR R1,icons_clock
+
+ LDR R0,icons_status
+ CMP R0,#0:FNexitEQ        ; nothing to do
+           BMI work_remove
+
+.work_install
+ CMP R1,#1:BEQ work_push
+
+ TST R1,#2
+  MOVNE R0,#1
+  MOVEQ R0,#0
+ BL put_top_icon
+FNexit
+
+.work_remove
+ CMP R1,#0:BEQ work_pop
+
+ LDR R14,bar_num
+ CMP R14,#0:BLEQ start_install:FNexitEQ
+
+ CMP R1,#3
+  MOVMI R0,#1
+  MVNPL R0,#0
+ BL put_top_icon
+FNexit
+
+.work_pop
+ BL remove_icon
+FNexit
+
+.work_push
+ LDR R0,icons_bar
+ LDR R1,bar_num
+ LDRB R0,[R0,R1]
+ CMP R0,#&FF:BLEQ stop_install
+             BLNE install_icon
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.program_icon_installation ; R0 = bar pointer
+ STR R0,icons_bar
+ MVN R2,#0:STR R2,icons_status      ; begin to remove all
+ MOV R2,#0:STR R2,icons_clock
+MOVS PC,R14
+
+.start_install
+ MOV R2,#1:STR R2,icons_status      ; after remove , install bar
+ MOV R2,#0:STR R2,icons_clock
+MOVS PC,R14
+
+.stop_install
+ MOV R0,#0:STR R0,icons_status
+MOVS PC,R14
+
+.icons_status EQUD 0          ;0 if no activity ; (-1/+1)=(remove/install)
+.icons_bar    EQUD aldeBar_1  ;default
+.icons_clock  EQUD 0
+
+.aldeBar_1 EQUB 15:EQUB 0:EQUB  6:EQUB  4:EQUB 25:EQUB 27: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+.aldeBar_2 EQUB 5:EQUB  1:EQUB  2:EQUB  3:EQUB 26:EQUB -1: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+.aldeBar_3 EQUB 5:EQUB  7:EQUB  8:EQUB  9:EQUB -1:EQUB -1: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+.aldeBar_4 EQUB 5:EQUB 13:EQUB 31:EQUB 10:EQUB 11:EQUB 12: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+.aldeBar_5 EQUB 5:EQUB 16:EQUB 17:EQUB 14:EQUB -1:EQUB -1: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+.aldeBar_6 EQUB 5:EQUB 20:EQUB 21:EQUB 24:EQUB -1:EQUB -1: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+.aldeBar_7 EQUB 5:EQUB 28:EQUB 29:EQUB -1:EQUB -1:EQUB -1: EQUB -1:EQUB -1
+           EQUB -1:EQUB 19:EQUB -1:EQUB -1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ ; icons are stored in a stack
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.install_icon  ; R0=icon #
+ ADR R2,bar_stack
+ LDR R3,bar_num
+ STRB R0,[R2,R3]
+ ADD R3,R3,#1
+ STR R3,bar_num
+MOV PC,R14
+
+.remove_icon      ; no parameters
+ LDR R3,bar_num
+ SUBS R3,R3,#1
+ MOVMI R3,#0      ; no negative icons!
+ STR R3,bar_num
+MOV PC,R14
+
+.empty_stack
+ MOV R0,#0
+ STR R0,bar_num
+MOVS PC,R14
+
+.bar_num EQUD 0   ; # of icons in stack
+
+.bar_stack
+ FNram(8)         ; max 6 icons
+
+.lookup_icon_grf
+ EQUB 0
+ EQUB 1
+ EQUB 2
+ EQUB 3
+ EQUB 4
+ EQUB 5     ; 05
+ EQUB 6
+ EQUB 7
+ EQUB 8
+ EQUB 9
+ EQUB 7     ; 10
+ EQUB 8
+ EQUB 9
+ EQUB 6
+ EQUB 12
+ EQUB 10    ; 15
+ EQUB 11
+ EQUB 13
+ EQUB 14
+ EQUB 19
+ EQUB 2     ; 20
+ EQUB 3
+ EQUB &FF
+ EQUB &FF
+ EQUB 14
+ EQUB 15    ; 25
+ EQUB 14
+ EQUB 16
+ EQUB 22
+ EQUB 23
+ EQUB 00    ; 30
+ EQUB 24    ;     (planet)
+ EQUB 06
+ALIGN
+
+.put_top_icon     ; draw last icon insered in stack (HALF if R0=+1)
+                  ;                                 (NONE if R0=-1)
+
+ ADR R1,bar_stack-1
+ LDR R2,bar_num
+ LDRB R1,[R1,R2]
+ ADR R3,lookup_icon_grf
+ LDRB R1,[R3,R1]
+
+ FNldr(6,BASESCR)
+ FNadd(6,320*228-32+4)
+ ADD R6,R6,R2,LSL#5  ; screen address
+
+ MOV R7,#24          ; lines #
+
+ ADR R8,icons_grf
+ ADD R1,R1,R1,LSL#3
+ ADD R8,R8,R1,LSL#6
+
+ FNadr(13,ordiBoard_grf+320*20-(32-4))
+ ADD R13,R13,R2,LSL#5
+
+ CMP R0,#0
+ BGT half_top_icon
+ BMI none_top_icon
+
+.loop_top_icon
+ LDMIA R8!,{R0-R5}
+ STMIA R6, {R0-R5}:ADD R6,R6,#320
+ SUBS R7,R7,#1:BNE loop_top_icon
+MOV PC,R14
+
+.half_top_icon
+ MOV R9,#&FF:ORR R9,R9,R9,LSL#16
+
+.loop_half_top_icon
+ LDMIA R8!,{R0-R5}                         ; mix two sprites
+ LDMIA R13!,{R10,R11,R12}
+ BIC R0,R0,R9:AND R10,R10,R9:ORR R0,R0,R10
+ BIC R1,R1,R9:AND R11,R11,R9:ORR R1,R1,R11
+ BIC R2,R2,R9:AND R12,R12,R9:ORR R2,R2,R12
+ LDMIA R13!,{R10,R11,R12}
+ BIC R3,R3,R9:AND R10,R10,R9:ORR R3,R3,R10
+ BIC R4,R4,R9:AND R11,R11,R9:ORR R4,R4,R11
+ BIC R5,R5,R9:AND R12,R12,R9:ORR R5,R5,R12
+ MOV R9,R9,ROR#8
+ STMIA R6 ,{R0-R5}:ADD R6,R6,#320
+                   ADD R13,R13,#320-24
+ SUBS R7,R7,#1:BNE loop_half_top_icon
+MOV PC,R14
+
+.none_top_icon
+ LDMIA R13,{R0-R5}:ADD R13,R13,#320
+ STMIA R6 ,{R0-R5}:ADD R6,R6,#320
+ SUBS R7,R7,#1:BNE none_top_icon
+MOV PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.pushed_icon            ; return R0=-1 if no press or the # of pushed icon
+ FNmouse                ; also return R2=mouse buttons
+ CMP R2,#4:BNE no_press ; no select button activated
+
+ SUBS R0,R0,#16:BMI no_press
+ AND R3,R0,#127
+ CMP R3,#24*4  :BPL no_press                 ; out of X-domain
+
+ SUB R1,R1,#16:CMP R1,#24*4:BCS no_press     ; out of Y-domain
+
+ MOV R0,R0,LSR#7                             ; =place%
+
+ LDR R1,icons_bar
+ LDRB R0,[R1,R0]
+ CMP R0,#255
+  MVNEQ R0,#0
+MOV PC,R14
+
+.no_press MVN R0,#0:MOV PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.draw_onboard_time
+FNin
+ BL redraw_underTime
+ BL read_time
+ FNmov(1,320*242+196)
+ MOV R2,R0
+ BL draw_time
+FNout
+
+.draw_time     ; input R1=scr pos ; R2=time
+FNin
+
+ FNldr(0,BASESCR)
+ ADD R1,R0,R1  ; screen addr
+
+ MOV R4,#252
+ MOV R5,#253
+ MOV R6,#254
+ MOV R7,#255
+
+ LDR R3,time_unit_1:BL base_counter
+ BL draw_char:ADD R1,R1,#8
+ LDR R3,time_unit_2:BL base_counter
+ BL draw_char:ADD R1,R1,#16
+
+ LDR R3,time_unit_3:BL base_counter
+ BL draw_char:ADD R1,R1,#8
+ LDR R3,time_unit_4:BL base_counter
+ BL draw_char:ADD R1,R1,#8
+
+ TST R2,#1
+ MOVEQ R0,#ASC("g"):BLEQ draw_char  ; double dot
+ ADD R1,R1,#8
+
+ MOV R3,#60*10*2    :BL base_counter
+ BL draw_char:ADD R1,R1,#8
+ MOV R3,#60   *2    :BL base_counter
+ BL draw_char:ADD R1,R1,#16
+
+ MOV R3,#10   *2    :BL base_counter
+ BL draw_char:ADD R1,R1,#8
+ MOV R3,#1    *2    :BL base_counter
+ BL draw_char
+
+FNout
+
+.time_unit_1 EQUD 60*60*24*10*2
+.time_unit_2 EQUD 60*60*24   *2
+.time_unit_3 EQUD 60*60*10   *2
+.time_unit_4 EQUD 60*60      *2
+
+FNbin
+
+.icons_grf
+ FNload("ZARCH_TWO.icons_data")  ; 24x24 graphics
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_ordiBoard                   ; draw board on both screens
+FNin
+ ADR R0,ordiBoard_grf
+ FNldr(1,BASESCR)
+ ADD R1,R1,#320*208
+
+ MOV R3,#48*10
+.loop_put_ordiBoard_1
+ LDMIA R0!,{R4-R11}
+ STMIA R1!,{R4-R11}
+ SUBS R3,R3,#1:BNE loop_put_ordiBoard_1
+
+ FNadr(0,planetnames_str)
+ FNldr(1,curr_planet)
+ ADD R0,R0,R1,LSL#4
+ MOV R1,#240
+ MOV R2,#230
+ MOV R3,#244
+  BL GenCentredMiniString
+
+ FNldr(12,curr_planet)
+ BL put_ordiraws
+
+ MOV R0,#208:MOV R1,#48
+ BL CopyInOtherPage
+FNout
+
+.put_ordiraws           ; input R12=planet #=[1..12]
+FNin
+ ADR R0,ordiBoard_grf
+ FNldr(1,BASESCR)
+ ADD R1,R1,#320*208
+
+ MOV R3,#8*10
+.loop_put_ordiBoard_2
+ LDMIA R0!,{R4-R11}
+ STMIA R1!,{R4-R11}
+ SUBS R3,R3,#1:BNE loop_put_ordiBoard_2
+
+ BL set_ordi_raws_base
+
+ FNldr(14,curr_planet)
+ CMP R12,R14            ; test if current planet or not is selected
+                        ; (use of two different colours)
+ ADR R0,ordi_raws
+ MOV R1,#160
+ MOV R2,#209
+ MOVEQ R3,#240
+ MOVNE R3,#192
+  BL GenCentredMiniString
+FNout
+
+.put_raw_strip
+FNin
+ ADR R0,ordi_strip
+ MOV R1,#160
+ MOV R2,#193
+ MOV R3,#204
+  BL GenCentredMiniString
+
+ ADR R0,ordi_raws
+ MOV R1,#160
+ MOV R2,#201
+ MOV R3,#236
+  BL GenCentredMiniString
+FNout
+
+.set_ordi_raws_base
+FNin
+ ADR R11,ordi_raws
+ MOV R1,#0
+.loop_set_ordi_raws_base
+
+ MOV R0,R1
+ BL access_base_resources
+ LDR R2,[R2]
+
+ MOV R3,#100:BL base_counter:STRB R0,[R11],#1
+ MOV R3,#010:BL base_counter:STRB R0,[R11],#1
+ MOV R3,#001:BL base_counter:STRB R0,[R11],#3
+
+ ADD R1,R1,#1:CMP R1,#8:BNE loop_set_ordi_raws_base
+FNout
+
+.set_ordi_raws_idea  ; input R4/R5/R6/R7
+FNin
+
+ ADR R11,ordi_raws
+ MOV R1,#0
+.loop_set_ordi_raws_idea
+
+ MOV R0,R1
+ BL access_rawmat
+ LDR R8,[R2,#00]
+ MOV R8,R8,LSL#8
+
+  MOV R2,#0
+
+  CMP R8,R4,LSL#8:MOVEQ R2,R4,LSR#24
+  CMP R8,R5,LSL#8:MOVEQ R2,R5,LSR#24
+  CMP R8,R6,LSL#8:MOVEQ R2,R6,LSR#24
+  CMP R8,R7,LSL#8:MOVEQ R2,R7,LSR#24
+
+  CMP R2,#0
+   MOVEQ R2,#32
+   STREQB R2,[R11],#1
+   STREQB R2,[R11],#1
+   STREQB R2,[R11],#3
+   BEQ nxt_ordi_raws
+
+ MOV R3,#100:BL base_counter:STRB R0,[R11],#1
+ MOV R3,#010:BL base_counter:STRB R0,[R11],#1
+ MOV R3,#001:BL base_counter:STRB R0,[R11],#3
+.nxt_ordi_raws
+ ADD R1,R1,#1:CMP R1,#8:BNE loop_set_ordi_raws_idea
+FNout
+
+.set_ordi_raws_FL
+FNin
+
+ ADR R11,ordi_raws
+ MOV R1,#0
+.loop_set_ordi_raws_FL
+
+ MOV R0,R1
+ BL access_curr_base_resources
+ LDR R2,[R2,#00]
+
+  CMP R2,#0
+   MOVEQ R2,#32
+   STREQB R2,[R11],#1
+   STREQB R2,[R11],#1
+   STREQB R2,[R11],#3
+   BEQ nxt_ordi_raws_FL
+
+ MOV R0,R1
+ BL access_FL_resources
+ LDR R2,[R2,#00]
+
+ MOV R3,#100:BL base_counter:STRB R0,[R11],#1
+ MOV R3,#010:BL base_counter:STRB R0,[R11],#1
+ MOV R3,#001:BL base_counter:STRB R0,[R11],#3
+.nxt_ordi_raws_FL
+ ADD R1,R1,#1:CMP R1,#8:BNE loop_set_ordi_raws_FL
+FNout
+
+.ordi_strip FNstring("BRE  CLO  COS  KRE  SHM  TEC  THO  ZOR")
+.ordi_raws  FNstring("020  015  007  030  008  002  005  015")
+
+.redraw_underTime
+ FNadr(0,ordiBoard_grf+320*33+196)
+ FNldr(1,BASESCR)
+ FNadd(1,320*242+196)
+
+ MOV R3,#7
+.loop_redraw_underTime
+ LDMIA R0!,{R4-R11}:STMIA R1!,{R4-R11}
+ LDMIA R0!,{R4-R11}:STMIA R1!,{R4-R11}
+ LDMIA R0!,{R4-R10}:STMIA R1!,{R4-R10}
+ ADD R0,R0,#320-92:ADD R1,R1,#320-92
+ SUBS R3,R3,#1:BNE loop_redraw_underTime
+MOVS PC,R14
+
+FNbin
+
+.ordiBoard_grf
+ FNload("ZARCH_TWO.ordiBoard")
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNspeaker
+[OPT PASS
+
+.print_speak
+ LDR R0,speakCounter
+ SUBS R0,R0,#1
+ MOVMIS PC,R14
+ STR R0,speakCounter
+
+FNin
+
+ LDR R0,speakCode
+ BL code_to_string
+
+ MOV R2,#4
+ LDR R3,speakCol
+ BL CentredString
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.interrupt_speak
+ MOV R0,#0
+ STR R0,speakCounter
+MOVS PC,R14
+
+.send_speak ; input R0=spoken code ; R1=message colour
+  STR R0,speakCode
+  STR R1,speakCol
+  MOV R0,#96
+  STR R0,speakCounter
+MOVS PC,R14
+
+.speakCounter        EQUD 0         ; [0..96]
+.speakCode           EQUD 0
+.speakCol            EQUD 0         ; code of colour
+
+.code_to_string
+ LDR R0,[PC,R0,LSL#2]
+MOVS PC,R14
+ EQUD spoken_0
+ EQUD spoken_1
+ EQUD spoken_2
+ EQUD spoken_3
+ EQUD spoken_4
+ EQUD spoken_5
+ EQUD spoken_6
+ EQUD spoken_7
+ EQUD spoken_8
+
+.spoken_0 FNstring("HAVE A GOOD TIMEh")
+.spoken_1 FNstring("FLASHLIGHT OUT OF ORDER")
+.spoken_2 FNstring("STILL WITH US COMMANDER j")
+
+.spoken_3 FNstring("NO ROCKETS AVAILABLE")      ; for Algol mission
+.spoken_4 FNstring("WELL DONE COMMANDERh")
+.spoken_5 FNstring("ONE POWER STATION LEFT")
+.spoken_6 FNstring("TWO POWER STATIONS LEFT")
+.spoken_7 FNstring("POWER STATIONS DESTROYED")
+.spoken_8 FNstring("MORE INSTINCT IS REQUIRED")
+
+FNbin
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+;;; Xth parameter is coded with CHR$X  (X=0,1 or 2)
+
+.create_message   ;R0=text pointer;R1=mould #;R2,R3,R4=string parameters
+
+ LDR R1,[PC,R1,LSL#2]
+ B init_create_message
+  EQUD message_mould_0
+  EQUD message_mould_1
+  EQUD message_mould_2
+  EQUD message_mould_3
+  EQUD message_mould_4
+  EQUD message_mould_5
+  EQUD message_mould_6
+  EQUD message_mould_7
+  EQUD message_mould_8
+  EQUD message_mould_9
+  EQUD message_mould_10
+  EQUD message_mould_11
+
+.init_create_message
+ LDRB R11,[R1],#1    ; read "text" header
+ STRB R11,[R0],#1
+
+.insert_strings
+ LDRB R12,[R1],#1
+
+ CMP R12,#3:BPL no_string_param
+
+ CMP R12,#1:MOVMI R10,R2:MOVEQ R10,R3:MOVGT R10,R4 ; select right pointer
+.loop_insert_param
+  LDRB R12,[R10],#1
+  CMP R12,#13
+  STRNEB R12,[R0],#1
+ BNE loop_insert_param
+ B insert_strings
+
+.no_string_param
+ STRB R12,[R0],#1
+ CMP R12,#13
+ BNE insert_strings
+ SUBS R11,R11,#1:BGT insert_strings
+MOVS PC,R14
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.message_mould_0
+EQUB 3
+EQUS CHR$0+" LABORATORIESgTHE"+CHR$13
+EQUS CHR$1+CHR$13
+EQUS "PROJECT IS FINISHEDf"+CHR$13
+ALIGN
+
+.message_mould_1
+EQUB 3
+EQUS "SECURITY SERVICES CALLg"+CHR$13
+EQUS CHR$0+CHR$13
+EQUS "HAS BEEN KIDNAPPEDf"+CHR$13
+ALIGN
+
+.message_mould_2
+FNtext("DEVELOPED ON "+CHR$0,26)
+
+.message_mould_3
+FNtext("HELLO COMMANDERh HERE IS MAX SPEAKINGh WELCOME TO ALDEBARANfff",26)
+.message_mould_4
+EQUB 3
+EQUS "DUE TO YOUR INCOMPETENCE"+CHR$13
+EQUS "WE HAVE LOST SOME FRIENDS"+CHR$13
+EQUS "IN THE LAST BLOODY BATTLE"+CHR$13
+ALIGN
+
+.message_mould_5
+FNtext("WORKING ON "+CHR$0,26)
+
+.message_mould_6
+FNtext("INACTIVE ON "+CHR$0,26)
+
+.message_mould_7
+FNtext("KIDNAPPED ON "+CHR$0,26)
+
+.message_mould_8
+FNtext("DEAD",26)
+
+.message_mould_9
+FNtext("ON "+CHR$0,26)
+
+.message_mould_10
+EQUB 3
+EQUS "CHAMPAGNE PLEASEh THANKS"+CHR$13
+EQUS "TO YOUR BRAVERY THE POWER"+CHR$13
+EQUS "STATIONS ARE OUT OF ORDER"+CHR$13
+ALIGN
+
+.message_mould_11
+EQUB 3
+EQUS "THE TAURUS SHIP HAS BEEN"+CHR$13
+EQUS "ARMED WITH 10 NEW ROCKETS"+CHR$13
+EQUS "YOU CAN USE AGAINST ALGOL"+CHR$13
+ALIGN
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNtools
+[OPT PASS
+
+.send_text        ; input R0=pointer to text; R2=y position ; R3=color
+FNin2
+
+ LDRB R13,[R0],#1 ; load # of lines
+.loop_send_text
+ BL CentredString
+ ADD R2,R2,#11    ; next line
+SUBS R13,R13,#1:BNE loop_send_text
+
+FNout2
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_aligned_name ; in R0=pointer to name string
+FNin2
+
+ ADR R1,tmp_string+3
+.loop_modify_str
+ LDRB R2,[R0],#1
+ CMP R2,#32:MOVEQ R3,#13:MOVNE R3,R2
+ STRB R3,[R1],#1
+ CMP R2,#13:BNE loop_modify_str
+
+ ADR R0,tmp_string+3
+ MOV R1,#40:MOV R2,#4+00:MOV R3,#47:BL PutString
+ MOV R1,#40:MOV R2,#4+11:MOV R3,#40:BL PutString
+ MOV R1,#40:MOV R2,#4+22           :BL PutString
+
+FNout2
+
+.put_aligned_idea ; in R0=pointer to name string
+FNin2
+
+ FNadr(1,tmp_string)
+ MOV R4,R1:ADD R5,R1,#128     ; here R5 should be big!(compared to R1)
+ MOV R6,#0                    ; = # of added CHR$13
+.loop_modify_str2
+ LDRB R2,[R0],#1
+ CMP R6,#0
+ CMPEQ R2,#32:MOVEQ R3,#13:MOVNE R3,R2:MOVEQ R5,R1:ADDEQ R6,R6,#1
+.no_carr_return
+ STRB R3,[R1],#1
+ CMP R2,#13:BNE loop_modify_str2
+
+ STRB R2,[R1],#-1
+
+ CMP R5,R1
+ SUBMI R4,R1,R4                           ; if string not too long,then
+ CMPMI R4,#16:MOVMI R4,#32:STRMIB R4,[R5] ; assemble both lines
+
+ ADR R0,tmp_string_name
+ MOV R1,#40     :MOV R2,#4+00:MOV R3,#6:BL PutString
+ MOV R1,#40+12*5:MOV R2,#4+11          :BL PutString
+
+FNout2
+
+.put_aligned_project    ; in R0=pointer to name string   ; (R10,R11)=pos
+FNin2
+
+ ADR R1,tmp_string
+ MOV R4,R1:ADD R5,R1,#128     ; here R5 should be big!(compared to R1)
+ MOV R6,#0                    ; = # of added CHR$13
+.loop_modify_str3
+ LDRB R2,[R0],#1
+ CMP R6,#0
+ CMPEQ R2,#32:MOVEQ R3,#13:MOVNE R3,R2:MOVEQ R5,R1:ADDEQ R6,R6,#1
+ CMP R2,#ASC("e"):MOVEQ R2,#ASC(" ")      ; remove stickies
+.no_carr_return
+ STRB R3,[R1],#1
+ CMP R2,#13:BNE loop_modify_str3
+
+ STRB R2,[R1],#-1
+
+ CMP R5,R1
+ SUBMI R4,R1,R4                           ; if string not too long,then
+ CMPMI R4,#16:MOVMI R4,#32:STRMIB R4,[R5] ; assemble both lines
+
+ ADR R0,tmp_string
+ ADD R1,R10,#28:ADD R2,R11,#0:MOV R3,#252:BL PutMiniString
+ MOV R0,R8
+ ADD R1,R10,#28:ADD R2,R11,#8            :BL PutMiniString
+
+FNout2
+
+FNbin
+
+.tmp_string_name
+            EQUS "NAMEg"
+.tmp_string FNstring("                                                                                                                                                      ")
+]
+=0
+_________________________________________________________________________
+
+DEFFNmailtools
+max_mails%=8
+[OPT PASS
+
+; mail instance description:
+;
+; EQUD code%=&ttttttcc ; (&tttttt=time stamp ; &cc=code)
+; EQUD par1%           ; code=&cd
+; EQUD par2%           ; where c=0/1=not read/read
+; EQUD par3%           ;       d=message mould=[0..15]
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\ When mail is sent,put mail in a "read" mail place or,if this is not
+\ possible,in a "not read" but "oldest" mail place
+
+.mail_send     ; input (R0,R1,R2,R3)=mail
+FNin
+ ADR R5,mail_datas
+
+ MOV R4,#0     ; curr_mail #
+ MVN R6,#0     ; a "read" mail #
+ MOV R9,R4     ; the oldest mail # (just in case...)
+
+ MOV R8,#max_mails%
+.mail_try_next
+
+ SUBS R8,R8,#1:BMI mail_write
+
+ LDR R14,[R5,R9,LSL#4]  ; =oldest code%
+ MOV R14,R14,LSR#8      ; =oldest time stamp
+
+ LDR R7,[R5,R4,LSL#4]   ; =code%
+
+ CMP R14,R7,LSR#8
+ MOVGT R9,R4            ; this one is older!
+
+ TST R7,#&10
+ MOVNE R6,R4            ; this one is read!
+
+ CMP R7,#0
+ ADDNE R4,R4,#1
+ BNE mail_try_next
+ MOV R6,R4
+ MOV R9,R4
+.mail_write
+ CMN R6,#1:MOVNE R4,R6:MOVEQ R4,R9
+
+ ADD R5,R5,R4,LSL#4
+
+ STMIB R5,{R1,R2,R3}
+ MOV R4,R0
+ BL read_time
+ ADD R0,R4,R0,LSL#8
+ STR R0,[R5]
+FNout
+
+.mail_set_read ; input R0=mail #=[0..max_mails%-1]
+ ADR R1,mail_datas
+ LDR R3,[R1,R0,LSL#4]
+ ORR R3,R3,#&10
+ STR R3,[R1,R0,LSL#4]
+MOVS PC,R14
+
+.mail_status   ; input R0=mail #
+ ADR R2,mail_datas
+ LDR R1,[R2,R0,LSL#4]!
+MOVS PC,R14
+
+.mail_reset
+ MOV R0,#0
+ ADR R1,mail_datas
+ MOV R2,#max_mails%
+.loop_mail_reset
+ STR R0,[R1],#16
+ SUBS R2,R2,#1:BNE loop_mail_reset
+MOVS PC,R14
+
+.mail_view  ; input R0=mail #
+FNin
+ BL mail_status
+ CMP R1,#0:FNexitEQ
+
+ BL mail_set_read
+
+ FNadr(0,tmp_string)
+ LDMIA R2,{R1,R2,R3,R4}
+ AND R1,R1,#&0F
+ BL create_message
+
+ FNadr(0,tmp_string)
+ MOV R2,#112
+ MOV R3,#47
+ BL send_text
+
+FNout
+
+.mail_datas FNram(16*max_mails%)
+
+FNbin
+
+]
+=0
+_________________________________________________________________________
+
+DEFFNdraw_weapon(w_num%,scr_pos%)
+
+ CASE w_num% OF
+  WHEN 0:ad%=FL_wea_0:ic%=17
+  WHEN 1:ad%=FL_wea_1:ic%=18
+  WHEN 2:ad%=FL_wea_2:ic%=19
+  WHEN 3:ad%=FL_wea_3:ic%=20
+  WHEN 4:ad%=FL_wea_4:ic%=21
+  OTHERWISE : ERROR 1," ### ABORT : bad parameters in FNdraw_weapon"
+ ENDCASE
+
+[OPT PASS
+ FNldr(10,ad%)
+ CMP R11,#w_num%:MOVEQ R10,R12
+ CMP R10,#0
+ MOV R0,#ic%:FNmov(1,scr_pos%):BLNE draw_idea
+                               BLEQ draw_half_idea
+]
+IF w_num%<>0 THEN
+[OPT PASS
+
+ FNldr(2,FL_wea_0+4*w_num%)
+ CMP R2,#0:ADDEQ PC,PC,#20
+ ADR R0,FL_wein_str
+ BL set_num_in_str
+ MOV R1,#(scr_pos% MOD 320)+12
+ MOV R2,#192
+ MOV R3,#200
+ BL  GenCentredMiniString
+
+]
+ENDIF
+=0
+
+DEFFNsun_cols(b_col%)
+FOR n%=0TO 9
+FOR m%=0TO 9
+ nm%=n%
+ IF m%=0 THEN nm%-=1
+ IF m%=9 THEN nm%+=1
+[OPT PASS:EQUB ?(MegaShades+O%-P%+b_col%*96+nm%*8+20):]
+NEXT,
+=0
+

@@ -1,0 +1,391 @@
+REM >MASTER.FNgyros
+
+LIBRARY "MASTER.FNadr"
+LIBRARY "MASTER.FNinout"
+LIBRARY "MASTER.FNgraf_lib"
+
+MODE 15:MODE 13:OFF
+*SCREENLOAD Z*.PANEL
+
+DIM SPACE 28000
+FOR PASS=4TO 6 STEP 2
+P%=SPACE
+O%=SPACE
+PROCinitinout
+main_assembly%=FALSE
+[OPT PASS
+
+.BASESCR EQUD &1FD8000
+
+FNPutGyrosRoutine
+
+.sinus FNlookup_sin
+]
+
+PROCendinout
+NEXT
+
+B%=0
+REPEAT
+A%=10
+B%+=1
+WAIT
+CALL put_gyros
+UNTIL FALSE
+
+END
+
+DEFFNPutGyrosRoutine
+[OPT PASS
+
+.put_window_indicator
+FNin
+ BL put_window_projects
+ BL put_window_professors
+FNout
+
+.put_window_projects
+FNin
+
+ MOV R0,#0:BL access_FL_idea     ; first project
+    MOVNE R0,#15
+    FNmov(1,320*213+22+40)
+    BLNE draw_small_prof
+
+ MOV R0,#1:BL access_FL_idea     ; second project
+    MOVNE R0,#15
+    FNmov(1,320*213+22+28)
+    BLNE draw_small_prof
+
+FNout
+
+.put_window_professors
+FNin
+
+ FNmov(11,320*213+20)
+ MOV R12,#0
+.loop_profs_on_board
+
+ MOV R0,R12
+ BL access_prof
+ LDR R14,[R2,#12]
+ TST R14,#1<<31
+  MOVNE R1,R11
+  BLNE draw_small_prof
+  ADDNE R11,R11,#16
+
+ ADD R12,R12,#1:CMP R12,#15:BNE loop_profs_on_board
+
+FNout
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_weapon_indicator
+ FNldr(0,FL_curr_wea)
+ ADD R0,R0,#17
+ FNmov(1,320*(208+48-6-24)+84)
+B draw_idea
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_weapon_instances
+FNin
+
+ FNldr(0,FL_curr_wea)
+ FNadr(14,FL_wea_0)
+ LDR R0,[R14,R0,LSL#2]     ; load # of instances for current weapon
+ CMP R0,#10:MOVGT R0,#10   ; no more than 10 blocks!
+ RSB R1,R0,#10
+
+ ADR R3,my_instance_block
+ LDMIA R3,{R3-R6}
+ MOV R7,#0
+
+ FNldr(2,BASESCR)
+ FNadd(2,243*320+4)
+
+.loop_weapons_inst
+ SUBS R0,R0,#1
+
+ STRPL R3,[R2],#8
+ STRPL R4,[R2,#1*320-8]
+ STRPL R5,[R2,#2*320-8]
+ STRPL R6,[R2,#3*320-8]
+ BGT loop_weapons_inst
+
+.loop_weapons_no_inst
+ SUBS R1,R1,#1
+
+ STRPL R7,[R2],#8
+ STRPL R7,[R2,#1*320-8]
+ STRPL R7,[R2,#2*320-8]
+ STRPL R7,[R2,#3*320-8]
+ BGT loop_weapons_no_inst
+
+FNout
+
+.my_instance_block
+ EQUD &F7F7F6F4
+ EQUD &F7F5F5F4
+ EQUD &F6F5F5F4
+ EQUD &F4F4F4F4
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+.put_twin_meters
+FNin
+
+BL FL_cargo_value
+MOV R5,R0
+
+FNldr(6,damage_on_FL):ADD R6,R6,R6,LSL#1:MOV R6,R6,ASR#3
+
+CMP R5,#37:MOVGT R5,#37                            ; maximum value
+CMP R6,#37:MOVGT R6,#37
+
+FNldr(2,BASESCR):FNadd(2,320*208+112+320*(10+37))  ; meter address on scr
+
+MOV R7,#0:MOV R8,#0  ; black to fill the remaining space
+
+MOV R12,R2
+MOV R3,#67<<24:ORR R3,R3,#66<<16:ORR R3,R3,#64<<08
+MOV R4,#64<<16:ORR R4,R4,#66<<08:ORR R4,R4,#67<<00
+
+RSB R1,R5,#36   ; # black lines
+
+.drwRedMeter
+SUBS R5,R5,#1
+STMPLIA R2,{R3,R4}:SUBPL R2,R2,#320:BPL drwRedMeter
+.drwRedBlack
+STMIA R2,{R7,R8}:SUB R2,R2,#320:SUBS R1,R1,#1:BPL drwRedBlack
+
+MOV R3,#23<<24:ORR R3,R3,#22<<16:ORR R3,R3,#20<<8
+MOV R4,#20<<16:ORR R4,R4,#22<<08:ORR R4,R4,#23<<0
+
+ADD R2,R12,#88  ; move screen address to green meter
+RSB R1,R6,#36   ; # black lines
+
+.drwBlueMeter
+SUBS R6,R6,#1
+STMPLIA R2,{R3,R4}:SUBPL R2,R2,#320:BPL drwBlueMeter
+.drwBlueBlack
+STMIA R2,{R7,R8}:SUB R2,R2,#320:SUBS R1,R1,#1:BPL drwBlueBlack
+
+FNout
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.put_gyros     ; input R0,R1=some FL datas
+FNin
+ AND R0,R0,#&FF
+
+ CMP R0,#192
+  SUBPL R0,R0,#256
+  BPL gyr_coco
+
+ CMP R0,#128
+  RSBPL R0,R0,#128
+  RSBPL R1,R1,#128
+  BPL gyr_coco
+
+ CMP R0,#64
+ ANDPL R0,R0,#63
+ RSBPL R0,R0,#64
+ RSBPL R1,R1,#128
+
+.gyr_coco
+ ADD R0,R0,R0,LSL#2              ; /1.5
+ ADD R0,R0,R0,LSL#4
+ MOV R0,R0,ASR#7
+ RSB R0,R0,#0
+ RSB R1,R1,#64
+
+ AND R1,R1,#&FF
+
+  rsb r4,r1,#64:and r4,r4,#&FF:cmp r4,#128
+
+FNadr(2,sinus)       ; calc sin & cos for 'delta ray'
+LDR R10,[R2,R4,LSL#2]!:MUL R10,R0,R10:MOV R10,R10,ASR#8
+LDR R2,[R2,#64*4]     :MUL R0,R2,R0:MOV R0,R0,ASR#8
+
+ADR R2,tan:LDR R1,[R2,R1,LSL#2]  ; calc tan
+
+FNldr(13,BASESCR)
+FNadd(13,320*213+128)                              ; gyros address on scr
+
+MOV R5,#166:ORR R5,R5,R5,LSL#8:ORR R5,R5,R5,LSL#16 ; the cols
+MOV R6,#38:ORR R6,R6,R6,LSL#8:ORR R6,R6,R6,LSL#16  ;
+
+MOVLE R8,R5:MOVLE R5,R6:MOVLE R6,R8 ; swap colors if alpha <0
+
+MOV R8,R5:MOV R9,R6                                ; (r8,r9)=(r5,r6)
+
+ADDS R3,R0,#20:BLE scnd   ; # lines   ; HALF BOTTOM
+
+MVN R11,R1,ASR#1
+ADD R2,R13,#320*21:SUB R12,R2,R0,LSL#8:SUB R12,R12,R0,LSL#6
+ADD R2,R2,#320*19
+
+.loopGyros1
+
+ ADD R11,R11,R1 ; incr line
+
+ CMP R12,R13
+ BLPL jumpFastfill
+
+ ADDPL R12,R12,#320-64  ; next line
+ ADDMI R12,R12,#320
+
+SUBS R3,R3,#1:BNE loopGyros1
+
+.scnd
+RSBS R3,R0,#21:BLE thatsAll  ; # lines   ; HALF TOP
+
+MOV R11,R1,ASR#1
+ADD R2,R13,#320*20:SUB R12,R2,R0,LSL#8:SUB R12,R12,R0,LSL#6
+ADD R2,R2,#320*20
+.loopGyros2
+
+ SUB R11,R11,R1 ; incr line
+
+ CMP R2,R12
+
+ BLPL jumpFastfill
+ SUBPL R12,R12,#320+64
+ SUBMI R12,R12,#320
+
+SUBS R3,R3,#1:BNE loopGyros2
+
+.thatsAll  ; and now draw green markers
+MOV R5,#205       ; green
+ORR R5,R5,R5,LSL#8
+ORR R5,R5,R5,LSL#16
+
+ADD R13,R13,#320*20
+
+STR R5,[R13,#8+320*-8]
+STR R5,[R13,#8+320*-4]
+STR R5,[R13,#8+320*00]   :STR R5,[R13,#8+320*00+4]
+STR R5,[R13,#8+320*+4]
+STR R5,[R13,#8+320*+8]
+
+STR R5,[R13,#60-8+320*-8]
+STR R5,[R13,#60-8+320*-4]
+STR R5,[R13,#60-8+320*00]:STR R5,[R13,#60-8+320*00-4]
+STR R5,[R13,#60-8+320*+4]
+STR R5,[R13,#60-8+320*+8]
+
+FNout
+
+FNbin
+
+.jumpFastfill
+
+ADD R4,R10,R11,ASR#8 ; add cos for deltaray and line counter divided
+
+MOVS R7,R4,LSL#31
+ MOV   R7,R6         ; calc the right mix register
+ MOVMI R7,R7,LSL#8:ORRMI R7,R7,R5,LSR#24
+ MOVCS R7,R7,LSL#16:ORRCS R7,R7,R5,LSR#16
+
+CMP R4,#32:MOVGT R4,#32  ;if more than 64 points ,then just draw 64 points
+               ; recenter gyros ( 32 points right )
+ADDS R4,R4,#32 ; if negative number of points to draw,then
+ADDPL PC,PC,R4 ; skip jump table
+MOV R7,R6      ; clear the mix register and draw Gy0
+B Gy0
+B Gy1
+B Gy2
+B Gy3
+B Gy4
+B Gy5
+B Gy6
+B Gy7
+B Gy8
+B Gy9
+B Gy10
+B Gy11
+B Gy12
+B Gy13
+B Gy14
+B Gy15
+FNoptiGyr(16)
+
+.tan
+]
+FOR alpha%=0 TO 255
+IF alpha%<>64 AND alpha%<>192 THEN
+[OPT PASS
+ EQUD 256*TAN(alpha%*2*PI/256)
+]
+ELSE
+[OPT PASS
+ EQUD 256*16384*SGN(128-alpha%)
+]
+ENDIF
+NEXT
+
+[OPT PASS
+
+.Gy0 FNoptiGyr(00)
+.Gy1 FNoptiGyr(01)
+.Gy2 FNoptiGyr(02)
+.Gy3 FNoptiGyr(03)
+.Gy4 FNoptiGyr(04)
+.Gy5 FNoptiGyr(05)
+.Gy6 FNoptiGyr(06)
+.Gy7 FNoptiGyr(07)
+.Gy8 FNoptiGyr(08)
+.Gy9 FNoptiGyr(09)
+.Gy10 FNoptiGyr(10)
+.Gy11 FNoptiGyr(11)
+.Gy12 FNoptiGyr(12)
+.Gy13 FNoptiGyr(13)
+.Gy14 FNoptiGyr(14)
+.Gy15 FNoptiGyr(15)
+
+]
+=0
+
+DEFFNoptiGyr(d%)     :REM R5 and R6 are the two colors
+                     :REM R7 is the mix of R5 and R6
+
+e%=16-d%
+
+WHILE d%>=2
+[OPT PASS
+STMIA R12!,{R5,R8}
+]
+d%-=2
+ENDWHILE
+
+IF d%=1 THEN
+[OPT PASS
+STMIA R12!,{R5,R7}
+]
+e%-=1
+ELSE
+
+ IF e%>1 THEN
+  [OPT PASS
+   STMIA R12!,{R7,R9}
+  ]
+  e%-=2
+ ENDIF
+
+ENDIF
+
+WHILE e%>=2
+[OPT PASS
+STMIA R12!,{R6,R9}
+]
+e%-=2
+ENDWHILE
+
+ENDIF
+
+[OPT PASS
+MOVS PC,R14
+]
+=0
+

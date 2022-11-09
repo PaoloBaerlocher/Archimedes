@@ -1,0 +1,140 @@
+REM >MASTER.FNsunLight
+END
+________________________________________________________________________
+
+DEFFNsunLight
+
+wind_down =154 :REM par rapport a' l'origine de la fenetre virtuelle
+wind_right=191
+
+[OPT PASS
+
+.draw_sunlight ; input R0,R1,R2 = light vector ; R3,R4=scr pos ; R5=ray
+FNin2                                                          ; R6=col
+
+CMP R5,#64:MOVPL PC,R14 ; too big!
+
+MOV R13,R5
+
+SUB R3,R3,R13,ASR#1  ; recenter
+SUB R4,R4,R13,ASR#1
+
+ADR R14,SL_Divis:LDR R14,[R14,R13,LSL#2]
+
+ADR R10,data_sphere
+
+FNadr(11,MegaShades)
+ADD R11,R11,R6,LSL#6 ; x96
+ADD R11,R11,R6,LSL#5
+
+FNldr(12,BASESCR)
+ADD R12,R12,#320*44  ; addresse de la fenetre virtuelle
+ADD R12,R12,#124
+
+MOV R6,R0,LSL#11
+ADD R6,R6,R1,LSL#11
+MOV R2,R2,LSL#3
+MUL R0,R14,R0
+MUL R1,R14,R1
+
+CMP R4,#0:BMI clipUp
+ADDGT R12,R12,R4,LSL#8:ADDGT R12,R12,R4,LSL#6
+
+ADD R7,R4,R13     ; last line du sprite
+CMP R7,#wind_down ; test if outside vertically
+MOVMI R4,R13
+RSBPL R4,R4,#wind_down
+CMP R4,#0:BLE quit_SunLight
+
+.endClipUp
+CMP R3,#0:BMI clipLeft
+ADDGT R12,R12,R3
+
+ADD R7,R3,R13     ; test if outside horizontally
+CMP R7,#wind_right
+RSBPL R13,R3,#wind_right
+CMP R13,#0:BLE quit_SunLight
+
+.endClipLeft
+
+ADD R12,R12,R13
+
+MVN R3,R14,LSL#5  ; -1/2
+.ly
+
+MOV R7,R6
+
+ADD R3,R3,R14,LSL#6
+BIC R9,R3,#%111111110000
+
+MOV R5,R13        ; taille
+.lx
+
+ ADD  R9,R9,R14       ; the right coloumn
+ LDRB R8,[R10,R9,LSR#6]
+ CMP R8,#0:BEQ noPoint
+
+ MLAS R8,R2,R8,R7
+
+ CMPPL R8,#6<<11:MOVMI R8,#6<<11
+ CMPPL R8,#23<<11:LDRPL R8,[R11,#23<<2]
+ LDRMI R8,[R11,R8,LSR#9]:STRB R8,[R12,-R5]
+
+.noPoint
+SUBS R5,R5,#1:SUBNE R7,R7,R1:BNE lx
+
+ SUB R6,R6,R0
+ ADD R12,R12,#320
+SUBS R4,R4,#1:BNE ly
+
+.quit_SunLight
+FNout2
+
+.clipUp
+ MLA R7,R14,R4,R14:MOV R7,R7,ASR#6
+ SUB R10,R10,R7,LSL#6   ; the right address
+ MLA R6,R0,R4,R6        ; correction pour calcul lumiere
+ ADDS R4,R13,R4:BLE quit_SunLight ; number of lines to draw
+B endClipUp
+
+.clipLeft
+ MLA R7,R14,R3,R14:MOV R7,R7,ASR#6
+ SUB R10,R10,R7        ; the right address
+ ADDS R13,R13,R3:BLE quit_SunLight
+B endClipLeft
+
+FNbin
+
+.SL_Divis
+ EQUD 255*255
+]
+FOR N%=1TO 63
+ [OPT PASS : EQUD 64*64/N% :]
+NEXT
+[OPT PASS
+
+.data_sphere
+]
+FOR Y%=-32TO 31
+FOR X%=-32TO 31
+
+D=X%*X%+Y%*Y%
+
+IF D>=32*32 THEN
+
+ [OPT PASS:EQUB 0:]
+
+ELSE
+
+ Z%=SQR(32*32-D)*8
+ IF Z%>255 Z%=255
+
+ [OPT PASS
+  EQUB Z%
+ ]
+
+ENDIF
+
+NEXT,
+
+=0

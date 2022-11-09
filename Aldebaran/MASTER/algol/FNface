@@ -1,0 +1,413 @@
+REM >MASTER.ALGOL.FNface
+END
+_________________________________________________________________________
+
+DEFFNfacial_animation
+eod=65536
+maxPoints2=128
+[OPT PASS
+
+.Headboom_animate
+FNin
+
+ FNadr(13,sinus)
+ SWI "OS_ReadMonotonicTime"
+ MOV R0,R0,LSL#1
+
+ ADD R1,R0,R0,ASR#1
+ AND R1,R1,#&FF
+ LDR R1,[R13,R1,LSL#2]
+ MOV R1,R1,ASR#4        ; alfa
+
+ MOV R2,R1,LSL#1
+ STR R2,HeadX
+
+ MOV R2,R0,LSR#2
+ AND R2,R2,#&FF
+ LDR R2,[R13,R2,LSL#2]
+ MOV R2,R2,ASR#3
+ ADD R2,R2,#180
+ STR R2,HeadY
+
+ ADD R1,R1,#128
+ MOV R1,R1,LSL#16
+ AND R1,R1,#&FF0000
+
+  LDR R3,dondol_head
+   ADD R3,R3,#1
+  STR R3,dondol_head
+   TST R3,#  %110000000
+   BNE no_dondol
+
+  AND R3,R3,#%001111111
+  AND R3,R3,#&FF
+  ADD R3,R3,#64
+  LDR R3,[R13,R3,LSL#2] ;cos
+  AND R3,R3,#&FF
+  ORR R1,R1,R3,LSL#8
+
+.no_dondol
+ STR R1,HeadAngle
+
+ AND R1,R0,#&FF
+ LDR R1,[R13,R1,LSL#2]
+ CMP R1,#0:RSBMI R1,R1,#0
+ ADD R1,R1,#256
+
+ MOV R2,R0,LSR#3
+ AND R2,R2,#&FF
+ LDR R2,[R13,R2,LSL#2]
+ MOVS R2,R2,ASR#2
+ RSBMI R2,R2,#0
+ SUB R2,R2,#32
+
+ MOV R0,#1:BL HB_eye
+
+ SWI "OS_ReadMonotonicTime"
+ MOV R0,R0,LSL#1
+
+ ADD R1,R0,R0,LSR#1
+ AND R1,R1,#&FF
+ LDR R1,[R13,R1,LSL#2]
+ CMP R1,#0:RSBMI R1,R1,#0
+ ADD R1,R1,#256
+
+ MOV R2,R0,LSR#3
+ AND R2,R2,#&FF
+ LDR R2,[R13,R2,LSL#2]
+ MOVS R2,R2,ASR#2:RSBMI R2,R2,#0
+ SUB R2,R2,#32
+
+ MVN R0,#0:BL HB_eye
+
+ SWI "OS_ReadMonotonicTime"
+ MOV R0,R0,LSL#2
+
+ MOV R1,R0,LSR#1
+ ADD R1,R1,R0,LSR#5
+ AND R1,R1,#&FF
+ LDR R1,[R13,R1,LSL#2]
+ MOVS R1,R1,LSL#1:RSBMI R1,R1,#0
+
+ MOV R2,R0,LSR#2
+ AND R2,R2,#&FF
+ LDR R2,[R13,R2,LSL#2]
+ MOVS R2,R2,LSL#1:RSBMI R2,R2,#0
+
+ MOV R3,R0,LSR#3
+ AND R3,R3,#&FF
+ LDR R3,[R13,R3,LSL#2]
+ MUL R4,R3,R3
+ MOV R4,R4,ASR#8
+ MUL R5,R4,R4
+ MOV R5,R5,ASR#8
+ MUL R4,R5,R5
+ MOV R4,R4,ASR#8
+ MUL R3,R4,R3
+ MOV R3,R3,ASR#8+2
+
+ BL HB_mouth
+
+ BL ViewHeadboom
+
+FNout
+
+FNbin
+
+.dondol_head EQUD 0
+
+; Headboom animation routines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.HB_mouth   ; R1=amplification1 * 256 ; R2=amplification2 *256 ; R3=deltaZ
+  ADR R0,Headboom_mouth+12*16
+
+  MOV R6,#0:MVN R7,#9*2    ; centre
+  MOV R8,R3
+
+  FNadr(10,sinus)
+  ADD R11,R10,#64*4
+
+  MOV R12,#0
+ .loop_HB_mouth
+
+  MOV R9,R12,LSL#4
+  AND R9,R9,#&FF
+  LDR R3,[R10,R9,LSL#2]
+  MUL R3,R1,R3
+  ADD R3,R6,R3,ASR#12
+
+  ADD R4,R8,#25*2
+
+  LDR R5,[R11,R9,LSL#2]
+  MUL R5,R2,R5
+  ADD R5,R7,R5,ASR#12
+
+  STMIA R0!,{R3,R4,R5}
+
+ ADD R12,R12,#1:CMP R12,#16:BNE loop_HB_mouth
+
+  MOV R12,#0
+ .loop_HB_mouth_centre
+
+  MOV R9,R12,LSL#4
+  AND R9,R9,#&FF
+  LDR R3,[R10,R9,LSL#2]
+  MUL R3,R1,R3
+  ADD R3,R6,R3,ASR#13
+
+  ADD R4,R8,#19*2
+
+  LDR R5,[R11,R9,LSL#2]
+  MUL R5,R2,R5
+  ADD R5,R7,R5,ASR#13
+
+  STMIA R0!,{R3,R4,R5}
+
+ ADD R12,R12,#1:CMP R12,#16:BNE loop_HB_mouth_centre
+MOV PC,R14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.HB_eye  ; in R0=eye #={-1,+1} ; R1=amplification * 256 ; R2=alfa
+ CMP R0,#1
+  ADREQ R0,Headboom_eye1:MOVEQ R6,#30*2   ; R6 = x centre
+  ADRNE R0,Headboom_eye2:MVNNE R6,#29*2
+                         MOV   R7,#25*2   ; R7 = y centre
+  FNadr(10,sinus)
+  ADD R11,R10,#64*4
+
+  AND R2,R2,#&FF:LDR R8,[R10,R2,LSL#2]:LDR R2,[R11,R2,LSL#2] ;sin&cos alfa
+
+  MOV R12,#0
+ .loop_HB_eye
+
+  CMP R12,#0
+
+  MOV R9,R12,LSL#5
+  AND R9,R9,#&FF
+  LDR R3,[R10,R9,LSL#2]
+  MUL R3,R1,R3
+  MOVEQ R3,R3,LSL#1
+  ADD R3,R6,R3,ASR#12
+
+  MOV R4,#20
+
+  LDR R5,[R11,R9,LSL#2]
+  MUL R5,R1,R5
+  MOVEQ R5,R5,LSL#1
+  ADD R5,R7,R5,ASR#12
+
+  MUL R9,R8,R5:RSB R9,R9,#0:MLA R9,R2,R4,R9
+  MUL R5,R2,R5:             MLA R5,R8,R4,R5
+  MOV R4,R9,ASR#8
+  MOV R5,R5,ASR#8
+
+  STMIA R0!,{R3,R4,R5}
+
+ ADD R12,R12,#1:CMP R12,#8:BNE loop_HB_eye
+
+  MOV R12,#0
+ .loop_HB_eye_centre
+
+  CMP R12,#0
+
+  MOV R9,R12,LSL#5
+  AND R9,R9,#&FF
+  LDR R3,[R10,R9,LSL#2]
+  MUL R3,R1,R3
+  MOVEQ R3,R3,LSL#1
+  ADD R3,R6,R3,ASR#13
+
+  MOV R4,#20
+
+  LDR R5,[R11,R9,LSL#2]
+  MUL R5,R1,R5
+  MOVEQ R5,R5,LSL#1
+  ADD R5,R7,R5,ASR#13
+
+  MUL R9,R8,R5:RSB R9,R9,#0:MLA R9,R2,R4,R9
+  MUL R5,R2,R5:             MLA R5,R8,R4,R5
+  MOV R4,R9,ASR#8
+  MOV R5,R5,ASR#8
+
+  STMIA R0!,{R3,R4,R5}
+
+ ADD R12,R12,#1:CMP R12,#8:BNE loop_HB_eye_centre
+MOV PC,R14
+
+.HeadX     EQUD 0
+.HeadY     EQUD 210
+.HeadZ     EQUD -50 ; elevation
+.HeadAngle EQUD 128<<16
+
+.Headboom
+FNdefine(Headboom,Dinamic,Shadow,0)
+
+.Headboom_mouth FNmouth
+.Headboom_eye1  FNeye(30)
+.Headboom_eye2  FNeye(-30)
+.Headboom_noose FNnoose
+.Headboom_ear1  FNears(50)
+.Headboom_ear2  FNears(-50)
+
+EQUD eod
+
+FNhidden(hea,0)
+
+.hea
+ FNclose_ears(23, 96)   ; ears
+; FNclose_ears(23, 112)
+; FNclose_ears2(23, 104)
+ FNclose_ears2(23, 120)
+ FNlink(104,96 ,8, 23)
+ FNlink(120,112,8, 23)
+
+ FNlink(16,32  ,16,47)  ; mouth
+ FNlink(0,16   ,16,99)
+
+ FNlink(48,56  ,8, 41)  ; eye
+ FNlink(64,72  ,8, 41)
+
+ FNclose_noose( 1)      ; noose
+ FNlink(80,88  ,8, 1 )
+
+EQUD eod
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.ViewHeadboom
+FNin
+ FNadr(0,Headboom)
+ FNldr(4,HeadAngle)
+ ADR R5,galaga
+ BL rotateTexPoints
+
+ FNadr(0,Headboom)
+ FNadr(1,HeadX)
+ LDMIA R1,{R1,R2,R3}
+ ADR R5,galaga
+ BL draw3DTexObject
+FNout
+
+FNbin
+
+.galaga     ; space for the drawing
+FNram(12*(maxPoints2+1)+4)
+]
+=0
+
+DEFFNbuild(pointerToObject,xp%,yp%,zp%,alfa0%,deltaAlfa%)
+alfa0%=alfa0% MOD 256
+deltaAlfa%=deltaAlfa% MOD 256
+
+[OPT PASS
+ EQUD pointerToObject
+ EQUD xp%
+ EQUD yp%
+ EQUD zp%
+ EQUD (alfa0%<<24)+deltaAlfa%
+]
+=0
+_________________________________________________________________________
+
+DEFFNtear(X,Y,Z,R)
+FOR Z%=0TO 15
+ A=Z%*2*PI/16
+ RR=R*(2-SIN(A/2))
+
+[OPT PASS:FNxyz(2*(X+RR*SIN(A)),2*Y,2*(Z+RR*COS(A))) :]
+NEXT
+=0
+
+DEFFNcircle(X,Y,Z,R,num_points%)
+FOR Z%=0 TO num_points%-1
+ A=Z%*2*PI/num_points%
+ [OPT PASS:FNxyz(2*(X+R*SIN(A)),2*Y,2*(Z+R*COS(A))) :]
+NEXT
+=0
+
+DEFFNcircle2(X,Y,Z,R,num_points%)
+FOR Z%=0 TO num_points%-1
+ A=Z%*2*PI/num_points%
+ [OPT PASS:FNxyz(2*X,2*(Y+R*SIN(A)),2*(Z+R*COS(A))) :]
+NEXT
+=0
+
+DEFFNlink(P1%,P2%,num_points%,col%)
+FOR Z%=0 TO num_points%-1
+IF col%=99 THEN coll%=35-12*(Z% MOD 2) ELSE coll%=col% :REM strips
+IF NOT(col%=47 AND (Z% MOD 2)=0) THEN
+[OPT PASS
+ FNquad(coll%,1,0, P1%+((Z%+1) MOD num_points%),P1%+Z%,P2%+Z%,P2%+((Z%+1) MOD num_points%))
+]
+ENDIF
+
+NEXT
+=0
+
+DEFFNmouth
+[OPT PASS
+
+ FNcircle(0,00,-10, 20, 16)
+ FNcircle(0,25,-10, 15, 16)
+ FNcircle(0,24,-10, 10, 16)
+
+]
+=0
+
+DEFFNnoose
+[OPT PASS
+ FNcircle(0,10,+23, 10, 8)
+ FNcircle(0,35,+15, 05, 8)
+
+]
+=0
+
+DEFFNeye(pos%)
+[OPT PASS
+
+ FNcircle(pos%,10,+25, 10, 8)
+ FNcircle(pos%,10,+25, 05, 8)
+
+]
+=0
+
+DEFFNears(pos%)
+[OPT PASS
+
+ FNcircle2(pos%-5,-5,+20, 13, 8)
+ FNcircle2(pos%+5,-5,+20, 13, 8)
+
+
+]
+=0
+
+DEFFNclose_noose(c%)
+[OPT PASS
+ FNquad(c%,1,0, 91,90,89,88)
+ FNquad(c%,1,0, 88,95,92,91)
+ FNquad(c%,1,0, 95,94,93,92)
+
+]
+=0
+
+DEFFNclose_ears(c%,p%)
+[OPT PASS
+
+ FNquad(c%,1,0, p%+3,p%+2,p%+1,p%)
+ FNquad(c%,1,0, p%,p%+7,p%+4,p%+3)
+ FNquad(c%,1,0, p%+7,p%+6,p%+5,p%+4)
+
+]
+=0
+
+DEFFNclose_ears2(c%,p%)
+[OPT PASS
+
+ FNquad(c%,1,0, p%+0,p%+1,p%+2,p%+3)
+ FNquad(c%,1,0, p%+3,p%+4,p%+7,p%+0)
+ FNquad(c%,1,0, p%+4,p%+5,p%+6,p%+7)
+
+]
+=0

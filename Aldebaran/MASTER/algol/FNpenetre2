@@ -1,0 +1,132 @@
+REM >MASTER.ALGOL.FNpenetre2
+END
+__________________________________________________________________________
+
+DEFFNpenetre
+REM utilise les memes parametres que FNalgol
+[OPT PASS
+
+.penet_col1 EQUD 0
+.penet_col2 EQUD 0
+
+.drawAllFrames
+FNin
+
+ FNldr(0,algolAtom):TST R0,#64
+ LDREQ R1,penet_col1:LDREQ R2,penet_col2
+ LDRNE R1,penet_col2:LDRNE R2,penet_col1
+ STR R1,frameCol1:STR R2,frameCol2
+
+ MOV R11,#1:BL drawFrame
+ MOV R11,#2:BL drawFrame
+ MOV R11,#3:BL drawFrame
+ MOV R11,#4:BL drawFrame
+ MOV R11,#5:BL drawFrame
+ MOV R11,#6:BL drawFrame
+ MOV R11,#7:BL drawFrame
+ MOV R11,#8:BL drawFrame
+
+FNout
+
+.frameCol1 EQUD 0
+.frameCol2 EQUD 0
+
+.drawFrame  ;affiche un bord solide de couleur R12
+FNin        ;a' la profondeur R11=[0..8]
+
+LDR R12,frameCol1:LDR R13,frameCol2
+STR R13,frameCol1:STR R12,frameCol2 ;alternate
+
+LDR R0,penet_col1
+CMP R12,R0:MOVEQ PC,R14 ; bof
+
+LDR R12,frameCol1
+FNadr(0,MegaShades)
+ADD R12,R12,R12,LSL#1:ADD R0,R0,R12,LSL#5:LDR R0,[R0,R11,LSL#3] ;load col
+STR R0,thePattern1
+
+LDR R12,frameCol2
+FNadr(0,MegaShades)
+ADD R12,R12,R12,LSL#1:ADD R0,R0,R12,LSL#5:LDR R0,[R0,R11,LSL#3] ;load col
+STR R0,thePattern2
+
+ADR R0,miniBuffer
+
+FNadr(13,threeD_algol)
+
+FNldr(1,algolDeltaX)                ; this is the centre of the Frame
+FNldr(3,algolAtom)                  ;
+AND R2,R3,#63:ADD R2,R2,R11,LSL#6   ;
+ADD R2,R2,#32
+
+FNldr(6,algolHigh)   ; hauteur du cube    ; build frame
+
+; y first
+;;;;;;;;;;
+
+ADD R7,R2,#32   :CMP R7,#640-16:MOVGT R7,#640-16
+  LDR R7,[R13,R7,LSL#2] ; les deux facteurs 3D
+SUB R8,R2,#32   :CMP R8,#640-16:MOVGT R8,#640-16
+  LDR R8,[R13,R8,LSL#2]
+
+MUL R5,R7,R6:MOV R5,R5,ASR#12:ADD R5,R5,#72
+ STR R5,[R0,#36]:STR R5,[R0,#52]
+MUL R5,R8,R6:MOV R5,R5,ASR#12:ADD R5,R5,#72
+ STR R5,[R0,#44]:STR R5,[R0,#60]
+
+SUB R6,R6,#512   ; le bas du cube
+
+MUL R5,R7,R6:MOV R5,R5,ASR#12:ADD R5,R5,#72
+ STR R5,[R0,#4]:STR R5,[R0,#20]
+MUL R5,R8,R6:MOV R5,R5,ASR#12:ADD R5,R5,#72
+ STR R5,[R0,#12]:STR R5,[R0,#28]
+
+; x last
+;;;;;;;;;
+
+SUB R4,R1,#16
+MUL R5,R7,R4:MOV R5,R5,ASR#08:ADD R5,R5,#160
+ STR R5,[R0,#0]:STR R5,[R0,#48]
+
+MUL R5,R8,R4:MOV R5,R5,ASR#08:ADD R5,R5,#160
+ STR R5,[R0,#8]:STR R5,[R0,#56]
+
+ADD R4,R1,#16
+MUL R5,R7,R4:MOV R5,R5,ASR#08:ADD R5,R5,#160
+ STR R5,[R0,#16]:STR R5,[R0,#32]
+
+MUL R5,R8,R4:MOV R5,R5,ASR#08:ADD R5,R5,#160
+ STR R5,[R0,#24]:STR R5,[R0,#40]
+
+;; now draw frame
+ ;;;;;;;;;;;;;;;;;;
+
+SUB R3,R3,R11,LSL#6:TST R3,#%10000000:BEQ frame2
+
+.frame1
+ADR R1,miniBuffer:LDMIA R1,{R1-R8}
+LDR R12,thePattern1:BL PutBigQuadra
+
+ADR R1,miniBuffer+32:LDMIA R1,{R1-R8}
+LDR R12,thePattern1:BL PutBigQuadra
+
+FNexit
+
+.frame2
+ADR R1,miniBuffer+16:LDMIA R1,{R1-R8}
+LDR R12,thePattern2:BL PutBigQuadra
+
+ADR R1,miniBuffer+48:LDMIA R1,{R1-R4}:ADR R5,miniBuffer:LDMIA R5,{R5-R8}
+LDR R12,thePattern2:BL PutBigQuadra
+
+FNout
+
+FNbin
+
+.thePattern1 EQUD 0
+.thePattern2 EQUD 0
+
+.miniBuffer
+FNram(8*8)
+]
+=0
