@@ -10,7 +10,7 @@ Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" fl
 
 ![Disks](/assets/disks.jpg)
 
-POIZONE ASSETS
+# POIZONE ASSETS
 
 ![Front](/assets/poizone/Front.jpg)
 ![Back](/assets/poizone/Back.jpg)
@@ -19,7 +19,7 @@ POIZONE ASSETS
 ![Manual](/assets/poizone/man.jpg)
 ![Review](/assets/poizone/POIZONE_REVIEW.jpeg)
 
-ALDEBARAN ASSETS
+# ALDEBARAN ASSETS
 
-![Review](/assets/aldebaran/AcornUserReview.png)
 ![Screen](/assets/aldebaran/Aldebaran.png)
+![Review](/assets/aldebaran/AcornUserReview.png)
