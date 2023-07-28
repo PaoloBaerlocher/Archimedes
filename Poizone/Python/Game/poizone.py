@@ -18,6 +18,10 @@ SCHEME_SIZE = 3072      # SCHEME_WIDTH*48
 PENG_WALK_STEP = 4      # In pixels
 MONS_WALK_STEP = 2
 
+# GAME PHASES
+PHASE_INTRO = 0
+PHASE_GAME  = 1
+
 # KEY
 KEY_UP    = 0
 KEY_DOWN  = 1
@@ -196,6 +200,24 @@ class Penguin():
             return 32 + dir
         return 0
 
+    def display(self, screen, baseX, baseY):
+        if int(self.ghost / 4) % 2 == 0:
+            screen.blit(penguinSprites[self.anim], (ORIGIN_X+self.posX-baseX, ORIGIN_Y+self.posY-baseY))
+
+    def displayMovingBloc(self, screen, baseX, baseY):
+        if self.movBlocWhat != -1:
+            c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
+            index = getAliasBlocIndex(self.movBlocWhat)
+            screen.blit(sprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+
+        # Display killed monsters bonus, if any
+        if self.movBonusTimer > 0:
+            self.movBonusTimer -= 1
+            if self.movMonsters > 0:  # At least one monster has been killed
+                c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
+                index = clamp(self.movMonsters - 1, 0, 3)  # Display corresponding bonus (20, 50, 100 or 200)
+                screen.blit(penguinSprites[72 + index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+
     def update(self, keyPressed):
         global monsters, teleporters, scheme, baseX, baseY
 
@@ -354,6 +376,11 @@ class Monster():
     def isDizzy(self):
         return self.dizzyCounter > 0
 
+    def display(self, screen, baseX, baseY):
+        if self.isBirth() or self.isAlive():
+            c = CropSprite(self.posX - baseX, self.posY - baseY)
+            screen.blit(monstersSprites[self.getSpriteIndex()], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+
     def update(self):
         global scheme, electrifyBorder
 
@@ -488,17 +515,23 @@ class CropSprite():
 
 # Global variables
 
-level = 1       # From 1 to 50
-currLand = 0
-electrifyBorder = False
+gamePhase           = PHASE_INTRO
+level               = 1             # From 1 to 50
+currLand            = 0             # 0..4
+electrifyBorder     = False
 electrifyBorderAnim = 0
-blocsCount = []
-countToxicBlocs = 0
+blocsCount          = []
+countToxicBlocs     = 0
 
-itsChallenge = False       # (no / yes) Challenge ?
-challengeIdx = 0           # Quel challenge (il y en a 10) ?
+itsChallenge        = False       # (no / yes) Challenge ?
+challengeIdx        = 0           # Quel challenge (il y en a 10) ?
 
 # Functions
+
+def resetGame():
+    global level
+
+    level = 1
 
 def resetLevel():
     global baseX, baseY, penguin1, itsChallenge, challengeIdx
@@ -743,6 +776,7 @@ for index in range(0, 5):
 
 # SpriteSheets
 
+ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
 ss_bg       = spritesheet.SpriteSheet('Data/border.png')
 ss_shared   = spritesheet.SpriteSheet('Data/sharedBlocs.png')
 ss_Penguins = spritesheet.SpriteSheet('Data/pengos.png')
@@ -758,6 +792,7 @@ image_maskCrash = pygame.image.load("Data/maskCrash.png").convert_alpha()
 
 # BORDER
 
+startScreen = ss_start.get_indexed_image(0, 244, 240)
 border = ss_bg.get_indexed_image(0, 320, 256)
 
 penguin1 = Penguin()
@@ -816,6 +851,16 @@ while running:
             if event.key == pygame.K_SPACE:
                 keyPressed[KEY_SPACE] = True
 
+            if event.key == pygame.K_F1:    # Start game
+                if gamePhase == PHASE_INTRO:
+                    gamePhase = PHASE_GAME
+                    resetGame()
+                    reloadLevel()
+
+            if event.key == pygame.K_ESCAPE:  # Quit game
+                if gamePhase == PHASE_GAME:
+                    gamePhase = PHASE_INTRO
+
             if event.key == pygame.K_F6:    # Next level
                 if (level < 50):
                     level += 1
@@ -845,58 +890,47 @@ while running:
     screen.fill("black")
     screen.blit(border, (0, 0))
 
-    # Draw BG
+    if gamePhase == PHASE_INTRO:
+        screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
+    else:
+        # Draw BG
 
-    anim = int(absTime / 4)
-    for y in range(0, BLOCS_RANGE + 1):
-        for x in range(0, BLOCS_RANGE + 1):
+        anim = int(absTime / 4)
+        for y in range(0, BLOCS_RANGE + 1):
+            for x in range(0, BLOCS_RANGE + 1):
 
-            blocOffset = (int(baseY / BLOC_SIZE) + y) * SCHEME_WIDTH + (int(baseX / BLOC_SIZE) + x)
-            index = int(lands[currLand][4 * blocOffset + (anim % 4)])
+                blocOffset = (int(baseY / BLOC_SIZE) + y) * SCHEME_WIDTH + (int(baseX / BLOC_SIZE) + x)
+                index = int(lands[currLand][4 * blocOffset + (anim % 4)])
 
-            if blocOffset < SCHEME_SIZE:
-                blocOfSchemes = scheme[blocOffset]
-                if blocOfSchemes < 24:
-                    index = blocOfSchemes
+                if blocOffset < SCHEME_SIZE:
+                    blocOfSchemes = scheme[blocOffset]
+                    if blocOfSchemes < 24:
+                        index = blocOfSchemes
 
-            posX = x * BLOC_SIZE - int(baseX % BLOC_SIZE)
-            posY = y * BLOC_SIZE - int(baseY % BLOC_SIZE)
+                posX = x * BLOC_SIZE - int(baseX % BLOC_SIZE)
+                posY = y * BLOC_SIZE - int(baseY % BLOC_SIZE)
 
-            c = CropSprite(posX, posY)
+                c = CropSprite(posX, posY)
 
-            if index >= 0 and index < 120:
-                index = getAliasBlocIndex(index)
-                screen.blit(sprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                if index >= 0 and index < 120:
+                    index = getAliasBlocIndex(index)
+                    screen.blit(sprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
-    # Display Penguin
-    if int(penguin1.ghost / 4) % 2 == 0:
-        screen.blit(penguinSprites[penguin1.anim], (ORIGIN_X+penguin1.posX-baseX, ORIGIN_Y+penguin1.posY-baseY))
+        # Display Penguin
+        penguin1.display(screen, baseX, baseY)
 
-    # Display Monsters
-    for m in monsters:
-        if m.isBirth() or m.isAlive():
-            c = CropSprite(m.posX - baseX, m.posY - baseY)
-            screen.blit(monstersSprites[m.getSpriteIndex()], (ORIGIN_X+c.posX, ORIGIN_Y+c.posY), c.getCroppedRegion())
+        # Display Monsters
+        for m in monsters:
+            m.display(screen, baseX, baseY)
 
-    # Display moving bloc, if any
-    if penguin1.movBlocWhat != -1:
-        c = CropSprite(penguin1.movBlocPosX - baseX, penguin1.movBlocPosY - baseY)
-        index = getAliasBlocIndex(penguin1.movBlocWhat)
-        screen.blit(sprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
-
-    # Display killed monsters bonus, if any
-    if penguin1.movBonusTimer > 0:
-        penguin1.movBonusTimer -= 1
-        if penguin1.movMonsters > 0:        # At least one monster has been killed
-            c = CropSprite(penguin1.movBlocPosX - baseX, penguin1.movBlocPosY - baseY)
-            index = clamp(penguin1.movMonsters-1, 0, 3)     # Display corresponding bonus (20, 50, 100 or 200)
-            screen.blit(penguinSprites[72+index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+        # Display moving bloc and bonus, if any
+        penguin1.displayMovingBloc(screen, baseX, baseY)
 
     # Display Scores
     displayScore(penguin1.score, 256, 45)
-    displayScore(0, 256, 188)
+    displayScore(0, 256, 188)   # No 2nd player supported, for now
 
-    #
+    # Time
     absTime += clock.get_time()
 
     # flip() the display to put your work on screen
