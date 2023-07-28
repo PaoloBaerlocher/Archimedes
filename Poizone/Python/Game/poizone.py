@@ -280,12 +280,19 @@ class Penguin():
         self.anim = self.getPenguinAnimOffset()
         self.animPhase += 1
 
-        # Move camera and clamp its position
+        # Move camera to follow penguin, and clamp its position
 
-        baseX = clamp(baseX, penguin1.posX - (BLOCS_RANGE * BLOC_SIZE - BORDER_SIZE - BLOC_SIZE),
-                      penguin1.posX - BORDER_SIZE)
-        baseY = clamp(baseY, penguin1.posY - (BLOCS_RANGE * BLOC_SIZE - BORDER_SIZE - BLOC_SIZE),
-                      penguin1.posY - BORDER_SIZE)
+        offsetX = penguin1.posX - baseX - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+        if (offsetX < 0):
+            baseX -= 4
+        elif offsetX > 0:
+            baseX += 4
+
+        offsetY = penguin1.posY - baseY - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+        if (offsetY < 0):
+            baseY -= 4
+        elif offsetY > 0:
+            baseY += 4
 
         MAX_X = (48 - BLOCS_RANGE) * BLOC_SIZE - 4  # In pixels
         MAX_Y = (48 - BLOCS_RANGE) * BLOC_SIZE - 4
@@ -860,6 +867,8 @@ while running:
             if event.key == pygame.K_ESCAPE:  # Quit game
                 if gamePhase == PHASE_GAME:
                     gamePhase = PHASE_INTRO
+                elif gamePhase == PHASE_INTRO:
+                    running = False
 
             if event.key == pygame.K_F6:    # Next level
                 if (level < 50):
