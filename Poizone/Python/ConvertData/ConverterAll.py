@@ -53,24 +53,41 @@ def convert_screen(input, output, width, height):
 
     return None
 
-def convert_shared_blocs(input, output, width, height):
-    blocs = []
-    
-    with open(input, 'rb') as f:
-        for y in range(height):
-            row = ()
+def convert_shared_blocs(input, output, width, height, maskFile):
+
+    # Load masks
+
+    maskBlocs = []
+    with open(maskFile, 'rb') as f:
+        for y in range(4*20):
+            row = []
             for x in range(width):
                 byte_val = f.read(1)
                 int_val = int.from_bytes(byte_val)
-                rgb = Acorn256.convert('acorn', 'rgb', int_val)
-                rgba = (rgb[0], rgb[1], rgb[2], 255)
-                row = row + rgba
-            if ((y >= 12844 and y <= 13323) or (y >= 14044 and y <= 14083)):
-                blocs.append(row)
+                alpha = 0 if int_val == 0 else 0xFF
+                row.append(alpha)
+            maskBlocs.append(row)
 
-    with open(output, 'wb') as f:
-        w = png.Writer(width, len(blocs), greyscale=False, alpha=True)
-        w.write(f, blocs)
+    #
+
+    for mask in range(0, 4):
+        blocs = []
+
+        with open(input, 'rb') as f:
+            for y in range(height):
+                row = ()
+                for x in range(width):
+                    byte_val = f.read(1)
+                    int_val = int.from_bytes(byte_val)
+                    rgb = Acorn256.convert('acorn', 'rgb', int_val)
+                    rgba = (rgb[0], rgb[1], rgb[2], maskBlocs [(len(blocs) % 20) + mask * 20][x])
+                    row = row + rgba
+                if ((y >= 12844 and y <= 13323) or (y >= 14044 and y <= 14083)):
+                    blocs.append(row)
+
+        with open(output [mask], 'wb') as f:
+            w = png.Writer(width, len(blocs), greyscale=False, alpha=True)
+            w.write(f, blocs)
 
     return None
 
@@ -120,26 +137,6 @@ def convert_chars(input, output, width, height):
 
     return None
 
-
-def convert_mask_crash(input, output, width, height):
-    blocs = []
-    with open(input, 'rb') as f:
-        for y in range(height):
-            row = ()
-            for x in range(width):
-                byte_val = f.read(1)
-                int_val = int.from_bytes(byte_val)
-                m = 0 if int_val == 0 else 0xFF
-                rgba = (m, m, m, m)
-                row = row + rgba
-            blocs.append(row)
-
-    with open(output, 'wb') as f:
-        w = png.Writer(width, len(blocs), greyscale=False, alpha=True)
-        w.write(f, blocs)
-
-    return None
-
 def convert_rocket(input, output, width, height):
     blocs = []
     with open(input, 'rb') as f:
@@ -178,10 +175,7 @@ convert_screen('Screens/JUNGLE_SCR', 'scr4.png', SCR_WIDTH, SCR_HEIGHT)
 convert_screen('Screens/ORDI_SCR',   'scr5.png', SCR_WIDTH, SCR_HEIGHT)
 
 convert_screen('BORDER', 'border.png', 320, 256)
-convert_shared_blocs('POIZ_cde', 'sharedBlocs.png', 20, 16384)
+convert_shared_blocs('POIZ_cde', ['sharedBlocs0.png', 'sharedBlocs1.png', 'sharedBlocs2.png', 'sharedBlocs3.png'], 20, 16384, 'varius/MASKCRASH')
 convert_pengos('POIZ_cde', 'pengos.png', 20, 16384)
 convert_chars('POIZ_cde', 'chars.png', 12, 8192)
-
-convert_mask_crash('varius/MASKCRASH', "maskCrash.png", 20, 4*20)
-
 convert_rocket('varius/ROCKET', "rocket.png", 40, 174)

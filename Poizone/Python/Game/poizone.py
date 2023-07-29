@@ -19,8 +19,9 @@ PENG_WALK_STEP = 4      # In pixels
 MONS_WALK_STEP = 2
 
 # GAME PHASES
-PHASE_INTRO = 0
-PHASE_GAME  = 1
+PHASE_INTRO     = 0
+PHASE_GAME      = 1
+PHASE_END_LEVEL = 2
 
 # KEY
 KEY_UP    = 0
@@ -104,7 +105,12 @@ class Penguin():
         self.movBlocDirX = 0
         self.movBlocDirY = 0
         self.movMonsters = 0    # Number of monsters killed by moving bloc
-        self.movBonusTimer = 0
+        self.movBonusTimer = 0  # Timer for displaying the bonus
+
+        self.crushBlocWhat = -1     # Which bloc (-1 : no bloc)
+        self.crushBlocPosX = 0
+        self.crushBlocPosY = 0
+        self.crushBlocTimer = 0
 
     def getBloc(self, dirX, dirY):
         return getBloc(int(self.posX / BLOC_SIZE) + dirX, int(self.posY / BLOC_SIZE) + dirY)
@@ -135,7 +141,73 @@ class Penguin():
                     writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
                     soundLaunch.play()
                 else:
-                    crushBloc(bloc, self)
+                    self.crushBloc(bloc)
+
+    def startCrushAnim(self, bloc, posX, posY):
+        # Start crush animation
+        self.crushBlocWhat = bloc
+        self.crushBlocPosX = posX
+        self.crushBlocPosY = posY
+        self.crushBlocTimer = 11
+
+    def crushBloc(self, bloc):
+
+        if bloc >= BLOC_ROCK:  # Cannot crush that bloc
+            return
+
+        blocUp    = self.getBloc(self.dirX, self.dirY - 1)
+        blocDown  = self.getBloc(self.dirX, self.dirY + 1)
+        blocLeft  = self.getBloc(self.dirX - 1, self.dirY)
+        blocRight = self.getBloc(self.dirX + 1, self.dirY)
+
+        if bloc == BLOC_ALCOOL:
+            self.invert = not self.invert
+            soundAlcool.play()
+
+        if bloc == BLOC_BOMB:
+            self.die()
+            soundBoom.play()
+            # TODO add bomb animation
+
+        if bloc == BLOC_MAGIC:  # Temporary invincibility
+            self.ghost = 60 * 15
+            soundMagic.play()
+
+        if bloc == BLOC_POISON:  # Must be in contact with at least one ALU bloc
+            if not (blocUp == BLOC_ALU or blocDown == BLOC_ALU or blocLeft == BLOC_ALU or blocRight == BLOC_ALU):
+                self.die()
+
+        if bloc == BLOC_ALU:  # Cannot crush ALU blob
+            self.die()
+
+        if bloc == BLOC_BATTERY:
+            if self.dirY == 0:  # Crushed from up or down ?
+                self.die()
+
+        if bloc == BLOC_DDT:
+            if not (blocUp == BLOC_DDT or blocDown == BLOC_DDT or blocLeft == BLOC_DDT or blocRight == BLOC_DDT):
+                self.die()
+
+        if bloc == BLOC_CFC:
+            if self.dirY != 1:  # Crushed from up ?
+                self.die()
+
+        if bloc == BLOC_RADIO:  # Are other RADIOACTIVE blocs nearby ?
+            if (blocUp == BLOC_RADIO or blocDown == BLOC_RADIO or blocLeft == BLOC_RADIO or blocRight == BLOC_RADIO):
+                self.die()
+
+        if bloc == BLOC_GREEN_CHEM:
+            self.die()
+
+        blocX = int(self.posX / BLOC_SIZE) + self.dirX
+        blocY = int(self.posY / BLOC_SIZE) + self.dirY
+
+        self.startCrushAnim(bloc, self.posX + self.dirX * BLOC_SIZE,  self.posY + self.dirY * BLOC_SIZE)
+
+        writeBloc(blocX, blocY, 26) # int(self.crushBlocPosX / BLOC_SIZE), int(self.crushBlocPosY / BLOC_SIZE), 26)
+        destroyBloc(bloc)  # self.crushBlocWhat)
+
+        soundCrash.play()
 
     def die(self):
 
@@ -201,14 +273,21 @@ class Penguin():
         return 0
 
     def display(self, screen, baseX, baseY):
-        if int(self.ghost / 4) % 2 == 0:
+        if int(self.ghost / 2) % 2 == 0:
             screen.blit(penguinSprites[self.anim], (ORIGIN_X+self.posX-baseX, ORIGIN_Y+self.posY-baseY))
 
-    def displayMovingBloc(self, screen, baseX, baseY):
+    def displayBloc(self, screen, baseX, baseY):
+
+        if self.crushBlocWhat != -1:
+            c = CropSprite(self.crushBlocPosX - baseX, self.crushBlocPosY - baseY)
+            index = getAliasBlocIndex(self.crushBlocWhat)
+            maskIndex = 3-int(self.crushBlocTimer / 4)
+            screen.blit(sprites[maskIndex][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+
         if self.movBlocWhat != -1:
             c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
             index = getAliasBlocIndex(self.movBlocWhat)
-            screen.blit(sprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+            screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
         # Display killed monsters bonus, if any
         if self.movBonusTimer > 0:
@@ -313,6 +392,14 @@ class Penguin():
                 soundMagic.play()
                 self.canTeleport = False
 
+        # Update crushed bloc
+
+        if self.crushBlocWhat != -1:
+
+            self.crushBlocTimer -= 1
+            if self.crushBlocTimer == 0:
+                self.crushBlocWhat = -1
+
         # Update moving bloc
 
         if self.movBlocWhat != -1:
@@ -332,6 +419,8 @@ class Penguin():
                                 self.score += 500
                     else:
                         destroyBloc(self.movBlocWhat)
+                        # Start crush animation
+                        self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 
                     self.movBlocWhat = -1
                     self.movBlocDirX = 0
@@ -552,25 +641,33 @@ def resetLevel():
     challengeIdx = 0  # Quel challenge (il y en a 10) ?
 
 def loadSprites():
-    global sprites, monstersSprites
+    global sprites, monstersSprites, endScreenSprite
+
     sprites = []
-    monstersSprites = []
 
-    # (0..23)
-    for index in range(0, 24):
-        sprites.append(ss_shared.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+    for maskIndex in range(0, 4):
+        sprites.append([])
+        s = sprites[maskIndex]
 
-    # (24..59)
-    for index in range(0, 36):
-        sprites.append(ss_levels[currLand].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+        # (0..23)
+        for index in range(0, 24):
+            s.append(ss_shared [maskIndex].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
-    # Teleport blocs (60, 61)
-    for index in range(24, 26):
-        sprites.append(ss_shared.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+        # (24..59)
+        for index in range(0, 36):
+            s.append(ss_levels[currLand].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+
+        # Teleport blocs (60, 61)
+        for index in range(24, 26):
+            s.append(ss_shared [0].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
     # Monsters
+    monstersSprites = []
     for index in range(36, 96):
         monstersSprites.append(ss_levels[currLand].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+
+    # End Screen
+    endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, 244, 240)
 
 def reloadLevel():
     global level, currLand, scheme, blocsCount, countToxicBlocs, monsters
@@ -628,7 +725,7 @@ def isOnBlock(posX, posY):
     return ((posX % BLOC_SIZE) == 0) and ((posY % BLOC_SIZE) == 0)
 
 def destroyBloc(bloc):
-    global blocsCount, countToxicBlocs, level
+    global blocsCount, countToxicBlocs, level, gamePhase, endOfLevelTimer
     print('Destroy bloc of type ' + str(bloc))
     if (bloc <= BLOC_GREEN_CHEM):
         blocsCount[bloc] -= 1
@@ -638,9 +735,10 @@ def destroyBloc(bloc):
             penguin1.score += 5
 
     if (countToxicBlocs == 0):
-        # Level finished
-        level += 1
-        reloadLevel()
+        # Level finished. Show outro animation.
+        gamePhase = PHASE_END_LEVEL
+        endOfLevelTimer = 150
+        print('PHASE_END_LEVEL')
 
 def writeBloc(indexX, indexY, blocIndex):
     global scheme
@@ -663,63 +761,6 @@ def getAliasBlocIndex(index):
         return BLOC_TELEPORT_0 + (int(absTime / 256) % 2)
 
     return index
-
-def crushBloc(bloc, penguin):
-
-    if bloc >= BLOC_ROCK:       # Cannot crush that bloc
-        return
-
-    blocUp    = penguin.getBloc(penguin.dirX, penguin.dirY-1)
-    blocDown  = penguin.getBloc(penguin.dirX, penguin.dirY+1)
-    blocLeft  = penguin.getBloc(penguin.dirX-1, penguin.dirY)
-    blocRight = penguin.getBloc(penguin.dirX+1, penguin.dirY)
-
-    if bloc == BLOC_ALCOOL:
-        penguin.invert = not penguin.invert
-        soundAlcool.play()
-
-    if bloc == BLOC_BOMB:
-        penguin.die()
-        soundBoom.play()
-        #TODO add bomb animation
-
-    if bloc == BLOC_MAGIC:          # Temporary invincibility
-        penguin.ghost = 60*15
-        soundMagic.play()
-
-    if bloc == BLOC_POISON:     # Must be in contact with at least one ALU bloc
-        if not (blocUp == BLOC_ALU or blocDown == BLOC_ALU or blocLeft == BLOC_ALU or blocRight == BLOC_ALU):
-            penguin.die()
-
-    if bloc == BLOC_ALU:        # Cannot crush ALU blob
-        penguin.die()
-
-    if bloc == BLOC_BATTERY:
-        if penguin.dirY == 0:  # Crushed from up or down ?
-            penguin.die()
-
-    if bloc == BLOC_DDT:
-        if not (blocUp == BLOC_DDT or blocDown == BLOC_DDT or blocLeft == BLOC_DDT or blocRight == BLOC_DDT):
-            penguin.die()
-
-    if bloc == BLOC_CFC:
-        if penguin.dirY != 1:  # Crushed from up ?
-            penguin.die()
-
-    if bloc == BLOC_RADIO:  # Are other RADIOACTIVE blocs nearby ?
-        if (blocUp == BLOC_RADIO or blocDown == BLOC_RADIO or blocLeft == BLOC_RADIO or blocRight == BLOC_RADIO):
-            penguin.die()
-
-    if bloc == BLOC_GREEN_CHEM:
-        penguin.die()
-
-    blocX = int(penguin.posX / BLOC_SIZE) + penguin.dirX
-    blocY = int(penguin.posY / BLOC_SIZE) + penguin.dirY
-
-    writeBloc(blocX, blocY, 26)
-    destroyBloc(bloc)
-
-    soundCrash.play()
 
 def setElectrifyBorder(newStatus):
     global electrifyBorder
@@ -751,11 +792,8 @@ soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sa
 soundOhNo  = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V)
 soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
 soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X)
-soundWow   = pygame.mixer.Sound('Data/bruitages/HMM.wav')               # 35 (sample Z) - WOW END OF LEVEL (wrong sample)
-
 soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')
-
-# READY = ?
+soundWow   = pygame.mixer.Sound('Data/bruitages/HMM.wav')               # 35 (sample Z) - WOW END OF LEVEL (wrong sample)
 
 # Set volumes
 
@@ -783,20 +821,22 @@ for index in range(0, 5):
 
 # SpriteSheets
 
+ss_shared = []
+ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs0.png'))
+ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs1.png'))
+ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs2.png'))
+ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs3.png'))
+
 ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
 ss_bg       = spritesheet.SpriteSheet('Data/border.png')
-ss_shared   = spritesheet.SpriteSheet('Data/sharedBlocs.png')
 ss_Penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars    = spritesheet.SpriteSheet('Data/chars.png')
 
 ss_levels = []
+ss_endScreens = []
 for index in range(1, 6):
     ss_levels.append(spritesheet.SpriteSheet('Data/level' + str(index) + '.png'))
-
-# Other graphic assets
-
-image_maskCrash = pygame.image.load("Data/maskCrash.png").convert_alpha()
-
+    ss_endScreens.append(spritesheet.SpriteSheet('Data/Screens/scr' + str(index) + '.png'))
 # BORDER
 
 startScreen = ss_start.get_indexed_image(0, 244, 240)
@@ -901,7 +941,16 @@ while running:
 
     if gamePhase == PHASE_INTRO:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
-    else:
+    elif gamePhase == PHASE_END_LEVEL:
+        screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
+        if endOfLevelTimer > 0:
+            endOfLevelTimer -= 1
+            # TODO Penguin animations
+        else:
+            level += 1
+            reloadLevel()
+            gamePhase = PHASE_GAME
+    else: # PHASE_GAME
         # Draw BG
 
         anim = int(absTime / 4)
@@ -923,7 +972,7 @@ while running:
 
                 if index >= 0 and index < 120:
                     index = getAliasBlocIndex(index)
-                    screen.blit(sprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                    screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
         # Display Penguin
         penguin1.display(screen, baseX, baseY)
@@ -933,7 +982,7 @@ while running:
             m.display(screen, baseX, baseY)
 
         # Display moving bloc and bonus, if any
-        penguin1.displayMovingBloc(screen, baseX, baseY)
+        penguin1.displayBloc(screen, baseX, baseY)
 
     # Display Scores
     displayScore(penguin1.score, 256, 45)
