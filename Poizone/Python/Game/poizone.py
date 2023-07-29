@@ -112,6 +112,11 @@ class Penguin():
         self.crushBlocPosY = 0
         self.crushBlocTimer = 0
 
+    def setStatus(self, status):
+        if status != self.status:
+            print('New Penguin status: ' + str(status))
+            self.status = status
+
     def getBloc(self, dirX, dirY):
         return getBloc(int(self.posX / BLOC_SIZE) + dirX, int(self.posY / BLOC_SIZE) + dirY)
 
@@ -129,7 +134,7 @@ class Penguin():
 
         if self.dirX != 0 or self.dirY != 0:
             bloc = self.getBloc(self.dirX, self.dirY)
-            self.status = PenguinStatus.PUSH
+            self.setStatus(PenguinStatus.PUSH)
             if bloc == BLOC_ELECTRO:
                 setElectrifyBorder(True)
             elif bloc < 24:
@@ -140,9 +145,13 @@ class Penguin():
                     blocY = int(self.posY / BLOC_SIZE) + self.dirY
                     writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
                     soundLaunch.play()
+
+                    if bloc == BLOC_RED:        # Do NOT launch red chemical block!
+                        soundOhNo.play()
+                        self.die()
                 else:
                     self.crushBloc(bloc)
-
+                    
     def startCrushAnim(self, bloc, posX, posY):
         # Start crush animation
         self.crushBlocWhat = bloc
@@ -204,16 +213,15 @@ class Penguin():
 
         self.startCrushAnim(bloc, self.posX + self.dirX * BLOC_SIZE,  self.posY + self.dirY * BLOC_SIZE)
 
-        writeBloc(blocX, blocY, 26) # int(self.crushBlocPosX / BLOC_SIZE), int(self.crushBlocPosY / BLOC_SIZE), 26)
-        destroyBloc(bloc)  # self.crushBlocWhat)
+        writeBloc(blocX, blocY, 26)
+        destroyBloc(bloc)
 
         soundCrash.play()
 
     def die(self):
 
         self.animPhase = 0
-        self.status = PenguinStatus.DIE
-        print('Die')
+        self.setStatus(PenguinStatus.DIE)
         soundColl.play()
 
     def checkSquareDiamond(self, bx, by):
@@ -305,7 +313,7 @@ class Penguin():
         if penguinMove:
             self.canTeleport = True
 
-        if keyPressed[KEY_SPACE] and penguinMove and isOnBlock(self.posX, self.posY):
+        if keyPressed[KEY_SPACE] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
             self.pushBloc()
 
         if isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
@@ -313,46 +321,46 @@ class Penguin():
                 self.dirX = -1 if self.invert == False else +1
                 self.dirY = 0
                 if not blocIsWalkable(self, self.dirX, self.dirY):
-                    self.status = PenguinStatus.IDLE
+                    self.setStatus(PenguinStatus.IDLE)
 
             if keyPressed[KEY_RIGHT]:
                 self.dirX = 1 if self.invert == False else -1
                 self.dirY = 0
                 if not blocIsWalkable(self, self.dirX, self.dirY):
-                    self.status = PenguinStatus.IDLE
+                    self.setStatus(PenguinStatus.IDLE)
 
             if keyPressed[KEY_UP]:
                 self.dirX = 0
                 self.dirY = -1 if self.invert == False else +1
                 if not blocIsWalkable(self, self.dirX, self.dirY):
-                    self.status = PenguinStatus.IDLE
+                    self.setStatus(PenguinStatus.IDLE)
 
             if keyPressed[KEY_DOWN]:
                 self.dirX = 0
                 self.dirY = 1 if self.invert == False else -1
                 if not blocIsWalkable(self, self.dirX, self.dirY):
-                    self.status = PenguinStatus.IDLE
+                    self.setStatus(PenguinStatus.IDLE)
 
         if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyPressed[KEY_SPACE]):
-            self.status = PenguinStatus.IDLE
+            self.setStatus(PenguinStatus.IDLE)
             setElectrifyBorder(False)
 
         if (self.status == PenguinStatus.IDLE) and (self.dirX != 0 or self.dirY != 0) and (
                 penguinMove == True):
             if blocIsWalkable(self, self.dirX, self.dirY):
-                self.status = PenguinStatus.WALK
+                self.setStatus(PenguinStatus.WALK)
 
         if (self.status == PenguinStatus.WALK):
             self.posX += self.dirX * PENG_WALK_STEP
             self.posY += self.dirY * PENG_WALK_STEP
             if isOnBlock(self.posX, self.posY):  # Stop walking at next block
                 if penguinMove == False:
-                    self.status = PenguinStatus.IDLE
+                    self.setStatus(PenguinStatus.IDLE)
                 elif blocIsWalkable(self, self.dirX, self.dirY) == False:
-                    self.status = PenguinStatus.IDLE
+                    self.setStatus(PenguinStatus.IDLE)
 
         if (self.status == PenguinStatus.DIE) and (self.animPhase > 128):  # Re-birth
-            self.status = PenguinStatus.IDLE
+            self.setStatus(PenguinStatus.IDLE)
             self.animPhase = 0
             self.ghost = 60
 
@@ -505,6 +513,7 @@ class Monster():
                 if (deltaX <= 8) and (deltaY <= 8):
                     print('Kill monster')
                     self.killAndRebirth()
+                    soundSplat.play()
                     penguin1.movMonsters += 1
                 elif (deltaX <= 16) and (deltaY <= 16):
                     print('Dizzy monster by bloc collision')
@@ -792,7 +801,7 @@ soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sa
 soundOhNo  = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V)
 soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
 soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X)
-soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')
+soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - for chemical bloc
 soundWow   = pygame.mixer.Sound('Data/bruitages/HMM.wav')               # 35 (sample Z) - WOW END OF LEVEL (wrong sample)
 
 # Set volumes
@@ -800,6 +809,7 @@ soundWow   = pygame.mixer.Sound('Data/bruitages/HMM.wav')               # 35 (sa
 soundCrash.set_volume(0.5)
 soundLaunch.set_volume(0.3)
 soundMagic.set_volume(0.2)
+soundSplat.set_volume(0.5)
 
 # Load Lands and extract teleporters positions.
 
