@@ -151,7 +151,7 @@ class Penguin():
                         self.die()
                 else:
                     self.crushBloc(bloc)
-                    
+
     def startCrushAnim(self, bloc, posX, posY):
         # Start crush animation
         self.crushBlocWhat = bloc
@@ -223,6 +223,7 @@ class Penguin():
         self.animPhase = 0
         self.setStatus(PenguinStatus.DIE)
         soundColl.play()
+        setElectrifyBorder(False)
 
     def checkSquareDiamond(self, bx, by):
         if (getBloc(bx, by - 1) == BLOC_DIAMOND):
@@ -489,16 +490,14 @@ class Monster():
         global scheme, electrifyBorder
 
         self.counter += 1
-        if (self.dizzyCounter > 0):
-            self.dizzyCounter -= 1
-            if self.dizzyCounter == 0:
-                self.dirX = 0 # Stop moving
-                self.dirY = 0
 
         if self.isAlive():
             if not self.isDizzy():
                 self.posX += self.dirX
                 self.posY += self.dirY
+
+            if (self.dizzyCounter > 0):
+                self.dizzyCounter -= 1
 
             onBlock = (self.posX % BLOC_SIZE == 0) and (self.posY % BLOC_SIZE == 0)
 
