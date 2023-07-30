@@ -17,6 +17,7 @@ SCHEME_WIDTH = 64       # In bloc units
 SCHEME_SIZE = 3072      # SCHEME_WIDTH*48
 PENG_WALK_STEP = 4      # In pixels
 MONS_WALK_STEP = 2
+CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]
 
 # GAME PHASES
 PHASE_INTRO     = 0
@@ -55,7 +56,7 @@ BLOC_GREEN_CHEM  = 10
 BLOC_MAGIC       = 11
 BLOC_ROCK        = 12
 BLOC_GOLD        = 13
-BLOC_GYRO        = 14
+BLOC_CYCLONE     = 14
 BLOC_DIAMOND     = 15
 BLOC_BASIC_0     = 16       # For Land No 0 (ice)
 BLOC_BASIC_2     = 17       # For Land No 2 (space)
@@ -144,6 +145,11 @@ class Penguin():
                     blocX = int(self.posX / BLOC_SIZE) + self.dirX
                     blocY = int(self.posY / BLOC_SIZE) + self.dirY
                     writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
+                    if bloc == BLOC_CYCLONE:
+                        idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
+                        print('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
+                        cyclonesList[idx] = 0
+
                     soundLaunch.play()
 
                     if bloc == BLOC_RED:        # Do NOT launch red chemical block!
@@ -416,11 +422,23 @@ class Penguin():
             if (self.movBlocPosX % BLOC_SIZE == 0) and (self.movBlocPosY % BLOC_SIZE == 0):
                 bx = int(self.movBlocPosX / BLOC_SIZE)
                 by = int(self.movBlocPosY / BLOC_SIZE)
-                if getBloc(bx + self.movBlocDirX, by + self.movBlocDirY) < 24:
+                nextBloc = getBloc(bx + self.movBlocDirX, by + self.movBlocDirY)
+                if nextBloc < 24:
                     print('End of bloc travel. Killed ' + str(self.movMonsters) + ' monsters.')
 
-                    if (self.movBlocWhat != BLOC_GREEN_CHEM):
-                        writeBloc(int(self.movBlocPosX / BLOC_SIZE), int (self.movBlocPosY / BLOC_SIZE), self.movBlocWhat)
+                    killBloc = (self.movBlocWhat == BLOC_GREEN_CHEM)
+                    if self.movBlocWhat == BLOC_ALU and nextBloc == BLOC_ELECTRO:
+                        killBloc = True     # Kill ALU when launched against electro border
+
+                    if not killBloc:
+                        writeBloc(bx, by, self.movBlocWhat)
+
+                        if self.movBlocWhat == BLOC_CYCLONE:
+                            # Insert it back in the cyclonesList
+                            for index in range(0, len(cyclonesList)):
+                                if cyclonesList[index] == 0:
+                                    cyclonesList[index] = bx + by * SCHEME_WIDTH
+                                    break
 
                         if (self.movBlocWhat == BLOC_DIAMOND):
                             if self.checkSquareDiamond(bx, by) == True:
@@ -626,6 +644,8 @@ electrifyBorder     = False
 electrifyBorderAnim = 0
 blocsCount          = []
 countToxicBlocs     = 0
+paceMaker           = 0             # For cyclones
+cyclonesList        = []
 
 itsChallenge        = False       # (no / yes) Challenge ?
 challengeIdx        = 0           # Quel challenge (il y en a 10) ?
@@ -678,7 +698,7 @@ def loadSprites():
     endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, 244, 240)
 
 def reloadLevel():
-    global level, currLand, scheme, blocsCount, countToxicBlocs, monsters
+    global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
     print("Load level " + str(level))
     currLand = int((level-1) / 10)
     loadSprites()
@@ -689,10 +709,18 @@ def reloadLevel():
 
     # Counts blocs in scheme
     blocsCount = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+    cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
+    cyclonesNb = 0
+
     for i in range(0, len(scheme)):
         blocIndex = scheme[i]
         if blocIndex <= BLOC_GREEN_CHEM:
             blocsCount[blocIndex] += 1
+
+        if blocIndex == BLOC_CYCLONE:
+            cyclonesList [cyclonesNb] = i
+            print('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
+            cyclonesNb += 1
             
     countToxicBlocs  = blocsCount[BLOC_POISON]+blocsCount[BLOC_RED]
     countToxicBlocs += blocsCount[BLOC_ALU]   +blocsCount[BLOC_BATTERY]
@@ -853,8 +881,6 @@ border = ss_bg.get_indexed_image(0, 320, 256)
 
 penguin1 = Penguin()
 
-reloadLevel()
-
 penguinSprites = []
 for index in range(0, 2*36+12):
     penguinSprites.append(ss_Penguins.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
@@ -929,16 +955,50 @@ while running:
                     level -= 1
                     reloadLevel()
 
-    # Animate electric border
-    if electrifyBorder == True:
-        electrifyBorderAnim += 1
+    if gamePhase == PHASE_GAME:
+        # Animate electric border
+        if electrifyBorder == True:
+            electrifyBorderAnim += 1
 
-    # Update Penguin
-    penguin1.update(keyPressed)
+        # Animate cyclones
+        paceMaker += 1
+        paceMaker %= 16
 
-    # Update Monsters
-    for m in monsters:
-        m.update()
+        if paceMaker % 2 == 0:      # To slow down process, process once every two passes
+            cycloneIndex = cyclonesList [paceMaker >> 1]
+            if cycloneIndex != 0:
+                print('Process cyclone #' + str(cycloneIndex))
+                # Collect blocs around cyclone
+                turningBlocs = []
+
+                for offset in CYCLONE_OFFSETS:
+                    finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
+                    turningBloc = scheme[finalOffset]
+
+                    if turningBloc < 24:
+                        turningBlocs.append(turningBloc)
+
+                # Rotate turning blocs (clockwise)
+                if (len(turningBlocs) > 1):
+                    turningBlocs = turningBlocs[len(turningBlocs)-1:len(turningBlocs)] + turningBlocs[:len(turningBlocs)-1]
+
+                i = 0
+                for offset in CYCLONE_OFFSETS:
+                    finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
+                    turningBloc = scheme[finalOffset]
+
+                    if turningBloc < 24:
+                        blocX = finalOffset % SCHEME_WIDTH
+                        blocY = int (finalOffset / SCHEME_WIDTH)
+                        writeBloc(blocX, blocY, turningBlocs [i])
+                        i += 1
+
+        # Update Penguin
+        penguin1.update(keyPressed)
+
+        # Update Monsters
+        for m in monsters:
+            m.update()
 
     ######
     # DRAW
