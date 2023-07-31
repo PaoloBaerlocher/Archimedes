@@ -39,11 +39,8 @@ def convert_screen(input, output, width, height):
             for x in range(width):
                 byte_val = f.read(1)
                 int_val = int.from_bytes(byte_val)
-                if int_val == 0:
-                    rgba = (0,0,0,0)
-                else:
-                    rgb = Acorn256.convert('acorn', 'rgb', int_val)
-                    rgba = (rgb[0], rgb[1], rgb[2], 255)
+                rgb = Acorn256.convert('acorn', 'rgb', int_val)
+                rgba = (rgb[0], rgb[1], rgb[2], 255)
                 row = row + rgba
             img.append(row)
  
@@ -160,6 +157,29 @@ def convert_rocket(input, output, width, height):
 
     return None
 
+
+def convert_generic(input, output, width, height, opaque):
+    blocs = []
+    with open(input, 'rb') as f:
+        for y in range(height):
+            row = ()
+            for x in range(width):
+                byte_val = f.read(1)
+                int_val = int.from_bytes(byte_val)
+                if not opaque and int_val == 0:
+                    rgba = (0, 0, 0, 0)
+                else:
+                    rgb = Acorn256.convert('acorn', 'rgb', int_val)
+                    rgba = (rgb[0], rgb[1], rgb[2], 255)
+                row = row + rgba
+            blocs.append(row)
+
+    with open(output, 'wb') as f:
+        w = png.Writer(width, len(blocs), greyscale=False, alpha=True)
+        w.write(f, blocs)
+
+    return None
+
 # Main
 
 convert_level('Levels/LEVEL1', 'level1.png')
@@ -178,4 +198,6 @@ convert_screen('BORDER', 'border.png', 320, 256)
 convert_shared_blocs('POIZ_cde', ['sharedBlocs0.png', 'sharedBlocs1.png', 'sharedBlocs2.png', 'sharedBlocs3.png'], 20, 16384, 'varius/MASKCRASH')
 convert_pengos('POIZ_cde', 'pengos.png', 20, 16384)
 convert_chars('POIZ_cde', 'chars.png', 12, 8192)
-convert_rocket('varius/ROCKET', "rocket.png", 40, 174)
+convert_rocket('varius/ROCKET', 'rocket.png', 40, 174)
+convert_generic('varius/PLAQU_SPR', 'plaqu.png', 60, 40, True)
+convert_generic('varius/ARROWS', 'arrows.png', 20, 160, False)
