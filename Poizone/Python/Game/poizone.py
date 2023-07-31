@@ -7,6 +7,7 @@ import spritesheet
 from enum import Enum
 
 # Constants
+LANDS_NB = 5
 ORIGIN_X = 8            # In pixels
 ORIGIN_Y = 8
 BLOC_SIZE = 20          # In pixels
@@ -17,6 +18,7 @@ SCHEME_WIDTH = 64       # In bloc units
 SCHEME_SIZE = 3072      # SCHEME_WIDTH*48
 PENG_WALK_STEP = 4      # In pixels
 MONS_WALK_STEP = 2
+MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]
 
 # GAME PHASES
@@ -85,10 +87,10 @@ def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 class Penguin():
     def __init__(self):
-        self.resetLevel()
+        self.reset()
         self.score = 0
 
-    def resetLevel(self):
+    def reset(self):
         self.posX = 24 * BLOC_SIZE   # Center of map
         self.posY = 24 * BLOC_SIZE
         self.dirX = 0
@@ -376,17 +378,18 @@ class Penguin():
 
         # Move camera to follow penguin, and clamp its position
 
-        offsetX = penguin1.posX - baseX - int((BLOCS_RANGE * BLOC_SIZE) / 2)
-        if (offsetX < 0):
-            baseX -= 4
-        elif offsetX > 0:
-            baseX += 4
+        if not itsChallenge:
+            offsetX = penguin1.posX - baseX - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+            if (offsetX < 0):
+                baseX -= 4
+            elif offsetX > 0:
+                baseX += 4
 
-        offsetY = penguin1.posY - baseY - int((BLOCS_RANGE * BLOC_SIZE) / 2)
-        if (offsetY < 0):
-            baseY -= 4
-        elif offsetY > 0:
-            baseY += 4
+            offsetY = penguin1.posY - baseY - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+            if (offsetY < 0):
+                baseY -= 4
+            elif offsetY > 0:
+                baseY += 4
 
         MAX_X = (48 - BLOCS_RANGE) * BLOC_SIZE - 4  # In pixels
         MAX_Y = (48 - BLOCS_RANGE) * BLOC_SIZE - 4
@@ -449,16 +452,17 @@ class Penguin():
                         # Start crush animation
                         self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 
+                    # Stop moving bloc animation
                     self.movBlocWhat = -1
                     self.movBlocDirX = 0
                     self.movBlocDirY = 0
                     self.movBonusTimer = 60 if self.movMonsters > 0 else 0
 
-                    bonus = [0, 20, 50, 100, 200]       # Bonus for kill a number of monsters with one bloc
-                    self.score += bonus [clamp(self.movMonsters, 0, 4)]
+                    bonusKill = [0, 20, 50, 100, 200]       # Bonus for killing monsters with one bloc
+                    self.score += bonusKill [clamp(self.movMonsters, 0, 4)]
 
-            self.movBlocPosX += self.movBlocDirX * 10
-            self.movBlocPosY += self.movBlocDirY * 10
+            self.movBlocPosX += self.movBlocDirX * MOVBLOC_STEP
+            self.movBlocPosY += self.movBlocDirY * MOVBLOC_STEP
 
         if self.ghost > 0:
             self.ghost -= 1
@@ -647,8 +651,7 @@ countToxicBlocs     = 0
 paceMaker           = 0             # For cyclones
 cyclonesList        = []
 
-itsChallenge        = False       # (no / yes) Challenge ?
-challengeIdx        = 0           # Quel challenge (il y en a 10) ?
+itsChallenge        = False         # Challenge ?
 
 # Functions
 
@@ -658,15 +661,34 @@ def resetGame():
     level = 1
 
 def resetLevel():
-    global baseX, baseY, penguin1, itsChallenge, challengeIdx
+    global baseX, baseY, penguin1, itsChallenge
 
     baseX = 18 * BLOC_SIZE
     baseY = 18 * BLOC_SIZE
-    penguin1.resetLevel()
+    penguin1.reset()
     setElectrifyBorder(False)
 
     itsChallenge = False  # (no / yes) Challenge ?
-    challengeIdx = 0  # Quel challenge (il y en a 10) ?
+
+def resetChallenge(challenge):
+    global baseX, baseY, penguin1, itsChallenge
+
+    itsChallenge = True
+
+    px = challenge % 4
+    py = int(challenge / 4)
+
+    baseX = (12 * px) * BLOC_SIZE
+    baseY = (1 + 12 * py) * BLOC_SIZE
+    penguin1.reset()
+
+    # Overrides for challenge
+    penguin1.posX = baseX + 6 * BLOC_SIZE  # Center of challenge map
+    penguin1.posY = baseY + 6 * BLOC_SIZE
+
+    penguin1.ghost = 10000  # Permanent ghost in Challenge mode
+
+    setElectrifyBorder(False)
 
 def loadSprites():
     global sprites, monstersSprites, endScreenSprite
@@ -700,7 +722,7 @@ def loadSprites():
 def reloadLevel():
     global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
     print("Load level " + str(level))
-    currLand = int((level-1) / 10)
+    currLand = (level-1) % LANDS_NB
     loadSprites()
 
     schemeName = "Data/Schemes/S" + str(level)
@@ -737,6 +759,28 @@ def reloadLevel():
         monsters.append(m)
 
     resetLevel()
+
+def reloadChallenge():
+    global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
+    print("Load challenge for level " + str(level))
+    currLand = int((level - 1) / 10)
+    loadSprites()
+
+    schemeName = "Data/Schemes/CHALLENGES"
+    with open(schemeName, 'rb') as f:
+        scheme = f.read()
+
+    cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
+    countToxicBlocs = 0
+
+    monsters = []
+    for index in range(0, MONSTERS_NB):
+        kind = index % 2
+        m = Monster(kind)
+        m.setRandomPosition()
+        monsters.append(m)
+
+    resetChallenge(int((level-1) / 5))
 
 def displayScore(score, posX, posY):
     base = 10000
@@ -945,15 +989,25 @@ while running:
                 elif gamePhase == PHASE_INTRO:
                     running = False
 
+            if event.key == pygame.K_F5:    # Prev level
+                if (level > 1):
+                    level -= 1
+                    reloadLevel()
+
             if event.key == pygame.K_F6:    # Next level
                 if (level < 50):
                     level += 1
                     reloadLevel()
 
-            if event.key == pygame.K_F5:    # Prev level
-                if (level > 1):
-                    level -= 1
-                    reloadLevel()
+            if event.key == pygame.K_F7:  # Prev challenge
+                if (level > 5):
+                    level -= 5
+                    reloadChallenge()
+
+            if event.key == pygame.K_F8:  # Next challenge
+                if (level < 45):
+                    level += 5
+                    reloadChallenge()
 
     if gamePhase == PHASE_GAME:
         # Animate electric border
@@ -1027,7 +1081,11 @@ while running:
             for x in range(0, BLOCS_RANGE + 1):
 
                 blocOffset = (int(baseY / BLOC_SIZE) + y) * SCHEME_WIDTH + (int(baseX / BLOC_SIZE) + x)
-                index = int(lands[currLand][4 * blocOffset + (anim % 4)])
+
+                if itsChallenge == True:
+                    index = 24      # Empty land in challenge mode
+                else:
+                    index = int(lands[currLand][4 * blocOffset + (anim % 4)])
 
                 if blocOffset < SCHEME_SIZE:
                     blocOfSchemes = scheme[blocOffset]
