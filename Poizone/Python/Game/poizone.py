@@ -1,4 +1,6 @@
 # POIZONE re-written in Python 3.11, july 2023 (32 years later after the original).
+# 2-player mode is not supported.
+
 import pygame
 import numpy
 import math
@@ -7,6 +9,7 @@ import spritesheet
 from enum import Enum
 
 # Constants
+NONE = -1
 LANDS_NB = 5
 ORIGIN_X = 8            # In pixels
 ORIGIN_Y = 8
@@ -19,7 +22,7 @@ SCHEME_SIZE = 3072      # SCHEME_WIDTH*48
 PENG_WALK_STEP = 4      # In pixels
 MONS_WALK_STEP = 2
 MOVBLOC_STEP = 10
-CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]
+CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
 
 # GAME PHASES
 PHASE_INTRO     = 0
@@ -70,6 +73,7 @@ BLOC_ELECTRO_1   = 22
 BLOC_ELECTRO     = 23
 BLOC_TELEPORT_0  = 60       # Anim
 BLOC_TELEPORT_1  = 61
+BLOC_CHALLENGE   = 62
 
 # Enums
 
@@ -102,7 +106,7 @@ class Penguin():
         self.ghost = 0              # Invincible if > 0
         self.canTeleport = True
 
-        self.movBlocWhat = -1   # Which bloc (-1 : no bloc)
+        self.movBlocWhat = NONE   # Which bloc (NONE : no bloc)
         self.movBlocPosX = 0
         self.movBlocPosY = 0
         self.movBlocDirX = 0
@@ -110,7 +114,7 @@ class Penguin():
         self.movMonsters = 0    # Number of monsters killed by moving bloc
         self.movBonusTimer = 0  # Timer for displaying the bonus
 
-        self.crushBlocWhat = -1     # Which bloc (-1 : no bloc)
+        self.crushBlocWhat = NONE   # Which bloc (NONE : no bloc)
         self.crushBlocPosX = 0
         self.crushBlocPosY = 0
         self.crushBlocTimer = 0
@@ -290,18 +294,18 @@ class Penguin():
         return 0
 
     def display(self, screen, baseX, baseY):
-        if int(self.ghost / 2) % 2 == 0:
+        if int(self.ghost / 8) % 4 <= 2:
             screen.blit(penguinSprites[self.anim], (ORIGIN_X+self.posX-baseX, ORIGIN_Y+self.posY-baseY))
 
     def displayBloc(self, screen, baseX, baseY):
 
-        if self.crushBlocWhat != -1:
+        if self.crushBlocWhat != NONE:
             c = CropSprite(self.crushBlocPosX - baseX, self.crushBlocPosY - baseY)
             index = getAliasBlocIndex(self.crushBlocWhat)
             maskIndex = 3-int(self.crushBlocTimer / 4)
             screen.blit(sprites[maskIndex][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
-        if self.movBlocWhat != -1:
+        if self.movBlocWhat != NONE:
             c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
             index = getAliasBlocIndex(self.movBlocWhat)
             screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
@@ -412,15 +416,15 @@ class Penguin():
 
         # Update crushed bloc
 
-        if self.crushBlocWhat != -1:
+        if self.crushBlocWhat != NONE:
 
             self.crushBlocTimer -= 1
             if self.crushBlocTimer == 0:
-                self.crushBlocWhat = -1
+                self.crushBlocWhat = NONE
 
         # Update moving bloc
 
-        if self.movBlocWhat != -1:
+        if self.movBlocWhat != NONE:
 
             if (self.movBlocPosX % BLOC_SIZE == 0) and (self.movBlocPosY % BLOC_SIZE == 0):
                 bx = int(self.movBlocPosX / BLOC_SIZE)
@@ -453,7 +457,7 @@ class Penguin():
                         self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 
                     # Stop moving bloc animation
-                    self.movBlocWhat = -1
+                    self.movBlocWhat = NONE
                     self.movBlocDirX = 0
                     self.movBlocDirY = 0
                     self.movBonusTimer = 60 if self.movMonsters > 0 else 0
@@ -484,15 +488,24 @@ class Monster():
         # COUNTER = -32767.. - 1    : not yet born ( -32 .. -1 : birth )
         #         = 0..9              alive (animation phases)
 
-        self.counter = -32 - random.randrange(2200)
+        self.counter = -32 - random.randrange(self.getBirthRange())
         self.dizzyCounter = 0       # If > 0: dizzy
 
     def killAndRebirth(self):
+
+        global itsChallenge
+
         self.dirX = 0
         self.dirY = 0
-        self.counter = -32 - random.randrange(2200)
+
+        self.counter = -32 - random.randrange(self.getBirthRange())
+
         self.dizzyCounter = 0
         self.setRandomPosition()
+
+    def getBirthRange(self):
+        global itsChallenge
+        return 300 if itsChallenge == True else 2200
 
     def isAlive(self):
         return self.counter >= 0
@@ -528,7 +541,7 @@ class Monster():
                     self.dizzyCounter = 90
                     print('Electrify monster')
 
-            if self.isAlive() and (penguin1.movBlocWhat != -1):
+            if self.isAlive() and (penguin1.movBlocWhat != NONE):
                 deltaX = abs(penguin1.movBlocPosX - self.posX)
                 deltaY = abs(penguin1.movBlocPosY - self.posY)
                 if (deltaX <= 8) and (deltaY <= 8):
@@ -536,7 +549,7 @@ class Monster():
                     self.killAndRebirth()
                     soundSplat.play()
                     penguin1.movMonsters += 1
-                elif (deltaX <= 16) and (deltaY <= 16):
+                elif (deltaX <= 12) and (deltaY <= 12):
                     print('Dizzy monster by bloc collision')
                     self.dizzyCounter = 60
 
@@ -591,10 +604,16 @@ class Monster():
         return index + (int(self.counter / 8) % 4)
 
     def setRandomPosition(self):
-        global penguin1, scheme
+        global penguin1, scheme, itsChallenge
         while True:
-            x = 3 + random.randrange(0, 48-2*3)
-            y = 3 + random.randrange(0, 48-2*3)
+
+            if itsChallenge == False:
+                x = 3 + random.randrange(0, 48-2*3)
+                y = 3 + random.randrange(0, 48-2*3)
+            else:
+                x = int(baseX / BLOC_SIZE) + 1 + random.randrange(0, 10)
+                y = int(baseY / BLOC_SIZE) + 1 + random.randrange(0, 10)
+            print(f"New monster at {x},{y}")
 
             if (abs(x - int(penguin1.posX / BLOC_SIZE)) < 3) or (abs(y - int(penguin1.posY / BLOC_SIZE)) < 3):
                 continue                    # Penguin too close ?
@@ -648,7 +667,7 @@ electrifyBorder     = False
 electrifyBorderAnim = 0
 blocsCount          = []
 countToxicBlocs     = 0
-paceMaker           = 0             # For cyclones
+cyclonesPace        = 0             # For cyclones
 cyclonesList        = []
 
 itsChallenge        = False         # Challenge ?
@@ -668,7 +687,7 @@ def resetLevel():
     penguin1.reset()
     setElectrifyBorder(False)
 
-    itsChallenge = False  # (no / yes) Challenge ?
+    itsChallenge = False  # Challenge ?
 
 def resetChallenge(challenge):
     global baseX, baseY, penguin1, itsChallenge
@@ -711,6 +730,9 @@ def loadSprites():
         for index in range(24, 26):
             s.append(ss_shared [0].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
+        # 62: specific bloc for Challenge
+        s.append(ss_challenge.get_indexed_image(0, BLOC_SIZE, BLOC_SIZE))
+
     # Monsters
     monstersSprites = []
     for index in range(36, 96):
@@ -719,7 +741,7 @@ def loadSprites():
     # End Screen
     endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, 244, 240)
 
-def reloadLevel():
+def loadLevel():
     global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
     print("Load level " + str(level))
     currLand = (level-1) % LANDS_NB
@@ -751,6 +773,8 @@ def reloadLevel():
 
     print('countToxicBlocs: ' + str(countToxicBlocs))
 
+    resetLevel()
+
     monsters = []
     for index in range(0, MONSTERS_NB):
         kind = index % 2
@@ -758,9 +782,8 @@ def reloadLevel():
         m.setRandomPosition()
         monsters.append(m)
 
-    resetLevel()
 
-def reloadChallenge():
+def loadChallenge():
     global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
     print("Load challenge for level " + str(level))
     currLand = int((level - 1) / 10)
@@ -773,14 +796,14 @@ def reloadChallenge():
     cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
     countToxicBlocs = 0
 
+    resetChallenge(int((level-1) / 5))
+
     monsters = []
     for index in range(0, MONSTERS_NB):
         kind = index % 2
         m = Monster(kind)
         m.setRandomPosition()
         monsters.append(m)
-
-    resetChallenge(int((level-1) / 5))
 
 def displayScore(score, posX, posY):
     base = 10000
@@ -814,7 +837,7 @@ def destroyBloc(bloc):
             print('countToxicBlocs: ' + str(countToxicBlocs))
             penguin1.score += 5
 
-    if (countToxicBlocs == 0):
+    if (countToxicBlocs == 0) and not itsChallenge:
         # Level finished. Show outro animation.
         gamePhase = PHASE_END_LEVEL
         endOfLevelTimer = 150
@@ -839,6 +862,9 @@ def getAliasBlocIndex(index):
 
     if index == BLOC_TELEPORT_0 or index == BLOC_TELEPORT_1:
         return BLOC_TELEPORT_0 + (int(absTime / 256) % 2)
+
+    if index == 24 and itsChallenge == True:
+        return BLOC_CHALLENGE
 
     return index
 
@@ -887,7 +913,7 @@ soundSplat.set_volume(0.5)
 lands = []
 teleporters = []
 
-for index in range(0, 5):
+for index in range(0, LANDS_NB):
     landsName = "Data/Lands/L" + str(index) + "_SET"
     with open(landsName, 'rb') as f:
         land = f.read()
@@ -909,25 +935,26 @@ ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs2.png'))
 ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs3.png'))
 
 ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
-ss_bg       = spritesheet.SpriteSheet('Data/border.png')
-ss_Penguins = spritesheet.SpriteSheet('Data/pengos.png')
+ss_border   = spritesheet.SpriteSheet('Data/border.png')
+ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars    = spritesheet.SpriteSheet('Data/chars.png')
+ss_challenge= spritesheet.SpriteSheet('Data/challengeTile.png')
 
 ss_levels = []
 ss_endScreens = []
-for index in range(1, 6):
+for index in range(1, 1+LANDS_NB):
     ss_levels.append(spritesheet.SpriteSheet('Data/level' + str(index) + '.png'))
     ss_endScreens.append(spritesheet.SpriteSheet('Data/Screens/scr' + str(index) + '.png'))
-# BORDER
 
+# Other assets
 startScreen = ss_start.get_indexed_image(0, 244, 240)
-border = ss_bg.get_indexed_image(0, 320, 256)
+border = ss_border.get_indexed_image(0, 320, 256)
 
 penguin1 = Penguin()
 
 penguinSprites = []
 for index in range(0, 2*36+12):
-    penguinSprites.append(ss_Penguins.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+    penguinSprites.append(ss_penguins.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
 charsSprites = []
 for index in range(0, 40):
@@ -981,7 +1008,7 @@ while running:
                 if gamePhase == PHASE_INTRO:
                     gamePhase = PHASE_GAME
                     resetGame()
-                    reloadLevel()
+                    loadLevel()
 
             if event.key == pygame.K_ESCAPE:  # Quit game
                 if gamePhase == PHASE_GAME:
@@ -992,22 +1019,22 @@ while running:
             if event.key == pygame.K_F5:    # Prev level
                 if (level > 1):
                     level -= 1
-                    reloadLevel()
+                    loadLevel()
 
             if event.key == pygame.K_F6:    # Next level
                 if (level < 50):
                     level += 1
-                    reloadLevel()
+                    loadLevel()
 
             if event.key == pygame.K_F7:  # Prev challenge
                 if (level > 5):
                     level -= 5
-                    reloadChallenge()
+                    loadChallenge()
 
             if event.key == pygame.K_F8:  # Next challenge
                 if (level < 45):
                     level += 5
-                    reloadChallenge()
+                    loadChallenge()
 
     if gamePhase == PHASE_GAME:
         # Animate electric border
@@ -1015,11 +1042,10 @@ while running:
             electrifyBorderAnim += 1
 
         # Animate cyclones
-        paceMaker += 1
-        paceMaker %= 16
+        cyclonesPace = (cyclonesPace + 1) % 16
 
-        if paceMaker % 2 == 0:      # To slow down process, process once every two passes
-            cycloneIndex = cyclonesList [paceMaker >> 1]
+        if cyclonesPace % 2 == 0:      # To slow down process, process once every two passes
+            cycloneIndex = cyclonesList [cyclonesPace >> 1]
             if cycloneIndex != 0:
                 print('Process cyclone #' + str(cycloneIndex))
                 # Collect blocs around cyclone
@@ -1070,8 +1096,13 @@ while running:
             endOfLevelTimer -= 1
             # TODO Penguin animations
         else:
-            level += 1
-            reloadLevel()
+            if level % 5 == 0:
+                loadChallenge()
+            else:
+                level += 1
+                loadLevel()
+
+            print('Switch to PHASE_GAME')
             gamePhase = PHASE_GAME
     else: # PHASE_GAME
         # Draw BG
