@@ -383,13 +383,13 @@ class Penguin():
         # Move camera to follow penguin, and clamp its position
 
         if not itsChallenge:
-            offsetX = penguin1.posX - baseX - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+            offsetX = penguin1.posX + 8 - baseX - int((BLOCS_RANGE * BLOC_SIZE) / 2)
             if (offsetX < 0):
                 baseX -= 4
             elif offsetX > 0:
                 baseX += 4
 
-            offsetY = penguin1.posY - baseY - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+            offsetY = penguin1.posY + 8 - baseY - int((BLOCS_RANGE * BLOC_SIZE) / 2)
             if (offsetY < 0):
                 baseY -= 4
             elif offsetY > 0:
@@ -964,6 +964,7 @@ ss_border   = spritesheet.SpriteSheet('Data/border.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars    = spritesheet.SpriteSheet('Data/chars.png')
 ss_challenge= spritesheet.SpriteSheet('Data/challengeTile.png')
+ss_panels   = spritesheet.SpriteSheet('Data/panels.png')
 
 ss_levels = []
 ss_endScreens = []
@@ -984,6 +985,10 @@ for index in range(0, 2*36+12):
 charsSprites = []
 for index in range(0, 40):
     charsSprites.append((ss_chars.get_indexed_image(index, 12, 16)))
+
+panelSprites = []
+for index in range(0, 2):
+    panelSprites.append((ss_panels.get_indexed_image(index, 60, 20)))
 
 # Variables
 absTime = 0
@@ -1174,6 +1179,16 @@ while running:
     # Display Scores
     displayScore(penguin1.score, 256, 45)
     displayScore(0, 256, 188)   # No 2nd player supported, for now
+
+    # Display panel (PAUSE or DEMO)
+
+    panelIdx = -1
+
+    if pauseGame == True:
+        panelIdx = 1
+
+    if panelIdx != -1:
+        screen.blit(panelSprites[panelIdx], (8 + 244/2 - 60/2, 50))
 
     # Time
     if not pauseGame:
