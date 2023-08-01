@@ -119,6 +119,10 @@ class Penguin():
         self.crushBlocPosY = 0
         self.crushBlocTimer = 0
 
+        self.bombTimer = 0              # Exploding Bomb animation
+        self.bombPosX = 0
+        self.bombPosY = 0
+
     def setStatus(self, status):
         if status != self.status:
             print('New Penguin status: ' + str(status))
@@ -164,6 +168,12 @@ class Penguin():
                 else:
                     self.crushBloc(bloc)
 
+    def startBombAnim(self, posX, posY):
+        # Start exploding bomb animation
+        self.bombTimer = 32
+        self.bombPosX = posX
+        self.bombPosY = posY
+
     def startCrushAnim(self, bloc, posX, posY):
         # Start crush animation
         self.crushBlocWhat = bloc
@@ -188,7 +198,6 @@ class Penguin():
         if bloc == BLOC_BOMB:
             self.die()
             soundBoom.play()
-            # TODO add bomb animation
 
         if bloc == BLOC_MAGIC:  # Temporary invincibility
             self.ghost = 60 * 15
@@ -223,7 +232,10 @@ class Penguin():
         blocX = int(self.posX / BLOC_SIZE) + self.dirX
         blocY = int(self.posY / BLOC_SIZE) + self.dirY
 
-        self.startCrushAnim(bloc, self.posX + self.dirX * BLOC_SIZE,  self.posY + self.dirY * BLOC_SIZE)
+        if bloc == BLOC_BOMB:
+            self.startBombAnim(self.posX + self.dirX * BLOC_SIZE, self.posY + self.dirY * BLOC_SIZE)
+        else:
+            self.startCrushAnim(bloc, self.posX + self.dirX * BLOC_SIZE, self.posY + self.dirY * BLOC_SIZE)
 
         writeBloc(blocX, blocY, 26)
         destroyBloc(bloc)
@@ -298,6 +310,11 @@ class Penguin():
             screen.blit(penguinSprites[self.anim], (ORIGIN_X+self.posX-baseX, ORIGIN_Y+self.posY-baseY))
 
     def displayBloc(self, screen, baseX, baseY):
+
+        if self.bombTimer > 0:
+            c = CropSprite(self.bombPosX - baseX, self.bombPosY - baseY)
+            index = 76 + int((32 - self.bombTimer) / 4)
+            screen.blit(penguinSprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
         if self.crushBlocWhat != NONE:
             c = CropSprite(self.crushBlocPosX - baseX, self.crushBlocPosY - baseY)
@@ -421,6 +438,11 @@ class Penguin():
             self.crushBlocTimer -= 1
             if self.crushBlocTimer == 0:
                 self.crushBlocWhat = NONE
+
+        # Update bomb anim
+
+        if self.bombTimer > 0:
+            self.bombTimer -= 1
 
         # Update moving bloc
 
