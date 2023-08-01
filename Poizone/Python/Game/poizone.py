@@ -565,6 +565,10 @@ class Monster():
                         dirY = -1 if (random.randrange(2) == 0) else +1
 
                     blocIndex = int(self.posX / BLOC_SIZE) + dirX + (int(self.posY / BLOC_SIZE) + dirY) * SCHEME_WIDTH
+
+                    if occupyTable[blocIndex] == True:      # Forbidden destination bloc
+                        continue
+
                     if scheme[blocIndex] >= 24: # Monster can move to empty block
                         found = True
                         break
@@ -604,7 +608,8 @@ class Monster():
         return index + (int(self.counter / 8) % 4)
 
     def setRandomPosition(self):
-        global penguin1, scheme, itsChallenge
+        global penguin1, scheme, itsChallenge, occupyTable
+
         while True:
 
             if itsChallenge == False:
@@ -614,6 +619,9 @@ class Monster():
                 x = int(baseX / BLOC_SIZE) + 1 + random.randrange(0, 10)
                 y = int(baseY / BLOC_SIZE) + 1 + random.randrange(0, 10)
             print(f"New monster at {x},{y}")
+
+            if (occupyTable[x + y * SCHEME_WIDTH] == True):      # Already occupied
+                continue
 
             if (abs(x - int(penguin1.posX / BLOC_SIZE)) < 3) or (abs(y - int(penguin1.posY / BLOC_SIZE)) < 3):
                 continue                    # Penguin too close ?
@@ -775,6 +783,8 @@ def loadLevel():
 
     resetLevel()
 
+    initOccupyTable()
+
     monsters = []
     for index in range(0, MONSTERS_NB):
         kind = index % 2
@@ -798,12 +808,26 @@ def loadChallenge():
 
     resetChallenge(int((level-1) / 5))
 
+    initOccupyTable()
+
     monsters = []
     for index in range(0, MONSTERS_NB):
         kind = index % 2
         m = Monster(kind)
         m.setRandomPosition()
         monsters.append(m)
+
+# Setup table for monsters
+def initOccupyTable():
+    global occupyTable
+
+    occupyTable = []
+    for index in range (0, SCHEME_SIZE):
+        occ = False
+        if lands[currLand][4*index] == BLOC_TELEPORT_0:    # Monsters cannot go over teleporters
+            occ = True
+
+        occupyTable.append(occ)
 
 def displayScore(score, posX, posY):
     base = 10000
@@ -885,6 +909,7 @@ pygame.mixer.init()  # Initialize the mixer module.
 screen = pygame.display.set_mode((320, 256), pygame.SCALED)
 clock = pygame.time.Clock()
 running = True
+pauseGame = False
 
 # Load sounds
 # From TRACKER: samples indexes from 24 to 35
@@ -1036,7 +1061,11 @@ while running:
                     level += 5
                     loadChallenge()
 
-    if gamePhase == PHASE_GAME:
+            if event.key == pygame.K_F12:    # Pause game
+                if gamePhase == PHASE_GAME:
+                    pauseGame = not pauseGame
+
+    if gamePhase == PHASE_GAME and not pauseGame:
         # Animate electric border
         if electrifyBorder == True:
             electrifyBorderAnim += 1
@@ -1147,7 +1176,8 @@ while running:
     displayScore(0, 256, 188)   # No 2nd player supported, for now
 
     # Time
-    absTime += clock.get_time()
+    if not pauseGame:
+        absTime += clock.get_time()
 
     # flip() the display to put your work on screen
     pygame.display.flip()
