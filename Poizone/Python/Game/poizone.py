@@ -475,6 +475,7 @@ class Penguin():
                                 self.score += 500
                     else:
                         destroyBloc(self.movBlocWhat)
+                        soundCrash.play()
                         # Start crush animation
                         self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 
@@ -933,8 +934,18 @@ clock = pygame.time.Clock()
 running = True
 pauseGame = False
 
-# Load sounds
-# From TRACKER: samples indexes from 24 to 35
+# Load musics recorded from SoundTracker
+musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
+musicChall = pygame.mixer.Sound('Data/musics/Challenge.wav')    # Patterns 16-20
+musicWin   = pygame.mixer.Sound('Data/musics/Win.wav')          # Patterns 21-26
+musicLose  = pygame.mixer.Sound('Data/musics/Lose.wav')         # Patterns 27-29
+musicPlay1 = pygame.mixer.Sound('Data/musics/Play1.wav')        # Patterns 30-35
+musicPlay2 = pygame.mixer.Sound('Data/musics/Play2.wav')        # Patterns 36-44
+musicPlay3 = pygame.mixer.Sound('Data/musics/Play3.wav')        # Patterns 45-50
+musicPlay4 = pygame.mixer.Sound('Data/musics/Play4.wav')        # Patterns 51-56
+musicPlay5 = pygame.mixer.Sound('Data/musics/Play5.wav')        # Patterns 57-62
+
+# Load sounds recorded from SoundTracker: samples indexes from 24 to 35
 soundLaunch= pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
 soundCrash = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')        # 25 (sample P)
 soundBoom  = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q)
@@ -1016,6 +1027,8 @@ for index in range(0, 2):
 absTime = 0
 
 keyPressed = [False, False, False, False, False]   # Up Down Left Right Space
+
+musicIntro.play()
 
 while running:
     # poll for events
