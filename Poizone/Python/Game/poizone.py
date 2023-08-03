@@ -9,6 +9,8 @@ import spritesheet
 from enum import Enum
 
 # Constants
+SCREEN_WIDTH = 320
+SCREEN_HEIGHT = 256
 NONE = -1
 LANDS_NB = 5
 ORIGIN_X = 8            # In pixels
@@ -786,7 +788,7 @@ def loadSprites():
     endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, 244, 240)
 
 def loadLevel():
-    global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
+    global level, currLand, scheme, blocsCount, countToxicBlocs, totalToxicBlocs, monsters, cyclonesList
     print("Load level " + str(level))
     currLand = (level-1) % LANDS_NB
     loadSprites()
@@ -816,6 +818,7 @@ def loadLevel():
     countToxicBlocs += blocsCount[BLOC_RADIO] +blocsCount[BLOC_GREEN_CHEM]
 
     print('countToxicBlocs: ' + str(countToxicBlocs))
+    totalToxicBlocs = countToxicBlocs
 
     resetLevel()
 
@@ -830,7 +833,7 @@ def loadLevel():
 
 
 def loadChallenge():
-    global level, currLand, scheme, blocsCount, countToxicBlocs, monsters, cyclonesList
+    global level, currLand, scheme, blocsCount, monsters, cyclonesList
     print("Load challenge for level " + str(level))
     currLand = int((level - 1) / 10)
     loadSprites()
@@ -840,7 +843,6 @@ def loadChallenge():
         scheme = f.read()
 
     cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
-    countToxicBlocs = 0
 
     resetChallenge(int((level-1) / 5))
 
@@ -948,13 +950,63 @@ def playMusic(m, loop=0):
     pygame.mixer.stop()
     m.play(loop)
 
+# HUD
+
+def displayGameHud():
+    WHITE = (255, 255, 255)
+    LEVEL_COLOR = (180, 255, 255)
+    COMPLETION_COLOR = (255, 255, 180)
+
+    HUD_WIDTH = (320 - 244 - 8)
+    HUD_CENTER = 320 - HUD_WIDTH / 2
+
+    # Level
+
+    if not itsChallenge:
+        text = font.render('ZONE', True, LEVEL_COLOR)
+        textRect = text.get_rect()
+        textRect.center = (HUD_CENTER, 78)
+        screen.blit(text, textRect)
+
+        text = font.render(f"{level:02d}", True, LEVEL_COLOR)
+        textRect = text.get_rect()
+        textRect.center = (HUD_CENTER, 90)
+        screen.blit(text, textRect)
+
+    # Completion
+    if not itsChallenge:
+        percent = int(100 * (totalToxicBlocs - countToxicBlocs) / totalToxicBlocs)
+        text = font.render(f"{percent:02d} %", True, COMPLETION_COLOR)
+        textRect = text.get_rect()
+        textRect.center = (HUD_CENTER, 120)
+        screen.blit(text, textRect)
+
+    # TIME
+    text = font.render('TIME', True, WHITE)
+    textRect = text.get_rect()
+    textRect.center = (HUD_CENTER, 154)
+    screen.blit(text, textRect)
+
+    # Time value
+    seconds = int(gameTimer % 60)
+    timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
+
+    text = font.render(timeStr, True, WHITE)
+    textRect = text.get_rect()
+    textRect.center = (HUD_CENTER, 166)
+    screen.blit(text, textRect)
+
 # pygame setup
 pygame.init()
+pygame.display.set_caption('Poizone')
 pygame.mixer.init()  # Initialize the mixer module.
-screen = pygame.display.set_mode((320, 256), pygame.SCALED)
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
 clock = pygame.time.Clock()
 running = True
 pauseGame = False
+
+# Font
+font = pygame.font.Font('Data/font/8-bit-hud.ttf', 5)
 
 # Load musics recorded from SoundTracker
 musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
@@ -1248,6 +1300,9 @@ while running:
 
         # Display moving bloc and bonus, if any
         penguin1.displayBloc(screen, baseX, baseY)
+
+        # Display HUD
+        displayGameHud()
 
     # Display Scores
     displayScore(penguin1.score, 256, 45)
