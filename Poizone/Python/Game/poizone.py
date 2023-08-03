@@ -25,9 +25,11 @@ MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
 
 # GAME PHASES
-PHASE_INTRO     = 0
-PHASE_GAME      = 1
-PHASE_END_LEVEL = 2
+PHASE_NONE      = 0
+PHASE_INTRO     = 1
+PHASE_GAME      = 2
+PHASE_RESULT    = 3
+PHASE_END_LEVEL = 4
 
 # KEY
 KEY_UP    = 0
@@ -306,8 +308,9 @@ class Penguin():
         return 0
 
     def display(self, screen, baseX, baseY):
-        if int(self.ghost / 8) % 4 <= 2:
-            screen.blit(penguinSprites[self.anim], (ORIGIN_X+self.posX-baseX, ORIGIN_Y+self.posY-baseY))
+        if int(self.ghost / 4) % 4 <= 2:
+            c = CropSprite(self.posX - baseX, self.posY - baseY)
+            screen.blit(penguinSprites[self.anim], (ORIGIN_X+c.posX, ORIGIN_Y+c.posY), c.getCroppedRegion())
 
     def displayBloc(self, screen, baseX, baseY):
 
@@ -472,10 +475,11 @@ class Penguin():
                         if (self.movBlocWhat == BLOC_DIAMOND):
                             if self.checkSquareDiamond(bx, by) == True:
                                 print('Square Diamond assembled')
+                                soundDiam.play()
                                 self.score += 500
                     else:
                         destroyBloc(self.movBlocWhat)
-                        soundCrash.play()
+                        soundSplat.play()
                         # Start crush animation
                         self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 
@@ -691,7 +695,8 @@ class CropSprite():
 
 # Global variables
 
-gamePhase           = PHASE_INTRO
+gamePhase           = PHASE_NONE
+gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
 level               = 1             # From 1 to 50
 currLand            = 0             # 0..4
 electrifyBorder     = False
@@ -711,17 +716,21 @@ def resetGame():
     level = 1
 
 def resetLevel():
-    global baseX, baseY, penguin1, itsChallenge
+    global baseX, baseY, penguin1, itsChallenge, gameTimer
 
     baseX = 18 * BLOC_SIZE
     baseY = 18 * BLOC_SIZE
     penguin1.reset()
     setElectrifyBorder(False)
 
+    gameTimer = 200.0
+
     itsChallenge = False  # Challenge ?
 
+    playMusic(musicPlay[currLand], 99)
+
 def resetChallenge(challenge):
-    global baseX, baseY, penguin1, itsChallenge
+    global baseX, baseY, penguin1, itsChallenge, gameTimer
 
     itsChallenge = True
 
@@ -738,7 +747,11 @@ def resetChallenge(challenge):
 
     penguin1.ghost = 10000  # Permanent ghost in Challenge mode
 
+    gameTimer = 30.0
+
     setElectrifyBorder(False)
+
+    playMusic(musicChall)
 
 def loadSprites():
     global sprites, monstersSprites, endScreenSprite
@@ -875,7 +888,7 @@ def isOnBlock(posX, posY):
     return ((posX % BLOC_SIZE) == 0) and ((posY % BLOC_SIZE) == 0)
 
 def destroyBloc(bloc):
-    global blocsCount, countToxicBlocs, level, gamePhase, endOfLevelTimer
+    global blocsCount, countToxicBlocs, level, gamePhase
     print('Destroy bloc of type ' + str(bloc))
     if (bloc <= BLOC_GREEN_CHEM):
         blocsCount[bloc] -= 1
@@ -883,12 +896,6 @@ def destroyBloc(bloc):
             countToxicBlocs -= 1
             print('countToxicBlocs: ' + str(countToxicBlocs))
             penguin1.score += 5
-
-    if (countToxicBlocs == 0) and not itsChallenge:
-        # Level finished. Show outro animation.
-        gamePhase = PHASE_END_LEVEL
-        endOfLevelTimer = 150
-        print('PHASE_END_LEVEL')
 
 def writeBloc(indexX, indexY, blocIndex):
     global scheme
@@ -926,6 +933,21 @@ def setElectrifyBorder(newStatus):
 
     electrifyBorder = newStatus
 
+# Game phases
+
+def startIntroPhase():
+    global gamePhase
+
+    gamePhase = PHASE_INTRO
+    playMusic(musicIntro)
+
+# Sound/Music
+
+def playMusic(m, loop=0):
+    print('playMusic')
+    pygame.mixer.stop()
+    m.play(loop)
+
 # pygame setup
 pygame.init()
 pygame.mixer.init()  # Initialize the mixer module.
@@ -939,11 +961,14 @@ musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
 musicChall = pygame.mixer.Sound('Data/musics/Challenge.wav')    # Patterns 16-20
 musicWin   = pygame.mixer.Sound('Data/musics/Win.wav')          # Patterns 21-26
 musicLose  = pygame.mixer.Sound('Data/musics/Lose.wav')         # Patterns 27-29
-musicPlay1 = pygame.mixer.Sound('Data/musics/Play1.wav')        # Patterns 30-35
-musicPlay2 = pygame.mixer.Sound('Data/musics/Play2.wav')        # Patterns 36-44
-musicPlay3 = pygame.mixer.Sound('Data/musics/Play3.wav')        # Patterns 45-50
-musicPlay4 = pygame.mixer.Sound('Data/musics/Play4.wav')        # Patterns 51-56
-musicPlay5 = pygame.mixer.Sound('Data/musics/Play5.wav')        # Patterns 57-62
+musicEnd   = pygame.mixer.Sound('Data/musics/EndLand.wav')      # Pattern 29
+
+musicPlay = []
+musicPlay.append(pygame.mixer.Sound('Data/musics/Play1.wav'))   # Patterns 30-35
+musicPlay.append(pygame.mixer.Sound('Data/musics/Play2.wav'))   # Patterns 36-44
+musicPlay.append(pygame.mixer.Sound('Data/musics/Play3.wav'))   # Patterns 45-50
+musicPlay.append(pygame.mixer.Sound('Data/musics/Play4.wav'))   # Patterns 51-56
+musicPlay.append(pygame.mixer.Sound('Data/musics/Play5.wav'))   # Patterns 57-62
 
 # Load sounds recorded from SoundTracker: samples indexes from 24 to 35
 soundLaunch= pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
@@ -951,13 +976,13 @@ soundCrash = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')        # 25 (sa
 soundBoom  = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q)
 soundElec  = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R)
 soundMagic = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')             # 28 (sample S)
-# soundDiam  = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T) - diamond (wrong)
+soundDiam  = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T)
 soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - laugh
 soundOhNo  = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V)
 soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
 soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X)
 soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - for chemical bloc
-soundWow   = pygame.mixer.Sound('Data/bruitages/HMM.wav')               # 35 (sample Z) - WOW END OF LEVEL (wrong sample)
+soundWow   = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - WOW (END OF LEVEL)
 
 # Set volumes
 
@@ -1028,7 +1053,7 @@ absTime = 0
 
 keyPressed = [False, False, False, False, False]   # Up Down Left Right Space
 
-musicIntro.play()
+startIntroPhase()
 
 while running:
     # poll for events
@@ -1077,7 +1102,7 @@ while running:
 
             if event.key == pygame.K_ESCAPE:  # Quit game
                 if gamePhase == PHASE_GAME:
-                    gamePhase = PHASE_INTRO
+                    startIntroPhase()
                 elif gamePhase == PHASE_INTRO:
                     running = False
 
@@ -1149,6 +1174,20 @@ while running:
         for m in monsters:
             m.update()
 
+        # Check end of game
+        if (gameTimer <= 0.0) or ((countToxicBlocs == 0) and not itsChallenge):
+            
+#            if itsChallenge == True:
+            soundWow.play()
+            # Results page missing
+            print('PHASE_END_LEVEL')
+            gamePhase = PHASE_END_LEVEL
+            endOfLevelTimer = 250
+            playMusic(musicEnd)
+
+#            else:
+#                gamePhase = PHASE_RESULT
+
     ######
     # DRAW
     ######
@@ -1197,9 +1236,8 @@ while running:
 
                 c = CropSprite(posX, posY)
 
-                if index >= 0 and index < 120:
-                    index = getAliasBlocIndex(index)
-                    screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                index = getAliasBlocIndex(index)
+                screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
         # Display Penguin
         penguin1.display(screen, baseX, baseY)
@@ -1227,7 +1265,9 @@ while running:
 
     # Time
     if not pauseGame:
-        absTime += clock.get_time()
+        dt = clock.get_time()
+        absTime += dt
+        gameTimer -= dt / 1000
 
     # flip() the display to put your work on screen
     pygame.display.flip()
