@@ -7,6 +7,9 @@ LEVEL_HEIGHT = 1920
 SCR_WIDTH = 244
 SCR_HEIGHT = 240
 
+def lerp(v0, v1, t):
+    return v0 + (v1-v0)*t
+
 def convert_level(input, output):
     img = []
 
@@ -113,19 +116,30 @@ def convert_pengos(input, output, width, height):
 
     return None
 
-def convert_chars(input, output, width, height):
+def convert_chars(input, output, width, height, colorMax, colorMin):
     blocs = []
     with open(input, 'rb') as f:
         f.read(4)  # Align with font
         for y in range(height):
             row = ()
+
+            factor = 1 - abs ((len(blocs) % 16) - 8) / 8
+            lineColor = (int(lerp(colorMin[0], colorMax[0], factor)),
+                         int(lerp(colorMin[1], colorMax[1], factor)),
+                         int(lerp(colorMin[2], colorMax[2], factor)), 255)
+
             for x in range(width):
                 byte_val = f.read(1)
                 int_val = int.from_bytes(byte_val)
                 rgb = Acorn256.convert('acorn', 'rgb', int_val)
-                rgba = (rgb[0], rgb[1], rgb[2], 255)
+
+                if rgb == (0, 0, 0):
+                    rgba = (0, 0, 0, 0)
+                else:
+                    rgba = lineColor
+
                 row = row + rgba
-            if (y >= 6525 and y <= 7400):
+            if (y >= 6525 and y <= 7380):
                 blocs.append(row)
 
     with open(output, 'wb') as f:
@@ -197,7 +211,8 @@ convert_screen('Screens/ORDI_SCR',   'scr5.png', SCR_WIDTH, SCR_HEIGHT)
 convert_screen('BORDER', 'border.png', 320, 256)
 convert_shared_blocs('POIZ_cde', ['sharedBlocs0.png', 'sharedBlocs1.png', 'sharedBlocs2.png', 'sharedBlocs3.png'], 20, 16384, 'varius/MASKCRASH')
 convert_pengos('POIZ_cde', 'pengos.png', 20, 16384)
-convert_chars('POIZ_cde', 'chars.png', 12, 8192)
+convert_chars('POIZ_cde', 'chars_green.png', 12, 8192, (110, 246, 178), (26, 139, 83))
+convert_chars('POIZ_cde', 'chars_white.png', 12, 8192, (255, 255, 255), (64, 64, 64))
 convert_rocket('varius/ROCKET', 'rocket.png', 40, 174)
 convert_generic('varius/PLAQU_SPR', 'plaqu.png', 60, 40, True)
 convert_generic('varius/ARROWS', 'arrows.png', 20, 160, False)

@@ -6,11 +6,14 @@ import numpy
 import math
 import random
 import spritesheet
+import leaderboard
 from enum import Enum
 
 # Constants
 SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 256
+WINDOW_WIDTH = 12*20+4
+WINDOW_HEIGHT = 12*20
 NONE = -1
 LANDS_NB = 5
 ORIGIN_X = 8            # In pixels
@@ -86,6 +89,22 @@ class PenguinStatus(Enum):
     WALK = 1
     DIE  = 2
     PUSH = 3
+
+# Global variables
+
+gamePhase           = PHASE_NONE
+gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
+level               = 1             # From 1 to 50
+currLand            = 0             # 0..4
+electrifyBorder     = False
+electrifyBorderAnim = 0
+blocsCount          = []
+countToxicBlocs     = 0
+cyclonesPace        = 0             # For cyclones
+cyclonesList        = []
+
+itsChallenge        = False         # Challenge ?
+windowFade          = 0             # 0..255
 
 # Utility functions
 
@@ -695,21 +714,6 @@ class CropSprite():
 
     def getCroppedRegion(self): return (self.xRegion, self.yRegion, self.widthRegion, self.heightRegion)
 
-# Global variables
-
-gamePhase           = PHASE_NONE
-gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
-level               = 1             # From 1 to 50
-currLand            = 0             # 0..4
-electrifyBorder     = False
-electrifyBorderAnim = 0
-blocsCount          = []
-countToxicBlocs     = 0
-cyclonesPace        = 0             # For cyclones
-cyclonesList        = []
-
-itsChallenge        = False         # Challenge ?
-
 # Functions
 
 def resetGame():
@@ -785,7 +789,7 @@ def loadSprites():
         monstersSprites.append(ss_levels[currLand].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
     # End Screen
-    endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, 244, 240)
+    endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, WINDOW_WIDTH, WINDOW_HEIGHT)
 
 def loadLevel():
     global level, currLand, scheme, blocsCount, countToxicBlocs, totalToxicBlocs, monsters, cyclonesList
@@ -871,7 +875,7 @@ def displayScore(score, posX, posY):
     base = 10000
     for i in range(0, 5):
         index = int(score / base) % 10
-        screen.blit(charsSprites[index + 26], (posX+12*i, posY))
+        screen.blit(charsSprites_gr[index + 26], (posX+12*i, posY))
         base /= 10
 
 def getBloc(indexX, indexY):
@@ -996,6 +1000,40 @@ def displayGameHud():
     textRect.center = (HUD_CENTER, 166)
     screen.blit(text, textRect)
 
+def displayLeaderboard(screen):
+
+    TITLE_COLOR = (50, 240, 200)
+    SCORE_COLOR = (225, 250, 200)
+    NAME_COLOR  = (255, 255, 255)
+    BLACK = (10, 10, 10)
+
+    # Title
+    text = font.render("BEST PENGUINS", True, TITLE_COLOR, BLACK)
+    textRect = text.get_rect()
+    textRect.center = (8+WINDOW_WIDTH//2, 100)
+    screen.blit(text, textRect)
+
+    for index in range (0, leaderboard.LB_MAX_ENTRIES):
+        entry = lb.entries [index]
+
+        y = 120 + 9 * index
+        score = entry [0]
+        name = entry [1]
+
+        # Score
+        text = font.render(str(score), True, SCORE_COLOR, BLACK)
+        textRect = text.get_rect()
+        textRect.right = 120
+        textRect.centery = y
+        screen.blit(text, textRect)
+
+        # Name
+        text = font.render(name, True, NAME_COLOR, BLACK)
+        textRect = text.get_rect()
+        textRect.left = 140
+        textRect.centery = y
+        screen.blit(text, textRect)
+
 # pygame setup
 pygame.init()
 pygame.display.set_caption('Poizone')
@@ -1004,6 +1042,13 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
 clock = pygame.time.Clock()
 running = True
 pauseGame = False
+
+lb = leaderboard.Leaderboard()
+lb.load()
+
+# For fade effect
+blackSurface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+blackSurface.fill((0, 0, 0, 128))
 
 # Font
 font = pygame.font.Font('Data/font/8-bit-hud.ttf', 5)
@@ -1072,7 +1117,8 @@ ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs3.png'))
 ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
 ss_border   = spritesheet.SpriteSheet('Data/border.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
-ss_chars    = spritesheet.SpriteSheet('Data/chars.png')
+ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
+ss_chars_wh = spritesheet.SpriteSheet('Data/chars_white.png')
 ss_challenge= spritesheet.SpriteSheet('Data/challengeTile.png')
 ss_panels   = spritesheet.SpriteSheet('Data/panels.png')
 
@@ -1092,9 +1138,9 @@ penguinSprites = []
 for index in range(0, 2*36+12):
     penguinSprites.append(ss_penguins.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
-charsSprites = []
+charsSprites_gr = []
 for index in range(0, 40):
-    charsSprites.append((ss_chars.get_indexed_image(index, 12, 16)))
+    charsSprites_gr.append((ss_chars_gr.get_indexed_image(index, 12, 16)))
 
 panelSprites = []
 for index in range(0, 2):
@@ -1254,6 +1300,14 @@ while running:
 
     if gamePhase == PHASE_INTRO:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
+
+        # Fade
+        if windowFade > 0:
+            blackSurface.fill((0, 0, 0, windowFade))
+            screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
+
+        displayLeaderboard(screen)
+
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
         if endOfLevelTimer > 0:
