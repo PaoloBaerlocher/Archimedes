@@ -725,7 +725,7 @@ def resetLevel():
     penguin1.reset()
     setElectrifyBorder(False)
 
-    gameTimer = 200.0
+    gameTimer = 200.99
 
     itsChallenge = False  # Challenge ?
 
@@ -1229,13 +1229,17 @@ while running:
         # Check end of game
         if (gameTimer <= 0.0) or ((countToxicBlocs == 0) and not itsChallenge):
             
-#            if itsChallenge == True:
-            soundWow.play()
-            # Results page missing
-            print('PHASE_END_LEVEL')
-            gamePhase = PHASE_END_LEVEL
-            endOfLevelTimer = 250
-            playMusic(musicEnd)
+            if itsChallenge == True:
+                level += 1
+                gamePhase = PHASE_GAME      # Move to next level
+                loadLevel()
+            else:
+                soundWow.play()
+                # Results page missing
+                print('PHASE_END_LEVEL')
+                gamePhase = PHASE_END_LEVEL
+                endOfLevelTimer = 250
+                playMusic(musicEnd)
 
 #            else:
 #                gamePhase = PHASE_RESULT
@@ -1316,7 +1320,7 @@ while running:
         panelIdx = 1
 
     if panelIdx != -1:
-        screen.blit(panelSprites[panelIdx], (8 + 244/2 - 60/2, 50))
+        screen.blit(panelSprites[panelIdx], (8 + 244/2 - 60/2, 40))
 
     # Time
     if not pauseGame:
