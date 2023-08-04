@@ -29,20 +29,20 @@ class Leaderboard(object):
     def clear(self):
         self.entries = []
 
-    def add(self, score, name):
+    def add(self, score, name, level):
         if (len(self.entries) < LB_MAX_ENTRIES or score > self.entries [LB_MAX_ENTRIES-1][0]):
-            self.entries.append((score, name))
+            self.entries.append((score, name, level))
             self.entries.sort(reverse = True)
 
     def setDefaultEntries(self):
         self.clear()
-        self.add(50000, "ARCHIE")
-        self.add(45000, "PAOLO")
-        self.add(40000, "MARC")
-        self.add(35000, "FABRICE")
-        self.add(30000, "FYB")
-        self.add(25000, "JOHN")
-        self.add(20000, "FABRICE")
-        self.add(15000, "ARC ANGELS")
-        self.add(10000, "FRED")
-        self.add( 5000, "ZOZO")
+        self.add(50000, "ARCHIE", 45)
+        self.add(45000, "PAOLO",  40)
+        self.add(40000, "MARC",   35)
+        self.add(35000, "FABRICE", 30)
+        self.add(30000, "FYB", 25)
+        self.add(25000, "JOHN", 22)
+        self.add(20000, "FABRICE", 20)
+        self.add(15000, "ARC ANGELS", 15)
+        self.add(10000, "FRED", 10)
+        self.add( 5000, "ZOZO", 5)

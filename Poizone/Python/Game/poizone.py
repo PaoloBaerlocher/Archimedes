@@ -105,6 +105,7 @@ cyclonesList        = []
 
 itsChallenge        = False         # Challenge ?
 windowFade          = 0             # 0..255
+introCounter        = 0
 
 # Utility functions
 
@@ -946,6 +947,8 @@ def startIntroPhase():
 
     gamePhase = PHASE_INTRO
     playMusic(musicIntro)
+    introCounter = 0
+    windowFade = 0
 
 # Sound/Music
 
@@ -1005,12 +1008,21 @@ def displayLeaderboard(screen):
     TITLE_COLOR = (50, 240, 200)
     SCORE_COLOR = (225, 250, 200)
     NAME_COLOR  = (255, 255, 255)
+    LEVEL_COLOR = (55, 155, 155)
+    LEGEND_COLOR = (50, 240, 200)
     BLACK = (10, 10, 10)
 
     # Title
     text = font.render("BEST PENGUINS", True, TITLE_COLOR, BLACK)
     textRect = text.get_rect()
-    textRect.center = (8+WINDOW_WIDTH//2, 100)
+    textRect.center = (8+WINDOW_WIDTH//2, 80)
+    screen.blit(text, textRect)
+
+    # Legend
+    text = font.render("SCORE       NAME             ZONE", True, LEGEND_COLOR, BLACK)
+    textRect = text.get_rect()
+    textRect.left = 55
+    textRect.top = 100
     screen.blit(text, textRect)
 
     for index in range (0, leaderboard.LB_MAX_ENTRIES):
@@ -1019,18 +1031,26 @@ def displayLeaderboard(screen):
         y = 120 + 9 * index
         score = entry [0]
         name = entry [1]
+        level = entry [2]
 
         # Score
         text = font.render(str(score), True, SCORE_COLOR, BLACK)
         textRect = text.get_rect()
-        textRect.right = 120
+        textRect.right = 90
         textRect.centery = y
         screen.blit(text, textRect)
 
         # Name
         text = font.render(name, True, NAME_COLOR, BLACK)
         textRect = text.get_rect()
-        textRect.left = 140
+        textRect.left = 110
+        textRect.centery = y
+        screen.blit(text, textRect)
+
+        # Level
+        text = font.render(str(level), True, LEVEL_COLOR, BLACK)
+        textRect = text.get_rect()
+        textRect.left = 190
         textRect.centery = y
         screen.blit(text, textRect)
 
@@ -1228,6 +1248,11 @@ while running:
                 if gamePhase == PHASE_GAME:
                     pauseGame = not pauseGame
 
+    if gamePhase == PHASE_INTRO:
+        introCounter += 1
+        if introCounter > 300 and windowFade < 160:
+            windowFade += 20
+
     if gamePhase == PHASE_GAME and not pauseGame:
         # Animate electric border
         if electrifyBorder == True:
@@ -1306,7 +1331,8 @@ while running:
             blackSurface.fill((0, 0, 0, windowFade))
             screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
 
-        displayLeaderboard(screen)
+        if windowFade > 140:
+            displayLeaderboard(screen)
 
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
