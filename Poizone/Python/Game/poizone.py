@@ -950,7 +950,7 @@ def setElectrifyBorder(newStatus):
 # Game phases
 
 def startIntroPhase():
-    global gamePhase
+    global gamePhase, introCounter, windowFade
 
     gamePhase = PHASE_INTRO
     playMusic(musicIntro)
