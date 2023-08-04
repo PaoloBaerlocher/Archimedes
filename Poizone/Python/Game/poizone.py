@@ -43,6 +43,13 @@ KEY_LEFT  = 2
 KEY_RIGHT = 3
 KEY_SPACE = 4
 
+# LANDS
+LAND_ICE      = 0
+LAND_ESA      = 1
+LAND_SPACE    = 2
+LAND_JUNGLE   = 3
+LAND_COMPUTER = 4
+
 # BLOC
 
 # General Codes     00 - 23 . blocs     ; 00-15  ---  Sprites
@@ -682,13 +689,13 @@ class Monster():
 
 
 class CropSprite():
-    def __init__(self, posX, posY):
+    def __init__(self, posX, posY, widthRegion = BLOC_SIZE, heightRegion = BLOC_SIZE):
         self.posX = posX
         self.posY = posY
         self.xRegion = 0
         self.yRegion = 0
-        self.widthRegion = BLOC_SIZE
-        self.heightRegion = BLOC_SIZE
+        self.widthRegion = widthRegion
+        self.heightRegion = heightRegion
 
         # Clip
 
@@ -1136,6 +1143,7 @@ ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs3.png'))
 
 ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
 ss_border   = spritesheet.SpriteSheet('Data/border.png')
+ss_rocket   = spritesheet.SpriteSheet('Data/rocket.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
 ss_chars_wh = spritesheet.SpriteSheet('Data/chars_white.png')
@@ -1151,6 +1159,7 @@ for index in range(1, 1+LANDS_NB):
 # Other assets
 startScreen = ss_start.get_indexed_image(0, 244, 240)
 border = ss_border.get_indexed_image(0, 320, 256)
+rocket = ss_rocket.get_indexed_image(0, 40, 174)
 
 penguin1 = Penguin()
 
@@ -1160,11 +1169,11 @@ for index in range(0, 2*36+12):
 
 charsSprites_gr = []
 for index in range(0, 40):
-    charsSprites_gr.append((ss_chars_gr.get_indexed_image(index, 12, 16)))
+    charsSprites_gr.append(ss_chars_gr.get_indexed_image(index, 12, 16))
 
 panelSprites = []
 for index in range(0, 2):
-    panelSprites.append((ss_panels.get_indexed_image(index, 60, 20)))
+    panelSprites.append(ss_panels.get_indexed_image(index, 60, 20))
 
 # Variables
 absTime = 0
@@ -1338,7 +1347,69 @@ while running:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
         if endOfLevelTimer > 0:
             endOfLevelTimer -= 1
-            # TODO Penguin animations
+
+            # Penguin and 3 Monsters animation
+            yByLand = [190, 210, 190, 135, 138]
+            dirByLand = [-1, -1, -1, -1, +1]
+            limitMinXByLand = [145, 140, 160, 140, -20]
+            limitMaxXByLand = [500, 500, 500, 500, 70]
+            monstersNb = 2 if currLand == LAND_COMPUTER else 3
+            
+            x = 20 + endOfLevelTimer if currLand != LAND_COMPUTER else 250 - endOfLevelTimer
+            y = yByLand [currLand]
+            dir = dirByLand [currLand]
+            limitMinX = limitMinXByLand [currLand]
+            limitMaxX = limitMaxXByLand [currLand]
+            baseX = 0
+            baseY = 0
+            mx = clamp(x, limitMinX, limitMaxX)
+
+            # Show Penguin
+            if (currLand == LAND_ICE or currLand == LAND_JUNGLE or currLand == LAND_COMPUTER):
+
+                if currLand == LAND_COMPUTER:
+                    px = x + 60         # Penguin on the right side of monsters
+                    py = y
+
+                    if px >= 90:       # Jump parabola
+                        dy = math.pow(px-90, 2) / 15
+                        py += clamp(dy, 0, 50)
+                else:
+                    px = x - 40         # Penguin on the left side of monsters
+                    py = y
+
+                if currLand == LAND_ICE:
+                    if px >= 120 and px <= 150:     # Jump parabola
+                        py -= (15*15 - math.pow(px-135, 2)) / 15
+
+                penguin1.posX = px
+                penguin1.posY = py
+
+                penguin1.dirX = dir
+                penguin1.dirY = 0
+                penguin1.update([False, False, dir == -1, dir == 1, False])
+                penguin1.display(screen, 0, 0)
+
+            # Show monsters
+            for index in range(0, monstersNb):
+                monsters[index].posX = mx + 25 * index
+                monsters[index].posY = y
+                monsters[index].dirX = dir
+                monsters[index].dirY = 0
+                monsters[index].counter = 1000-endOfLevelTimer + 16 * index
+                monsters[index].display(screen, 0, 0)
+
+            # Show Rocket
+            if currLand == LAND_ESA or currLand == LAND_SPACE:
+                propel = pow(250-endOfLevelTimer, 2) / 250
+                c = CropSprite(70 if currLand == LAND_ESA else 105,
+                               (60 if currLand == LAND_ESA else 35) - propel, rocket.get_width(), rocket.get_height())
+                screen.blit(rocket, (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+
+            # For COMPUTER level: redraw a part of the disk drive, over monsters
+            if currLand == LAND_COMPUTER:
+                screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y+138), (0, 138, 17*4, 20))
+
         else:
             if level % 5 == 0:
                 loadChallenge()

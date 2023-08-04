@@ -216,3 +216,5 @@ convert_chars('POIZ_cde', 'chars_white.png', 12, 8192, (255, 255, 255), (64, 64,
 convert_rocket('varius/ROCKET', 'rocket.png', 40, 174)
 convert_generic('varius/PLAQU_SPR', 'plaqu.png', 60, 40, True)
 convert_generic('varius/ARROWS', 'arrows.png', 20, 160, False)
+
+# varius/SCOREBOOM and varius/MADGADG are obsolete.
