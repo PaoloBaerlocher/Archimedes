@@ -28,6 +28,7 @@ PENG_WALK_STEP = 4      # In pixels
 MONS_WALK_STEP = 2
 MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
+JOY_LIMIT = 0.8
 
 # GAME PHASES
 PHASE_NONE      = 0
@@ -182,20 +183,21 @@ class Penguin():
             elif bloc < 24:
                 nextBloc = self.getBloc(self.dirX * 2, self.dirY * 2)
                 if (nextBloc >= 24):
-                    self.launchBloc(bloc, self.posX, self.posY, self.dirX, self.dirY)
-                    blocX = int(self.posX / BLOC_SIZE) + self.dirX
-                    blocY = int(self.posY / BLOC_SIZE) + self.dirY
-                    writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
-                    if bloc == BLOC_CYCLONE:
-                        idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
-                        print('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
-                        cyclonesList[idx] = 0
+                    if self.movBlocWhat == NONE:        # Avoid overriding ongoing launch bloc
+                        self.launchBloc(bloc, self.posX, self.posY, self.dirX, self.dirY)
+                        blocX = int(self.posX / BLOC_SIZE) + self.dirX
+                        blocY = int(self.posY / BLOC_SIZE) + self.dirY
+                        writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
+                        if bloc == BLOC_CYCLONE:
+                            idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
+                            print('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
+                            cyclonesList[idx] = 0
 
-                    soundLaunch.play()
+                        soundLaunch.play()
 
-                    if bloc == BLOC_RED:        # Do NOT launch red chemical block!
-                        soundOhNo.play()
-                        self.die()
+                        if bloc == BLOC_RED:        # Do NOT launch red chemical block!
+                            soundOhNo.play()
+                            self.die()
                 else:
                     self.crushBloc(bloc)
 
@@ -1179,16 +1181,67 @@ for index in range(0, 2):
 absTime = 0
 
 keyPressed = [False, False, False, False, False]   # Up Down Left Right Space
+old_x_axis = 0.0
+old_y_axis = 0.0
+joy = pygame.joystick.Joystick(0)
+joy.init()
+print('JOY ' + joy.get_name())
 
 startIntroPhase()
 
 while running:
-    # poll for events
+
+    # INPUT
+    #######
+
+    # Test joystick stick
+    x_axis = joy.get_axis(0)
+    y_axis = joy.get_axis(1)
+
+    # X
+
+    if x_axis > JOY_LIMIT and old_x_axis <= JOY_LIMIT:
+        keyPressed[KEY_RIGHT] = True
+
+    if x_axis < -JOY_LIMIT and old_x_axis >= -JOY_LIMIT:
+        keyPressed[KEY_LEFT] = True
+
+    if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
+        keyPressed[KEY_RIGHT] = False
+
+    if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
+        keyPressed[KEY_LEFT] = False
+
+    # Y
+
+    if y_axis > JOY_LIMIT and old_y_axis <= JOY_LIMIT:
+        keyPressed[KEY_DOWN] = True
+
+    if y_axis < -JOY_LIMIT and old_y_axis >= -JOY_LIMIT:
+        keyPressed[KEY_UP] = True
+
+    if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
+        keyPressed[KEY_DOWN] = False
+
+    if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
+        keyPressed[KEY_UP] = False
+
+    old_x_axis = x_axis
+    old_y_axis = y_axis
+
+    # Poll for events
     # pygame.QUIT event means the user clicked X to close your window
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
+        if event.type == pygame.JOYBUTTONDOWN or event.type == pygame.JOYBUTTONUP:
+            buttonIsDown = (event.type == pygame.JOYBUTTONDOWN)
+            if event.button == 0:
+                keyPressed[KEY_SPACE] = buttonIsDown
+            else:
+                print('JOY button ' + str(event.button))
+                
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 keyPressed[KEY_LEFT] = False
