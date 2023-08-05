@@ -161,7 +161,7 @@ class Penguin():
             self.status = status
 
     def getBloc(self, dirX, dirY):
-        return getBloc(int(self.posX / BLOC_SIZE) + dirX, int(self.posY / BLOC_SIZE) + dirY)
+        return getBloc(self.posX // BLOC_SIZE + dirX, self.posY // BLOC_SIZE + dirY)
 
     def launchBloc(self, bloc, posX, posY, dirX, dirY):
         print('LaunchBloc')
@@ -185,8 +185,8 @@ class Penguin():
                 if (nextBloc >= 24):
                     if self.movBlocWhat == NONE:        # Avoid overriding ongoing launch bloc
                         self.launchBloc(bloc, self.posX, self.posY, self.dirX, self.dirY)
-                        blocX = int(self.posX / BLOC_SIZE) + self.dirX
-                        blocY = int(self.posY / BLOC_SIZE) + self.dirY
+                        blocX = self.posX // BLOC_SIZE + self.dirX
+                        blocY = self.posY // BLOC_SIZE + self.dirY
                         writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
                         if bloc == BLOC_CYCLONE:
                             idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
@@ -262,8 +262,8 @@ class Penguin():
         if bloc == BLOC_GREEN_CHEM:
             self.die()
 
-        blocX = int(self.posX / BLOC_SIZE) + self.dirX
-        blocY = int(self.posY / BLOC_SIZE) + self.dirY
+        blocX = self.posX // BLOC_SIZE + self.dirX
+        blocY = self.posY // BLOC_SIZE + self.dirY
 
         if bloc == BLOC_BOMB:
             self.startBombAnim(self.posX + self.dirX * BLOC_SIZE, self.posY + self.dirY * BLOC_SIZE)
@@ -301,7 +301,7 @@ class Penguin():
         return isOnBlock(self.posX, self.posY)
 
     def getNextTeleportIndex(self):     # Or -1 if none
-        penguinIndex = int(self.posX / BLOC_SIZE) + int(self.posY / BLOC_SIZE) * SCHEME_WIDTH
+        penguinIndex = self.posX // BLOC_SIZE + (self.posY // BLOC_SIZE) * SCHEME_WIDTH
         nb = len(teleporters[currLand])
         for i in range(0, nb):
             tele = teleporters[currLand][i]
@@ -339,7 +339,7 @@ class Penguin():
         return 0
 
     def display(self, screen, baseX, baseY):
-        if int(self.ghost / 4) % 4 <= 2:
+        if (self.ghost / 4) % 4 <= 2:
             c = CropSprite(self.posX - baseX, self.posY - baseY)
             screen.blit(penguinSprites[self.anim], (ORIGIN_X+c.posX, ORIGIN_Y+c.posY), c.getCroppedRegion())
 
@@ -434,13 +434,13 @@ class Penguin():
         # Move camera to follow penguin, and clamp its position
 
         if not itsChallenge:
-            offsetX = penguin1.posX + 8 - baseX - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+            offsetX = penguin1.posX + 8 - baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
             if (offsetX < 0):
                 baseX -= 4
             elif offsetX > 0:
                 baseX += 4
 
-            offsetY = penguin1.posY + 8 - baseY - int((BLOCS_RANGE * BLOC_SIZE) / 2)
+            offsetY = penguin1.posY + 8 - baseY - (BLOCS_RANGE * BLOC_SIZE) // 2
             if (offsetY < 0):
                 baseY -= 4
             elif offsetY > 0:
@@ -459,7 +459,7 @@ class Penguin():
             if found != -1:
                 print('Teleporter found : ' + str(found))
                 newPosX = found % SCHEME_WIDTH
-                newPosY = int(found / SCHEME_WIDTH)
+                newPosY = found // SCHEME_WIDTH
                 self.posX = newPosX * BLOC_SIZE
                 self.posY = newPosY * BLOC_SIZE
                 soundMagic.play()
@@ -483,8 +483,8 @@ class Penguin():
         if self.movBlocWhat != NONE:
 
             if (self.movBlocPosX % BLOC_SIZE == 0) and (self.movBlocPosY % BLOC_SIZE == 0):
-                bx = int(self.movBlocPosX / BLOC_SIZE)
-                by = int(self.movBlocPosY / BLOC_SIZE)
+                bx = self.movBlocPosX // BLOC_SIZE
+                by = self.movBlocPosY // BLOC_SIZE
                 nextBloc = getBloc(bx + self.movBlocDirX, by + self.movBlocDirY)
                 if nextBloc < 24:
                     print('End of bloc travel. Killed ' + str(self.movMonsters) + ' monsters.')
@@ -622,7 +622,7 @@ class Monster():
                         dirX = 0
                         dirY = -1 if (random.randrange(2) == 0) else +1
 
-                    blocIndex = int(self.posX / BLOC_SIZE) + dirX + (int(self.posY / BLOC_SIZE) + dirY) * SCHEME_WIDTH
+                    blocIndex = self.posX // BLOC_SIZE + dirX + (self.posY // BLOC_SIZE + dirY) * SCHEME_WIDTH
 
                     if occupyTable[blocIndex] == True:      # Forbidden destination bloc
                         continue
@@ -674,8 +674,8 @@ class Monster():
                 x = 3 + random.randrange(0, 48-2*3)
                 y = 3 + random.randrange(0, 48-2*3)
             else:
-                x = int(baseX / BLOC_SIZE) + 1 + random.randrange(0, 10)
-                y = int(baseY / BLOC_SIZE) + 1 + random.randrange(0, 10)
+                x = baseX // BLOC_SIZE + 1 + random.randrange(0, 10)
+                y = baseY // BLOC_SIZE + 1 + random.randrange(0, 10)
             print(f"New monster at {x},{y}")
 
             if (occupyTable[x + y * SCHEME_WIDTH] == True):      # Already occupied
@@ -751,7 +751,7 @@ def resetChallenge(challenge):
     itsChallenge = True
 
     px = challenge % 4
-    py = int(challenge / 4)
+    py = challenge // 4
 
     baseX = (12 * px) * BLOC_SIZE
     baseY = (1 + 12 * py) * BLOC_SIZE
@@ -849,7 +849,7 @@ def loadLevel():
 def loadChallenge():
     global level, currLand, scheme, blocsCount, monsters, cyclonesList
     print("Load challenge for level " + str(level))
-    currLand = int((level - 1) / 10)
+    currLand = (level - 1) // 10
     loadSprites()
 
     schemeName = "Data/Schemes/CHALLENGES"
@@ -858,7 +858,7 @@ def loadChallenge():
 
     cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
 
-    resetChallenge(int((level-1) / 5))
+    resetChallenge((level-1) // 5)
 
     initOccupyTable()
 
@@ -884,9 +884,9 @@ def initOccupyTable():
 def displayScore(score, posX, posY):
     base = 10000
     for i in range(0, 5):
-        index = int(score / base) % 10
+        index = (score // base) % 10
         screen.blit(charsSprites_gr[index + 26], (posX+12*i, posY))
-        base /= 10
+        base //= 10
 
 def getBloc(indexX, indexY):
     blocOffset = indexY * SCHEME_WIDTH + indexX
@@ -958,7 +958,8 @@ def startIntroPhase():
     playMusic(musicIntro)
     introCounter = 0
     windowFade = 0
-
+    pauseGame = False
+    
 # Sound/Music
 
 def playMusic(m, loop=0):
@@ -1005,7 +1006,7 @@ def displayGameHud():
 
     # Time value
     seconds = int(gameTimer % 60)
-    timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
+    timeStr = str(gameTimer // 60) + ":" + f"{seconds:02d}"
 
     text = font.render(timeStr, True, WHITE)
     textRect = text.get_rect()
@@ -1024,7 +1025,7 @@ def displayLeaderboard(screen):
     # Title
     text = font.render("BEST PENGUINS", True, TITLE_COLOR, BLACK)
     textRect = text.get_rect()
-    textRect.center = (8+WINDOW_WIDTH//2, 80)
+    textRect.center = (ORIGIN_X+WINDOW_WIDTH//2, 80)
     screen.blit(text, textRect)
 
     # Legend
@@ -1063,6 +1064,21 @@ def displayLeaderboard(screen):
         textRect.centery = y
         screen.blit(text, textRect)
 
+def displayResult(screen):
+    TITLE_COLOR = (50, 240, 200)
+    BLACK = (10, 10, 10)
+
+    # Title
+    text = font.render(f"END OF ZONE {level}", True, TITLE_COLOR)
+    textRect = text.get_rect()
+    textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 40)
+    screen.blit(text, textRect)
+
+def applyFade():
+    if windowFade > 0:
+        blackSurface.fill((0, 0, 0, windowFade))
+        screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
+
 # pygame setup
 pygame.init()
 pygame.display.set_caption('Poizone')
@@ -1084,17 +1100,17 @@ font = pygame.font.Font('Data/font/8-bit-hud.ttf', 5)
 
 # Load musics recorded from SoundTracker
 musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
-musicChall = pygame.mixer.Sound('Data/musics/Challenge.wav')    # Patterns 16-20
-musicWin   = pygame.mixer.Sound('Data/musics/Win.wav')          # Patterns 21-26
-musicLose  = pygame.mixer.Sound('Data/musics/Lose.wav')         # Patterns 27-29
-musicEnd   = pygame.mixer.Sound('Data/musics/EndLand.wav')      # Pattern 29
+musicChall = pygame.mixer.Sound('Data/musics/challenge.wav')    # Patterns 16-20
+musicWin   = pygame.mixer.Sound('Data/musics/win.wav')          # Patterns 21-26
+musicLose  = pygame.mixer.Sound('Data/musics/lose.wav')         # Patterns 27-29
+musicEnd   = pygame.mixer.Sound('Data/musics/endLand.wav')      # Pattern 29
 
 musicPlay = []
-musicPlay.append(pygame.mixer.Sound('Data/musics/Play1.wav'))   # Patterns 30-35
-musicPlay.append(pygame.mixer.Sound('Data/musics/Play2.wav'))   # Patterns 36-44
-musicPlay.append(pygame.mixer.Sound('Data/musics/Play3.wav'))   # Patterns 45-50
-musicPlay.append(pygame.mixer.Sound('Data/musics/Play4.wav'))   # Patterns 51-56
-musicPlay.append(pygame.mixer.Sound('Data/musics/Play5.wav'))   # Patterns 57-62
+musicPlay.append(pygame.mixer.Sound('Data/musics/play1.wav'))   # Patterns 30-35
+musicPlay.append(pygame.mixer.Sound('Data/musics/play2.wav'))   # Patterns 36-44
+musicPlay.append(pygame.mixer.Sound('Data/musics/play3.wav'))   # Patterns 45-50
+musicPlay.append(pygame.mixer.Sound('Data/musics/play4.wav'))   # Patterns 51-56
+musicPlay.append(pygame.mixer.Sound('Data/musics/play5.wav'))   # Patterns 57-62
 
 # Load sounds recorded from SoundTracker: samples indexes from 24 to 35
 soundLaunch= pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
@@ -1131,9 +1147,9 @@ for index in range(0, LANDS_NB):
     print('Teleporters in land #' + str(index) + ':')
     for i in range(0, len(land), 4):
         if land[i] >= BLOC_TELEPORT_0:
-            j=int(i/4)
+            j=i // 4
             teleporters[index].append(j)
-            print('  ' + str(j%64) + ',' + str(int(j/SCHEME_WIDTH)))
+            print('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
 
 # SpriteSheets
 
@@ -1183,9 +1199,14 @@ absTime = 0
 keyPressed = [False, False, False, False, False]   # Up Down Left Right Space
 old_x_axis = 0.0
 old_y_axis = 0.0
-joy = pygame.joystick.Joystick(0)
-joy.init()
-print('JOY ' + joy.get_name())
+try:
+    joy = pygame.joystick.Joystick(0)
+    joy.init()
+    print('JOY ' + joy.get_name())
+    joyFound = 0
+except pygame.error:
+    print('JOY not found')
+    joyFound = -1
 
 startIntroPhase()
 
@@ -1194,40 +1215,41 @@ while running:
     # INPUT
     #######
 
-    # Test joystick stick
-    x_axis = joy.get_axis(0)
-    y_axis = joy.get_axis(1)
+    if joyFound != -1:
+        # Test joystick stick
+        x_axis = joy.get_axis(0)
+        y_axis = joy.get_axis(1)
 
-    # X
+        # X
 
-    if x_axis > JOY_LIMIT and old_x_axis <= JOY_LIMIT:
-        keyPressed[KEY_RIGHT] = True
+        if x_axis > JOY_LIMIT and old_x_axis <= JOY_LIMIT:
+            keyPressed[KEY_RIGHT] = True
 
-    if x_axis < -JOY_LIMIT and old_x_axis >= -JOY_LIMIT:
-        keyPressed[KEY_LEFT] = True
+        if x_axis < -JOY_LIMIT and old_x_axis >= -JOY_LIMIT:
+            keyPressed[KEY_LEFT] = True
 
-    if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
-        keyPressed[KEY_RIGHT] = False
+        if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
+            keyPressed[KEY_RIGHT] = False
 
-    if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
-        keyPressed[KEY_LEFT] = False
+        if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
+            keyPressed[KEY_LEFT] = False
 
-    # Y
+        # Y
 
-    if y_axis > JOY_LIMIT and old_y_axis <= JOY_LIMIT:
-        keyPressed[KEY_DOWN] = True
+        if y_axis > JOY_LIMIT and old_y_axis <= JOY_LIMIT:
+            keyPressed[KEY_DOWN] = True
 
-    if y_axis < -JOY_LIMIT and old_y_axis >= -JOY_LIMIT:
-        keyPressed[KEY_UP] = True
+        if y_axis < -JOY_LIMIT and old_y_axis >= -JOY_LIMIT:
+            keyPressed[KEY_UP] = True
 
-    if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
-        keyPressed[KEY_DOWN] = False
+        if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
+            keyPressed[KEY_DOWN] = False
 
-    if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
-        keyPressed[KEY_UP] = False
+        if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
+            keyPressed[KEY_UP] = False
 
-    old_x_axis = x_axis
-    old_y_axis = y_axis
+        old_x_axis = x_axis
+        old_y_axis = y_axis
 
     # Poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -1241,7 +1263,7 @@ while running:
                 keyPressed[KEY_SPACE] = buttonIsDown
             else:
                 print('JOY button ' + str(event.button))
-                
+
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 keyPressed[KEY_LEFT] = False
@@ -1279,6 +1301,7 @@ while running:
                     gamePhase = PHASE_GAME
                     resetGame()
                     loadLevel()
+                    windowFade = 0
 
             if event.key == pygame.K_ESCAPE:  # Quit game
                 if gamePhase == PHASE_GAME:
@@ -1368,14 +1391,23 @@ while running:
                 loadLevel()
             else:
                 soundWow.play()
-                # Results page missing
+                gamePhase = PHASE_RESULT
+                windowFade = 200
+                resultTimer = 0
+
+    if gamePhase == PHASE_RESULT:
+        resultTimer += 1
+        if resultTimer > 60*8:
+            gameOver = False
+
+            if gameOver == True:
+                pass
+            else:
                 print('PHASE_END_LEVEL')
                 gamePhase = PHASE_END_LEVEL
                 endOfLevelTimer = 250
                 playMusic(musicEnd)
-
-#            else:
-#                gamePhase = PHASE_RESULT
+                windowFade = 0
 
     ######
     # DRAW
@@ -1389,9 +1421,7 @@ while running:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
 
         # Fade
-        if windowFade > 0:
-            blackSurface.fill((0, 0, 0, windowFade))
-            screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
+        applyFade()
 
         if windowFade > 140:
             displayLeaderboard(screen)
@@ -1472,14 +1502,14 @@ while running:
 
             print('Switch to PHASE_GAME')
             gamePhase = PHASE_GAME
-    else: # PHASE_GAME
+    else: # PHASE_GAME or PHASE_RESULT
         # Draw BG
 
-        anim = int(absTime / 4)
+        anim = absTime // 4
         for y in range(0, BLOCS_RANGE + 1):
             for x in range(0, BLOCS_RANGE + 1):
 
-                blocOffset = (int(baseY / BLOC_SIZE) + y) * SCHEME_WIDTH + (int(baseX / BLOC_SIZE) + x)
+                blocOffset = (baseY // BLOC_SIZE + y) * SCHEME_WIDTH + (baseX // BLOC_SIZE + x)
 
                 if itsChallenge == True:
                     index = 24      # Empty land in challenge mode
@@ -1508,6 +1538,12 @@ while running:
 
         # Display moving bloc and bonus, if any
         penguin1.displayBloc(screen, baseX, baseY)
+
+        applyFade()
+
+        if gamePhase == PHASE_RESULT:
+            # Display result over game
+            displayResult(screen)
 
         # Display HUD
         displayGameHud()
