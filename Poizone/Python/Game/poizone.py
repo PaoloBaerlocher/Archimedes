@@ -29,6 +29,7 @@ MONS_WALK_STEP = 2
 MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
 JOY_LIMIT = 0.8
+SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 
 # GAME PHASES
 PHASE_NONE      = 0
@@ -107,7 +108,7 @@ currLand            = 0             # 0..4
 electrifyBorder     = False
 electrifyBorderAnim = 0
 blocsCount          = []
-countToxicBlocs     = 0
+toxicBlocsLeft      = 0
 cyclonesPace        = 0             # For cyclones
 cyclonesList        = []
 
@@ -802,7 +803,7 @@ def loadSprites():
     endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, WINDOW_WIDTH, WINDOW_HEIGHT)
 
 def loadLevel():
-    global level, currLand, scheme, blocsCount, countToxicBlocs, totalToxicBlocs, monsters, cyclonesList
+    global level, currLand, scheme, blocsCount, toxicBlocsLeft, totalToxicBlocs, monsters, cyclonesList
     print("Load level " + str(level))
     currLand = (level-1) % LANDS_NB
     loadSprites()
@@ -826,13 +827,13 @@ def loadLevel():
             print('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
             cyclonesNb += 1
             
-    countToxicBlocs  = blocsCount[BLOC_POISON]+blocsCount[BLOC_RED]
-    countToxicBlocs += blocsCount[BLOC_ALU]   +blocsCount[BLOC_BATTERY]
-    countToxicBlocs += blocsCount[BLOC_DDT]   +blocsCount[BLOC_CFC]
-    countToxicBlocs += blocsCount[BLOC_RADIO] +blocsCount[BLOC_GREEN_CHEM]
+    toxicBlocsLeft  = blocsCount[BLOC_POISON]+blocsCount[BLOC_RED]
+    toxicBlocsLeft += blocsCount[BLOC_ALU]   +blocsCount[BLOC_BATTERY]
+    toxicBlocsLeft += blocsCount[BLOC_DDT]   +blocsCount[BLOC_CFC]
+    toxicBlocsLeft += blocsCount[BLOC_RADIO] +blocsCount[BLOC_GREEN_CHEM]
 
-    print('countToxicBlocs: ' + str(countToxicBlocs))
-    totalToxicBlocs = countToxicBlocs
+    print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
+    totalToxicBlocs = toxicBlocsLeft
 
     resetLevel()
 
@@ -904,13 +905,13 @@ def isOnBlock(posX, posY):
     return ((posX % BLOC_SIZE) == 0) and ((posY % BLOC_SIZE) == 0)
 
 def destroyBloc(bloc):
-    global blocsCount, countToxicBlocs, level, gamePhase
+    global blocsCount, toxicBlocsLeft, level, gamePhase
     print('Destroy bloc of type ' + str(bloc))
     if (bloc <= BLOC_GREEN_CHEM):
         blocsCount[bloc] -= 1
         if (bloc >= BLOC_POISON):
-            countToxicBlocs -= 1
-            print('countToxicBlocs: ' + str(countToxicBlocs))
+            toxicBlocsLeft -= 1
+            print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
             penguin1.score += 5
 
 def writeBloc(indexX, indexY, blocIndex):
@@ -954,12 +955,39 @@ def setElectrifyBorder(newStatus):
 def startIntroPhase():
     global gamePhase, introCounter, windowFade
 
+    print('PHASE_INTRO')
     gamePhase = PHASE_INTRO
     playMusic(musicIntro)
     introCounter = 0
     windowFade = 0
     pauseGame = False
-    
+
+def startResultPhase():
+    global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
+
+    print('PHASE_RESULT')
+    gamePhase = PHASE_RESULT
+    windowFade = 200
+    resultTimer = 0
+
+    # Compute bonus
+    percent = ((totalToxicBlocs - toxicBlocsLeft) * 100) // totalToxicBlocs
+    bonus = 25 * clamp(percent - SUCCESS_GOAL, 0, 100)
+
+    if percent == 100:                              # Perfect
+        bonus += 500 + 5 * int(gameTimer)           # 1 second = 5 points
+
+
+
+def startEndLevelPhase():
+    global gamePhase, endOfLevelTimer, windowFade
+
+    print('PHASE_END_LEVEL')
+    gamePhase = PHASE_END_LEVEL
+    endOfLevelTimer = 250
+    playMusic(musicEnd)
+    windowFade = 0
+
 # Sound/Music
 
 def playMusic(m, loop=0):
@@ -978,7 +1006,6 @@ def displayGameHud():
     HUD_CENTER = 320 - HUD_WIDTH / 2
 
     # Level
-
     if not itsChallenge:
         text = font.render('ZONE', True, LEVEL_COLOR)
         textRect = text.get_rect()
@@ -992,7 +1019,7 @@ def displayGameHud():
 
     # Completion
     if not itsChallenge:
-        percent = int(100 * (totalToxicBlocs - countToxicBlocs) / totalToxicBlocs)
+        percent = int(100 * (totalToxicBlocs - toxicBlocsLeft) / totalToxicBlocs)
         text = font.render(f"{percent:02d} %", True, COMPLETION_COLOR)
         textRect = text.get_rect()
         textRect.center = (HUD_CENTER, 120)
@@ -1006,7 +1033,7 @@ def displayGameHud():
 
     # Time value
     seconds = int(gameTimer % 60)
-    timeStr = str(gameTimer // 60) + ":" + f"{seconds:02d}"
+    timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
 
     text = font.render(timeStr, True, WHITE)
     textRect = text.get_rect()
@@ -1066,12 +1093,61 @@ def displayLeaderboard(screen):
 
 def displayResult(screen):
     TITLE_COLOR = (50, 240, 200)
-    BLACK = (10, 10, 10)
+    DECONTAMINATED_COLOR = (50, 255, 140)
+    TIME_LEFT_COLOR = (200, 200, 240)
+    BONUS_COLOR = (40, 200, 240)
+    GAMEOVER_COLOR = (255, 60, 60)
+    GOOD_COLOR = (0, 255, 0)
+    BAD_COLOR = (255, 0, 0)
 
     # Title
-    text = font.render(f"END OF ZONE {level}", True, TITLE_COLOR)
+    text = font_big.render(f"END OF ZONE {level}", True, TITLE_COLOR)
     textRect = text.get_rect()
     textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 40)
+    screen.blit(text, textRect)
+
+    if toxicBlocsLeft == 0:
+        if ((resultTimer // 8) % 4 != 0):      # Flash FX
+            text = font_big.render("TOTAL", True, DECONTAMINATED_COLOR)
+            textRect = text.get_rect()
+            textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 80)
+            screen.blit(text, textRect)
+
+            text = font_big.render("DECONTAMINATION!", True, DECONTAMINATED_COLOR)
+            textRect = text.get_rect()
+            textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 95)
+            screen.blit(text, textRect)
+    else:
+        text = font_big.render("DECONTAMINATION:", True, DECONTAMINATED_COLOR)
+        textRect = text.get_rect()
+        textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 80)
+        screen.blit(text, textRect)
+
+        percent = (100 * (totalToxicBlocs - toxicBlocsLeft)) // totalToxicBlocs
+        percentDisplay = clamp(percent, 0, resultTimer // 2)
+        text = font_big.render(f"{percentDisplay} %", True, BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR)
+        textRect = text.get_rect()
+        textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 130)
+        screen.blit(text, textRect)
+
+        if percent < SUCCESS_GOAL and resultTimer >= 200:
+            text = font_big.render("GAME OVER", True, GAMEOVER_COLOR)
+            textRect = text.get_rect()
+            textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 220)
+            screen.blit(text, textRect)
+
+    # Time left
+    timeLeft = int(gameTimer)
+    if timeLeft > 0:
+        text = font_big.render(f"TIME LEFT: {timeLeft} s", True, TIME_LEFT_COLOR)
+        textRect = text.get_rect()
+        textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 200)
+        screen.blit(text, textRect)
+
+    # Bonus
+    text = font_big.render(f"BONUS: {bonus} POINTS", True, BONUS_COLOR)
+    textRect = text.get_rect()
+    textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 180)
     screen.blit(text, textRect)
 
 def applyFade():
@@ -1095,8 +1171,9 @@ lb.load()
 blackSurface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
 blackSurface.fill((0, 0, 0, 128))
 
-# Font
-font = pygame.font.Font('Data/font/8-bit-hud.ttf', 5)
+# Fonts
+font = pygame.font.Font('Data/font/small/8-bit-hud.ttf', 5)
+font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
 # Load musics recorded from SoundTracker
 musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
@@ -1211,6 +1288,12 @@ except pygame.error:
 startIntroPhase()
 
 while running:
+
+    # Time
+    if gamePhase == PHASE_GAME and not pauseGame:
+        dt = clock.get_time()
+        absTime += dt
+        gameTimer -= dt / 1000
 
     # INPUT
     #######
@@ -1383,7 +1466,7 @@ while running:
             m.update()
 
         # Check end of game
-        if (gameTimer <= 0.0) or ((countToxicBlocs == 0) and not itsChallenge):
+        if (gameTimer <= 0.0) or ((toxicBlocsLeft == 0) and not itsChallenge):
             
             if itsChallenge == True:
                 level += 1
@@ -1391,23 +1474,21 @@ while running:
                 loadLevel()
             else:
                 soundWow.play()
-                gamePhase = PHASE_RESULT
-                windowFade = 200
-                resultTimer = 0
+                startResultPhase()
 
     if gamePhase == PHASE_RESULT:
         resultTimer += 1
         if resultTimer > 60*8:
-            gameOver = False
+            percent = (100 * toxicBlocsLeft / totalToxicBlocs)
+            gameOver = (percent >= 10)
+            penguin1.score += bonus         # Take bonus into account
+
+            print(f"percent: {percent} gameOver : {gameOver}")
 
             if gameOver == True:
-                pass
+                startIntroPhase()
             else:
-                print('PHASE_END_LEVEL')
-                gamePhase = PHASE_END_LEVEL
-                endOfLevelTimer = 250
-                playMusic(musicEnd)
-                windowFade = 0
+                startEndLevelPhase()
 
     ######
     # DRAW
@@ -1561,12 +1642,6 @@ while running:
 
     if panelIdx != -1:
         screen.blit(panelSprites[panelIdx], (8 + 244/2 - 60/2, 40))
-
-    # Time
-    if not pauseGame:
-        dt = clock.get_time()
-        absTime += dt
-        gameTimer -= dt / 1000
 
     # flip() the display to put your work on screen
     pygame.display.flip()
