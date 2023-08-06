@@ -597,9 +597,9 @@ class Monster():
 
             if electrifyBorder and self.isAlive() and not self.isDizzy() and onBlock:
                 if (self.posX == BORDER_SIZE) or (self.posY == BORDER_SIZE) or (self.posX == BLOC_SIZE*44) or (self.posY == BLOC_SIZE*44):
-                    self.dizzyCounter = 90
+                    self.dizzyCounter = 4*60
                     print('Electrify monster')
-
+                    
             if self.isAlive() and (penguin1.movBlocWhat != NONE):
                 deltaX = abs(penguin1.movBlocPosX - self.posX)
                 deltaY = abs(penguin1.movBlocPosY - self.posY)
@@ -610,7 +610,7 @@ class Monster():
                     penguin1.movMonsters += 1
                 elif (deltaX <= 12) and (deltaY <= 12):
                     print('Dizzy monster by bloc collision')
-                    self.dizzyCounter = 60
+                    self.dizzyCounter = 4*60
 
             if (self.isAlive() and not self.isDizzy() and onBlock):
                 found = False
@@ -740,7 +740,15 @@ def resetLevel():
     penguin1.reset()
     setElectrifyBorder(False)
 
-    gameTimer = 200.99
+    # Time available for finishing this level
+    if level == 1 or level == 2:
+        gameTimer = 90      # 1m30
+    elif level == 3 or level == 4:
+        gameTimer = 150     # 2m30
+    else:
+        gameTimer = 180     # 3m00
+
+    gameTimer += 0.99       # To see the first full second, initially
 
     itsChallenge = False  # Challenge ?
 
@@ -764,7 +772,7 @@ def resetChallenge(challenge):
 
     penguin1.ghost = 10000  # Permanent ghost in Challenge mode
 
-    gameTimer = 30.0
+    gameTimer = 30.99
 
     setElectrifyBorder(False)
 
