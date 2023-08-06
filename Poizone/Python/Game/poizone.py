@@ -735,8 +735,8 @@ def resetGame():
 def resetLevel():
     global baseX, baseY, penguin1, itsChallenge, gameTimer
 
-    baseX = 18 * BLOC_SIZE
-    baseY = 18 * BLOC_SIZE
+    baseX = 18 * BLOC_SIZE + 8
+    baseY = 18 * BLOC_SIZE + 8
     penguin1.reset()
     setElectrifyBorder(False)
 
@@ -1294,6 +1294,8 @@ while running:
         dt = clock.get_time()
         absTime += dt
         gameTimer -= dt / 1000
+        if gameTimer < 0.0:
+            gameTimer = 0.0
 
     # INPUT
     #######
