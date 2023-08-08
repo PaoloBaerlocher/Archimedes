@@ -437,15 +437,15 @@ class Penguin():
         if not itsChallenge:
             offsetX = penguin1.posX + 8 - baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
             if (offsetX < 0):
-                baseX -= 4
+                baseX -= PENG_WALK_STEP
             elif offsetX > 0:
-                baseX += 4
+                baseX += PENG_WALK_STEP
 
             offsetY = penguin1.posY + 8 - baseY - (BLOCS_RANGE * BLOC_SIZE) // 2
             if (offsetY < 0):
-                baseY -= 4
+                baseY -= PENG_WALK_STEP
             elif offsetY > 0:
-                baseY += 4
+                baseY += PENG_WALK_STEP
 
         MAX_X = (48 - BLOCS_RANGE) * BLOC_SIZE - 4  # In pixels
         MAX_Y = (48 - BLOCS_RANGE) * BLOC_SIZE - 4
@@ -1005,6 +1005,12 @@ def playMusic(m, loop=0):
 
 # HUD
 
+def displayText(font, str, col, text_x, text_y):
+    text = font.render(str, True, col)
+    textRect = text.get_rect()
+    textRect.center = (text_x, text_y)
+    screen.blit(text, textRect)
+
 def displayGameHud():
     WHITE = (255, 255, 255)
     LEVEL_COLOR = (180, 255, 255)
@@ -1015,38 +1021,21 @@ def displayGameHud():
 
     # Level
     if not itsChallenge:
-        text = font.render('ZONE', True, LEVEL_COLOR)
-        textRect = text.get_rect()
-        textRect.center = (HUD_CENTER, 78)
-        screen.blit(text, textRect)
-
-        text = font.render(f"{level:02d}", True, LEVEL_COLOR)
-        textRect = text.get_rect()
-        textRect.center = (HUD_CENTER, 90)
-        screen.blit(text, textRect)
+        displayText(font, "ZONE", LEVEL_COLOR, HUD_CENTER, 78)
+        displayText(font, f"{level:02d}", LEVEL_COLOR, HUD_CENTER, 90)
 
     # Completion
     if not itsChallenge:
         percent = int(100 * (totalToxicBlocs - toxicBlocsLeft) / totalToxicBlocs)
-        text = font.render(f"{percent:02d} %", True, COMPLETION_COLOR)
-        textRect = text.get_rect()
-        textRect.center = (HUD_CENTER, 120)
-        screen.blit(text, textRect)
+        displayText(font, f"{percent:02d} %", COMPLETION_COLOR, HUD_CENTER, 120)
 
-    # TIME
-    text = font.render('TIME', True, WHITE)
-    textRect = text.get_rect()
-    textRect.center = (HUD_CENTER, 154)
-    screen.blit(text, textRect)
+    # TIM
+    displayText(font, 'TIME', WHITE, HUD_CENTER, 154)
 
     # Time value
     seconds = int(gameTimer % 60)
     timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
-
-    text = font.render(timeStr, True, WHITE)
-    textRect = text.get_rect()
-    textRect.center = (HUD_CENTER, 166)
-    screen.blit(text, textRect)
+    displayText(font, timeStr, WHITE, HUD_CENTER, 166)
 
 def displayLeaderboard(screen):
 
@@ -1109,54 +1098,36 @@ def displayResult(screen):
     BAD_COLOR = (255, 0, 0)
 
     # Title
-    text = font_big.render(f"END OF ZONE {level}", True, TITLE_COLOR)
-    textRect = text.get_rect()
-    textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 40)
-    screen.blit(text, textRect)
+    displayText(font_big, f"END OF ZONE {level}",  TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40)
 
     if toxicBlocsLeft == 0:
         if ((resultTimer // 8) % 4 != 0):      # Flash FX
-            text = font_big.render("TOTAL", True, DECONTAMINATED_COLOR)
-            textRect = text.get_rect()
-            textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 80)
-            screen.blit(text, textRect)
-
-            text = font_big.render("DECONTAMINATION!", True, DECONTAMINATED_COLOR)
-            textRect = text.get_rect()
-            textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 95)
-            screen.blit(text, textRect)
+            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+            displayText(font_big, "DECONTAMINATION!", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130)
     else:
-        text = font_big.render("DECONTAMINATION:", True, DECONTAMINATED_COLOR)
-        textRect = text.get_rect()
-        textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 80)
-        screen.blit(text, textRect)
+        displayText(font_big, "DECONTAMINATION:", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
         percent = (100 * (totalToxicBlocs - toxicBlocsLeft)) // totalToxicBlocs
         percentDisplay = clamp(percent, 0, resultTimer // 2)
-        text = font_big.render(f"{percentDisplay} %", True, BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR)
-        textRect = text.get_rect()
-        textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 130)
-        screen.blit(text, textRect)
+        displayText(font_big, f"{percentDisplay} %", BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130)
 
         if percent < SUCCESS_GOAL and resultTimer >= 200:
-            text = font_big.render("GAME OVER", True, GAMEOVER_COLOR)
-            textRect = text.get_rect()
-            textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 220)
-            screen.blit(text, textRect)
+            displayText(font_big, "GAME OVER", GAMEOVER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
 
     # Time left
     timeLeft = int(gameTimer)
     if timeLeft > 0:
-        text = font_big.render(f"TIME LEFT: {timeLeft} s", True, TIME_LEFT_COLOR)
-        textRect = text.get_rect()
-        textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 200)
-        screen.blit(text, textRect)
+        displayText(font_big, f"TIME LEFT: {timeLeft} s", TIME_LEFT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 200)
 
     # Bonus
-    text = font_big.render(f"BONUS: {bonus} POINTS", True, BONUS_COLOR)
-    textRect = text.get_rect()
-    textRect.center = (ORIGIN_X + WINDOW_WIDTH // 2, 180)
-    screen.blit(text, textRect)
+    displayText(font_big, f"BONUS: {bonus} POINTS", BONUS_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 180)
+
+def displayEnterYourName():
+    pass
+
+def displayGameFinished():
+    pass
+
 
 def applyFade():
     if windowFade > 0:
