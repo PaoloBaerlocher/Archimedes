@@ -607,9 +607,9 @@ class Monster():
                 if (deltaX <= 8) and (deltaY <= 8):
                     print('Kill monster')
                     self.killAndRebirth()
-                    soundSplat.play()
+                    soundColl.play()
                     penguin1.movMonsters += 1
-                elif (deltaX <= 12) and (deltaY <= 12):
+                elif (deltaX <= 10) and (deltaY <= 10):
                     print('Dizzy monster by bloc collision')
                     self.dizzyCounter = 4*60
 
@@ -754,6 +754,7 @@ def resetLevel():
     itsChallenge = False  # Challenge ?
 
     playMusic(musicPlay[currLand], 99)
+    soundReady.play()
 
 def resetChallenge(challenge):
     global baseX, baseY, penguin1, itsChallenge, gameTimer
@@ -854,7 +855,6 @@ def loadLevel():
         m = Monster(kind)
         m.setRandomPosition()
         monsters.append(m)
-
 
 def loadChallenge():
     global level, currLand, scheme, blocsCount, monsters, cyclonesList
@@ -1130,7 +1130,8 @@ def displayResult():
     # Bonus
     displayText(font_big, f"BONUS: {bonus} POINTS", BONUS_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 180)
 
-    displayDancingPenguins()
+    if toxicBlocsLeft == 0:
+        displayDancingPenguins()
 
 def displayDancingPenguins():
     # According to d value:
@@ -1205,19 +1206,20 @@ musicPlay.append(pygame.mixer.Sound('Data/musics/play3.wav'))   # Patterns 45-50
 musicPlay.append(pygame.mixer.Sound('Data/musics/play4.wav'))   # Patterns 51-56
 musicPlay.append(pygame.mixer.Sound('Data/musics/play5.wav'))   # Patterns 57-62
 
-# Load sounds recorded from SoundTracker: samples indexes from 24 to 35
+# Load sounds recorded from SoundTracker: samples indexes from 23 to 35
+soundReady = pygame.mixer.Sound('Data/bruitages/READY.wav')             # 23 (sample N) - START OF LEVEL
 soundLaunch= pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
 soundCrash = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')        # 25 (sample P)
-soundBoom  = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q)
-soundElec  = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R)
+soundBoom  = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q) - bomb
+soundElec  = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R) - border
 soundMagic = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')             # 28 (sample S)
-soundDiam  = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T)
-soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - laugh
-soundOhNo  = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V)
+soundDiam  = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T) - when 4 diamonds assembled
+# soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - laugh (not used)
+soundOhNo  = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V) - wrong move / death
 soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
-soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X)
-soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - for chemical bloc
-soundWow   = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - WOW (END OF LEVEL)
+soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
+soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
+soundWow   = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
 
 # Set volumes
 
@@ -1635,8 +1637,8 @@ while running:
                     if blocOfSchemes < 24:
                         index = blocOfSchemes
 
-                posX = x * BLOC_SIZE - int(baseX % BLOC_SIZE)
-                posY = y * BLOC_SIZE - int(baseY % BLOC_SIZE)
+                posX = x * BLOC_SIZE - (baseX % BLOC_SIZE)
+                posY = y * BLOC_SIZE - (baseY % BLOC_SIZE)
 
                 c = CropSprite(posX, posY)
 
@@ -1654,7 +1656,7 @@ while running:
         penguin1.displayBloc(screen, baseX, baseY)
 
         applyFade()
-
+        
         if gamePhase == PHASE_RESULT:
             # Display result over game
             displayResult()
