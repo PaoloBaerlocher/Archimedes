@@ -29,8 +29,11 @@ class Leaderboard(object):
     def clear(self):
         self.entries = []
 
+    def canEnter(self, score):
+        return (len(self.entries) < LB_MAX_ENTRIES) or (score > self.entries [LB_MAX_ENTRIES-1][0])
+
     def add(self, score, name, level):
-        if (len(self.entries) < LB_MAX_ENTRIES or score > self.entries [LB_MAX_ENTRIES-1][0]):
+        if self.canEnter(score):
             self.entries.append((score, name, level))
             self.entries.sort(reverse = True)
 

@@ -38,6 +38,7 @@ PHASE_LEVEL     = 2
 PHASE_RESULT    = 3
 PHASE_END_LEVEL = 4
 PHASE_GAME_WON  = 5
+PHASE_ENTER_NAME= 6
 
 # KEY
 KEY_UP    = 0
@@ -755,7 +756,7 @@ def resetLevel():
 
     itsChallenge = False  # Challenge ?
 
-    playMusic(musicPlay[currLand], 99)
+    playMusic(musicPlay[currLand], -1)
     soundReady.play()
 
 def resetChallenge(challenge):
@@ -968,7 +969,7 @@ def startIntroPhase():
 
     print('PHASE_INTRO')
     gamePhase = PHASE_INTRO
-    playMusic(musicIntro)
+    playMusic(musicIntro, -1)
     introCounter = 0
     windowFade = 0
     pauseGame = False
@@ -1006,10 +1007,17 @@ def startGameWonPhase():
     playMusic(musicWin)
     windowFade = 0
 
+def startEnterNamePhase():
+    global gamePhase
+
+    print('PHASE_ENTER_NAME')
+    gamePhase = PHASE_ENTER_NAME
+    # TODO
+
 # Sound/Music
 
 def playMusic(m, loop=0):
-    print('playMusic')
+    print('playMusic loop=' + str(loop))
     pygame.mixer.stop()
     m.play(loop)
 
@@ -1222,6 +1230,7 @@ soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sa
 soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
 soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
 soundWow   = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
+soundTick  = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample
 
 # Set volumes
 
@@ -1320,9 +1329,14 @@ while running:
     if gamePhase == PHASE_LEVEL and not pauseGame:
         dt = clock.get_time()
         absTime += dt
+        prevGameTimer = gameTimer
         gameTimer -= dt / 1000
         if gameTimer < 0.0:
             gameTimer = 0.0
+
+        for tick in range(1, 6):
+            if (prevGameTimer >= tick and gameTimer <= tick):
+                soundTick.play()
 
     # INPUT
     #######
@@ -1505,7 +1519,9 @@ while running:
                     level += 1  # End of level - display results
                     loadLevel()
             else:
-                soundWow.play()
+                if (toxicBlocsLeft == 0):
+                    soundWow.play()
+
                 startResultPhase()
 
     if gamePhase == PHASE_RESULT:
@@ -1518,7 +1534,10 @@ while running:
             print(f"percent: {percent} gameOver : {gameOver}")
 
             if gameOver == True:
-                startIntroPhase()
+                if lb.canEnter(penguin1.score):
+                    startEnterNamePhase()
+                else:
+                    startIntroPhase()
             else:
                 startEndLevelPhase()
 
