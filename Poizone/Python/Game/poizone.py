@@ -1130,6 +1130,29 @@ def displayResult():
     # Bonus
     displayText(font_big, f"BONUS: {bonus} POINTS", BONUS_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 180)
 
+    displayDancingPenguins()
+
+def displayDancingPenguins():
+    # According to d value:
+    # 0..100: move right
+    # 100..120: still, upfront
+    # 120..140: still, left front
+    # 140..160: still, upfront
+    # 160..   : move right
+
+    d = resultTimer - 50
+    px = d if d < 100 else (100 if d < 160 else d-60)
+    py = 95
+    dir = 0 if (d > 100 and d < 120) or (d > 140 and d < 160) else (-1 if (d > 120 and d < 140) else +1)
+    for i in range(0, len(dancingPenguins)):
+        p = dancingPenguins [i]
+        p.dirX = dir
+        p.dirY = 1 if dir == 0 else 0
+        p.update([False, dir == 0, dir == -1, dir == 1, False])
+        p.posX = px + 20 * i - 10
+        p.posY = py
+        p.display(screen, 0, 0)
+
 def displayEnterYourName():
     pass
 
@@ -1250,6 +1273,13 @@ border = ss_border.get_indexed_image(0, 320, 256)
 rocket = ss_rocket.get_indexed_image(0, 40, 174)
 
 penguin1 = Penguin()
+
+# Three dancing penguins, for result screen
+dancingPenguins = []
+dancingPenguins.append(Penguin())
+dancingPenguins.append(Penguin())
+dancingPenguins.append(Penguin())
+dancingPenguins[1].animPhase += 8
 
 penguinSprites = []
 for index in range(0, 2*36+12):
