@@ -34,9 +34,10 @@ SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 # GAME PHASES
 PHASE_NONE      = 0
 PHASE_INTRO     = 1
-PHASE_GAME      = 2
+PHASE_LEVEL     = 2
 PHASE_RESULT    = 3
 PHASE_END_LEVEL = 4
+PHASE_GAME_WON  = 5
 
 # KEY
 KEY_UP    = 0
@@ -985,8 +986,6 @@ def startResultPhase():
     if percent == 100:                              # Perfect
         bonus += 500 + 5 * int(gameTimer)           # 1 second = 5 points
 
-
-
 def startEndLevelPhase():
     global gamePhase, endOfLevelTimer, windowFade
 
@@ -994,6 +993,15 @@ def startEndLevelPhase():
     gamePhase = PHASE_END_LEVEL
     endOfLevelTimer = 250
     playMusic(musicEnd)
+    windowFade = 0
+
+def startGameWonPhase():
+    global gamePhase, resultTimer
+
+    resultTimer = 0
+    print('PHASE_GAME_WON')
+    gamePhase = PHASE_GAME_WON
+    playMusic(musicWin)
     windowFade = 0
 
 # Sound/Music
@@ -1088,7 +1096,7 @@ def displayLeaderboard(screen):
         textRect.centery = y
         screen.blit(text, textRect)
 
-def displayResult(screen):
+def displayResult():
     TITLE_COLOR = (50, 240, 200)
     DECONTAMINATED_COLOR = (50, 255, 140)
     TIME_LEFT_COLOR = (200, 200, 240)
@@ -1125,9 +1133,15 @@ def displayResult(screen):
 def displayEnterYourName():
     pass
 
-def displayGameFinished():
-    pass
+def displayGameWon():
+    TEXT_COLOR = (50, 240, 200)
 
+    windowFade = 100
+
+    displayText(font_big, "IT'S UNBELIEVABLE!", TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, "YOU HAVE FINISHED",  TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 100)
+    displayText(font_big, "THE GAME!!! HAVE",  TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 120)
+    displayText(font_big, "YOU CHEATED ?", TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 140)
 
 def applyFade():
     if windowFade > 0:
@@ -1269,7 +1283,7 @@ startIntroPhase()
 while running:
 
     # Time
-    if gamePhase == PHASE_GAME and not pauseGame:
+    if gamePhase == PHASE_LEVEL and not pauseGame:
         dt = clock.get_time()
         absTime += dt
         gameTimer -= dt / 1000
@@ -1362,13 +1376,13 @@ while running:
 
             if event.key == pygame.K_F1:    # Start game
                 if gamePhase == PHASE_INTRO:
-                    gamePhase = PHASE_GAME
+                    gamePhase = PHASE_LEVEL
                     resetGame()
                     loadLevel()
                     windowFade = 0
 
             if event.key == pygame.K_ESCAPE:  # Quit game
-                if gamePhase == PHASE_GAME:
+                if gamePhase == PHASE_LEVEL:
                     startIntroPhase()
                 elif gamePhase == PHASE_INTRO:
                     running = False
@@ -1394,7 +1408,7 @@ while running:
                     loadChallenge()
 
             if event.key == pygame.K_F12:    # Pause game
-                if gamePhase == PHASE_GAME:
+                if gamePhase == PHASE_LEVEL:
                     pauseGame = not pauseGame
 
     if gamePhase == PHASE_INTRO:
@@ -1402,7 +1416,7 @@ while running:
         if introCounter > 300 and windowFade < 160:
             windowFade += 20
 
-    if gamePhase == PHASE_GAME and not pauseGame:
+    if gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
         if electrifyBorder == True:
             electrifyBorderAnim += 1
@@ -1450,9 +1464,12 @@ while running:
         if (gameTimer <= 0.0) or ((toxicBlocsLeft == 0) and not itsChallenge):
             
             if itsChallenge == True:
-                level += 1
-                gamePhase = PHASE_GAME      # Move to next level
-                loadLevel()
+                if level >= 50:             # End of game reached!
+                    startGameWonPhase()
+                else:
+                    gamePhase = PHASE_LEVEL  # Move to next level
+                    level += 1  # End of level - display results
+                    loadLevel()
             else:
                 soundWow.play()
                 startResultPhase()
@@ -1470,6 +1487,11 @@ while running:
                 startIntroPhase()
             else:
                 startEndLevelPhase()
+
+    elif gamePhase == PHASE_GAME_WON:
+        resultTimer += 1
+        if resultTimer > 60*10:
+            startIntroPhase()
 
     ######
     # DRAW
@@ -1562,9 +1584,9 @@ while running:
                 level += 1
                 loadLevel()
 
-            print('Switch to PHASE_GAME')
-            gamePhase = PHASE_GAME
-    else: # PHASE_GAME or PHASE_RESULT
+            print('Switch to PHASE_LEVEL')
+            gamePhase = PHASE_LEVEL
+    else: # PHASE_LEVEL or PHASE_RESULT
         # Draw BG
 
         anim = absTime // 4
@@ -1605,7 +1627,9 @@ while running:
 
         if gamePhase == PHASE_RESULT:
             # Display result over game
-            displayResult(screen)
+            displayResult()
+        elif gamePhase == PHASE_GAME_WON:
+            displayGameWon()
 
         # Display HUD
         displayGameHud()
