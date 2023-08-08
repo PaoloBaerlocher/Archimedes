@@ -492,8 +492,10 @@ class Penguin():
                     print('End of bloc travel. Killed ' + str(self.movMonsters) + ' monsters.')
 
                     killBloc = (self.movBlocWhat == BLOC_GREEN_CHEM)
-                    if self.movBlocWhat == BLOC_ALU and nextBloc == BLOC_ELECTRO:
-                        killBloc = True     # Kill ALU when launched against electro border
+                    if self.movBlocWhat == BLOC_ALU:
+                        if (getBloc(bx+1, by) == BLOC_ELECTRO) or (getBloc(bx-1, by) == BLOC_ELECTRO) or \
+                           (getBloc(bx, by-1) == BLOC_ELECTRO) or (getBloc(bx, by+1) == BLOC_ELECTRO):
+                            killBloc = True     # Kill ALU when launched against electro border
 
                     if not killBloc:
                         writeBloc(bx, by, self.movBlocWhat)
