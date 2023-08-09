@@ -2,6 +2,7 @@ import pygame
 import json
 
 LB_MAX_ENTRIES = 10
+LB_MAX_NAME_LENGTH = 10
 
 class Leaderboard(object):
 
@@ -48,4 +49,4 @@ class Leaderboard(object):
         self.add(20000, "FABRICE", 20)
         self.add(15000, "ARC ANGELS", 15)
         self.add(10000, "FRED", 10)
-        self.add( 5000, "ZOZO", 5)
+        self.add( 2000, "ZOZO", 5)

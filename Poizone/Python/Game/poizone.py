@@ -30,6 +30,8 @@ MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
 JOY_LIMIT = 0.8
 SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
+ALPHABET_ROWS = 4       # For 'Enter your name'
+ALPHABET_COLUMNS = 7
 
 # GAME PHASES
 PHASE_NONE      = 0
@@ -46,6 +48,7 @@ KEY_DOWN  = 1
 KEY_LEFT  = 2
 KEY_RIGHT = 3
 KEY_SPACE = 4
+KEY_BACK  = 5       # Backspace
 
 # LANDS
 LAND_ICE      = 0
@@ -372,43 +375,43 @@ class Penguin():
                 index = clamp(self.movMonsters - 1, 0, 3)  # Display corresponding bonus (20, 50, 100 or 200)
                 screen.blit(penguinSprites[72 + index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
-    def update(self, keyPressed):
+    def update(self, keyDown):
         global monsters, teleporters, scheme, baseX, baseY
 
-        penguinMove = keyPressed[KEY_LEFT] or keyPressed[KEY_RIGHT] or keyPressed[KEY_UP] or keyPressed[KEY_DOWN]
+        penguinMove = keyDown[KEY_LEFT] or keyDown[KEY_RIGHT] or keyDown[KEY_UP] or keyDown[KEY_DOWN]
 
         if penguinMove:
             self.canTeleport = True
 
-        if keyPressed[KEY_SPACE] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
+        if keyDown[KEY_SPACE] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
             self.pushBloc()
 
         if isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
-            if keyPressed[KEY_LEFT]:
+            if keyDown[KEY_LEFT]:
                 self.dirX = -1 if self.invert == False else +1
                 self.dirY = 0
                 if not blocIsWalkable(self, self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-            if keyPressed[KEY_RIGHT]:
+            if keyDown[KEY_RIGHT]:
                 self.dirX = 1 if self.invert == False else -1
                 self.dirY = 0
                 if not blocIsWalkable(self, self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-            if keyPressed[KEY_UP]:
+            if keyDown[KEY_UP]:
                 self.dirX = 0
                 self.dirY = -1 if self.invert == False else +1
                 if not blocIsWalkable(self, self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-            if keyPressed[KEY_DOWN]:
+            if keyDown[KEY_DOWN]:
                 self.dirX = 0
                 self.dirY = 1 if self.invert == False else -1
                 if not blocIsWalkable(self, self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyPressed[KEY_SPACE]):
+        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_SPACE]):
             self.setStatus(PenguinStatus.IDLE)
             setElectrifyBorder(False)
 
@@ -965,7 +968,7 @@ def setElectrifyBorder(newStatus):
 # Game phases
 
 def startIntroPhase():
-    global gamePhase, introCounter, windowFade
+    global gamePhase, introCounter, windowFade, pauseGame
 
     print('PHASE_INTRO')
     gamePhase = PHASE_INTRO
@@ -999,7 +1002,7 @@ def startEndLevelPhase():
     windowFade = 0
 
 def startGameWonPhase():
-    global gamePhase, resultTimer
+    global gamePhase, resultTimer, windowFade
 
     resultTimer = 0
     print('PHASE_GAME_WON')
@@ -1008,11 +1011,13 @@ def startGameWonPhase():
     windowFade = 0
 
 def startEnterNamePhase():
-    global gamePhase
+    global gamePhase, yourName, cursorTx, cursorTy
 
     print('PHASE_ENTER_NAME')
     gamePhase = PHASE_ENTER_NAME
-    # TODO
+    yourName = ""
+    cursorTx = 0
+    cursorTy = 0
 
 # Sound/Music
 
@@ -1165,7 +1170,28 @@ def displayDancingPenguins():
         p.display(screen, 0, 0)
 
 def displayEnterYourName():
-    pass
+    TITLE_COLOR = (50, 240, 200)
+    LETTER_COLOR = (250, 240, 230)
+    HIGHLIGHT_LETTER_COLOR = (255, 255, 0)
+    NAME_COLOR = (255, 255, 66)
+
+    displayText(font_big, "CONGRATULATIONS!", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40)
+    displayText(font_big, "ENTER YOUR NAME:", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60)
+
+    for ty in range (0, ALPHABET_ROWS):
+        for tx in range(0, ALPHABET_COLUMNS):
+            charIndex = tx + ty * ALPHABET_COLUMNS
+            ch = chr(ord('A')+charIndex)
+            isCursor = (tx == cursorTx and ty == cursorTy)
+            color = HIGHLIGHT_LETTER_COLOR if isCursor else LETTER_COLOR
+
+            if ch <= 'Z':
+                displayText(font_big, ch, color, ORIGIN_X + WINDOW_WIDTH // 2 + (tx-3) * 25, 150 + (ty-2) * 24)
+
+    displayName = yourName
+    if len(yourName) < leaderboard.LB_MAX_NAME_LENGTH:
+        displayName += '_'
+    displayText(font_big, displayName, NAME_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
 
 def displayGameWon():
     TEXT_COLOR = (50, 240, 200)
@@ -1238,6 +1264,7 @@ soundCrash.set_volume(0.5)
 soundLaunch.set_volume(0.3)
 soundMagic.set_volume(0.2)
 soundSplat.set_volume(0.5)
+soundTick.set_volume(0.7)
 
 # Load Lands and extract teleporters positions.
 
@@ -1309,7 +1336,9 @@ for index in range(0, 2):
 # Variables
 absTime = 0
 
-keyPressed = [False, False, False, False, False]   # Up Down Left Right Space
+keyDown = [False, False, False, False, False, False]   # Up Down Left Right Space Back
+keyPressed = [False, False, False, False, False, False]
+
 old_x_axis = 0.0
 old_y_axis = 0.0
 try:
@@ -1349,33 +1378,35 @@ while running:
         # X
 
         if x_axis > JOY_LIMIT and old_x_axis <= JOY_LIMIT:
-            keyPressed[KEY_RIGHT] = True
+            keyDown[KEY_RIGHT] = True
 
         if x_axis < -JOY_LIMIT and old_x_axis >= -JOY_LIMIT:
-            keyPressed[KEY_LEFT] = True
+            keyDown[KEY_LEFT] = True
 
         if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
-            keyPressed[KEY_RIGHT] = False
+            keyDown[KEY_RIGHT] = False
 
         if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
-            keyPressed[KEY_LEFT] = False
+            keyDown[KEY_LEFT] = False
 
         # Y
 
         if y_axis > JOY_LIMIT and old_y_axis <= JOY_LIMIT:
-            keyPressed[KEY_DOWN] = True
+            keyDown[KEY_DOWN] = True
 
         if y_axis < -JOY_LIMIT and old_y_axis >= -JOY_LIMIT:
-            keyPressed[KEY_UP] = True
+            keyDown[KEY_UP] = True
 
         if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
-            keyPressed[KEY_DOWN] = False
+            keyDown[KEY_DOWN] = False
 
         if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
-            keyPressed[KEY_UP] = False
+            keyDown[KEY_UP] = False
 
         old_x_axis = x_axis
         old_y_axis = y_axis
+
+    oldKeyDown = keyDown.copy()
 
     # Poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -1386,78 +1417,70 @@ while running:
         if event.type == pygame.JOYBUTTONDOWN or event.type == pygame.JOYBUTTONUP:
             buttonIsDown = (event.type == pygame.JOYBUTTONDOWN)
             if event.button == 0:
-                keyPressed[KEY_SPACE] = buttonIsDown
+                keyDown[KEY_SPACE] = buttonIsDown
             else:
                 print('JOY button ' + str(event.button))
 
-        if event.type == pygame.KEYUP:
+        if event.type == pygame.KEYUP or event.type == pygame.KEYDOWN:
+            down = (event.type == pygame.KEYDOWN)
             if event.key == pygame.K_LEFT:
-                keyPressed[KEY_LEFT] = False
+                keyDown[KEY_LEFT] = down
 
             if event.key == pygame.K_RIGHT:
-                keyPressed[KEY_RIGHT] = False
+                keyDown[KEY_RIGHT] = down
 
             if event.key == pygame.K_UP:
-                keyPressed[KEY_UP] = False
+                keyDown[KEY_UP] = down
 
             if event.key == pygame.K_DOWN:
-                keyPressed[KEY_DOWN] = False
+                keyDown[KEY_DOWN] = down
 
             if event.key == pygame.K_SPACE:
-                keyPressed[KEY_SPACE] = False
+                keyDown[KEY_SPACE] = down
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                keyPressed[KEY_LEFT] = True
+            if event.key == pygame.K_BACKSPACE:
+                keyDown[KEY_BACK] = down
 
-            if event.key == pygame.K_RIGHT:
-                keyPressed[KEY_RIGHT] = True
+            if not down:
+                if event.key == pygame.K_F1:    # Start game
+                    if gamePhase == PHASE_INTRO:
+                        gamePhase = PHASE_LEVEL
+                        resetGame()
+                        loadLevel()
+                        windowFade = 0
 
-            if event.key == pygame.K_UP:
-                keyPressed[KEY_UP] = True
+                if event.key == pygame.K_ESCAPE:  # Quit game
+                    if gamePhase == PHASE_LEVEL:
+                        startIntroPhase()
+                    elif gamePhase == PHASE_INTRO:
+                        running = False
 
-            if event.key == pygame.K_DOWN:
-                keyPressed[KEY_DOWN] = True
+                if event.key == pygame.K_F5:    # Prev level
+                    if (level > 1):
+                        level -= 1
+                        loadLevel()
 
-            if event.key == pygame.K_SPACE:
-                keyPressed[KEY_SPACE] = True
+                if event.key == pygame.K_F6:    # Next level
+                    if (level < 50):
+                        level += 1
+                        loadLevel()
 
-            if event.key == pygame.K_F1:    # Start game
-                if gamePhase == PHASE_INTRO:
-                    gamePhase = PHASE_LEVEL
-                    resetGame()
-                    loadLevel()
-                    windowFade = 0
+                if event.key == pygame.K_F7:  # Prev challenge
+                    if (level > 5):
+                        level -= 5
+                        loadChallenge()
 
-            if event.key == pygame.K_ESCAPE:  # Quit game
-                if gamePhase == PHASE_LEVEL:
-                    startIntroPhase()
-                elif gamePhase == PHASE_INTRO:
-                    running = False
+                if event.key == pygame.K_F8:  # Next challenge
+                    if (level < 45):
+                        level += 5
+                        loadChallenge()
 
-            if event.key == pygame.K_F5:    # Prev level
-                if (level > 1):
-                    level -= 1
-                    loadLevel()
+                if event.key == pygame.K_F12:    # Pause game
+                    if gamePhase == PHASE_LEVEL:
+                        pauseGame = not pauseGame
 
-            if event.key == pygame.K_F6:    # Next level
-                if (level < 50):
-                    level += 1
-                    loadLevel()
-
-            if event.key == pygame.K_F7:  # Prev challenge
-                if (level > 5):
-                    level -= 5
-                    loadChallenge()
-
-            if event.key == pygame.K_F8:  # Next challenge
-                if (level < 45):
-                    level += 5
-                    loadChallenge()
-
-            if event.key == pygame.K_F12:    # Pause game
-                if gamePhase == PHASE_LEVEL:
-                    pauseGame = not pauseGame
+    for i in range(0, len(keyDown)):
+        keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
 
     if gamePhase == PHASE_INTRO:
         introCounter += 1
@@ -1502,7 +1525,7 @@ while running:
                         i += 1
 
         # Update Penguin
-        penguin1.update(keyPressed)
+        penguin1.update(keyDown)
 
         # Update Monsters
         for m in monsters:
@@ -1546,6 +1569,30 @@ while running:
         if resultTimer > 60*10:
             startIntroPhase()
 
+    elif gamePhase == PHASE_ENTER_NAME:
+        if keyPressed[KEY_LEFT]:
+            cursorTx = (cursorTx + ALPHABET_COLUMNS - 1) % ALPHABET_COLUMNS
+        if keyPressed[KEY_RIGHT]:
+            cursorTx = (cursorTx + 1) % ALPHABET_COLUMNS
+        if keyPressed[KEY_UP]:
+            cursorTy = (cursorTy + ALPHABET_ROWS - 1) % ALPHABET_ROWS
+        if keyPressed[KEY_DOWN]:
+            cursorTy = (cursorTy + 1) % ALPHABET_ROWS
+        if keyPressed[KEY_SPACE]:
+            ch = chr(ord('A') + cursorTx + cursorTy * ALPHABET_COLUMNS)
+            if ch == '\\' and len(yourName) > 0:
+                lb.add(penguin1.score, yourName, level)
+                lb.save()       # Add new entry and save leaderboard
+                startIntroPhase()
+            if (len(yourName) < leaderboard.LB_MAX_NAME_LENGTH):
+                if (ch <= 'Z'):
+                    yourName += ch
+                else:
+                    yourName += ' '
+                soundTick.play()
+
+        if keyPressed[KEY_BACK]:
+            yourName = yourName[:-1]
     ######
     # DRAW
     ######
@@ -1683,6 +1730,8 @@ while running:
             displayResult()
         elif gamePhase == PHASE_GAME_WON:
             displayGameWon()
+        elif gamePhase == PHASE_ENTER_NAME:
+            displayEnterYourName()
 
         # Display HUD
         displayGameHud()
