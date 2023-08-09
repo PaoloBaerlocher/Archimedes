@@ -49,6 +49,7 @@ KEY_LEFT  = 2
 KEY_RIGHT = 3
 KEY_SPACE = 4
 KEY_BACK  = 5       # Backspace
+KEY_RETURN= 6
 
 # LANDS
 LAND_ICE      = 0
@@ -998,7 +999,7 @@ def startEndLevelPhase():
     print('PHASE_END_LEVEL')
     gamePhase = PHASE_END_LEVEL
     endOfLevelTimer = 250
-    playMusic(musicEnd)
+    playMusic(musicEnd, -1)
     windowFade = 0
 
 def startGameWonPhase():
@@ -1007,17 +1008,20 @@ def startGameWonPhase():
     resultTimer = 0
     print('PHASE_GAME_WON')
     gamePhase = PHASE_GAME_WON
-    playMusic(musicWin)
     windowFade = 0
 
 def startEnterNamePhase():
-    global gamePhase, yourName, cursorTx, cursorTy
+    global gamePhase, yourName, cursorTx, cursorTy, cursorPx, cursorPy, resultTimer
 
     print('PHASE_ENTER_NAME')
     gamePhase = PHASE_ENTER_NAME
     yourName = ""
     cursorTx = 0
     cursorTy = 0
+    cursorPx = 0    # In pixels
+    cursorPy = 0
+    resultTimer = 0
+    playMusic(musicWin, -1)
 
 # Sound/Music
 
@@ -1028,10 +1032,30 @@ def playMusic(m, loop=0):
 
 # HUD
 
-def displayText(font, str, col, text_x, text_y):
+def displayText(font, str, col, text_x, text_y):            # Centered
+    # Shadow
+    text = font.render(str, True, (0, 0, 0))
+    textRect = text.get_rect()
+    textRect.center = (text_x + 1, text_y + 1)
+    screen.blit(text, textRect)
+
     text = font.render(str, True, col)
     textRect = text.get_rect()
     textRect.center = (text_x, text_y)
+    screen.blit(text, textRect)
+
+def displayTextLeft(font, str, col, text_x, text_y):        # Left-Aligned
+    # Shadow
+    text = font.render(str, True, (0, 0, 0))
+    textRect = text.get_rect()
+    textRect.left = text_x + 1
+    textRect.centery = text_y + 1
+    screen.blit(text, textRect)
+
+    text = font.render(str, True, col)
+    textRect = text.get_rect()
+    textRect.left = text_x
+    textRect.centery = text_y
     screen.blit(text, textRect)
 
 def displayGameHud():
@@ -1170,6 +1194,8 @@ def displayDancingPenguins():
         p.display(screen, 0, 0)
 
 def displayEnterYourName():
+    global cursorPx, cursorPy
+
     TITLE_COLOR = (50, 240, 200)
     LETTER_COLOR = (250, 240, 230)
     HIGHLIGHT_LETTER_COLOR = (255, 255, 0)
@@ -1182,16 +1208,36 @@ def displayEnterYourName():
         for tx in range(0, ALPHABET_COLUMNS):
             charIndex = tx + ty * ALPHABET_COLUMNS
             ch = chr(ord('A')+charIndex)
-            isCursor = (tx == cursorTx and ty == cursorTy)
-            color = HIGHLIGHT_LETTER_COLOR if isCursor else LETTER_COLOR
+
+            if ch == '\\':
+                ch = '>'        # Exit
 
             if ch <= 'Z':
-                displayText(font_big, ch, color, ORIGIN_X + WINDOW_WIDTH // 2 + (tx-3) * 25, 150 + (ty-2) * 24)
+                displayText(font_big, ch, LETTER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2 + (tx-3) * 25, 150 + (ty-2) * 24)
+
+    # Display cursor
+    targetPx = ORIGIN_X + WINDOW_WIDTH // 2 + (cursorTx - 3) * 25
+    targetPy = 150 + (cursorTy - 2) * 24
+    if cursorPx == 0 and cursorPy == 0:
+        cursorPx = targetPx
+        cursorPy = targetPy
+    else:
+        deltaPx = targetPx - cursorPx
+        cursorPx += 5 if deltaPx > 0 else -5 if deltaPx < 0 else 0
+        deltaPy = targetPy - cursorPy
+        cursorPy += 4 if deltaPy > 0 else -4 if deltaPy < 0 else 0
+
+    displayText(font_big, '_', HIGHLIGHT_LETTER_COLOR, cursorPx, cursorPy + 2)
+    displayText(font_big, '_', HIGHLIGHT_LETTER_COLOR, cursorPx, cursorPy - 16)
 
     displayName = yourName
-    if len(yourName) < leaderboard.LB_MAX_NAME_LENGTH:
-        displayName += '_'
-    displayText(font_big, displayName, NAME_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
+    if (resultTimer // 8) % 4 != 0:
+        if len(yourName) < leaderboard.LB_MAX_NAME_LENGTH:
+            displayName += '_'
+        else:
+            displayName += ' '
+
+    displayTextLeft(font_big, displayName, NAME_COLOR, ORIGIN_X + 40, 220)
 
 def displayGameWon():
     TEXT_COLOR = (50, 240, 200)
@@ -1336,8 +1382,8 @@ for index in range(0, 2):
 # Variables
 absTime = 0
 
-keyDown = [False, False, False, False, False, False]   # Up Down Left Right Space Back
-keyPressed = [False, False, False, False, False, False]
+keyDown = [False, False, False, False, False, False, False]   # Up Down Left Right Space Back Return
+keyPressed = [False, False, False, False, False, False, False]
 
 old_x_axis = 0.0
 old_y_axis = 0.0
@@ -1440,6 +1486,9 @@ while running:
 
             if event.key == pygame.K_BACKSPACE:
                 keyDown[KEY_BACK] = down
+
+            if event.key == pygame.K_RETURN:
+                keyDown[KEY_RETURN] = down
 
             if not down:
                 if event.key == pygame.K_F1:    # Start game
@@ -1570,6 +1619,9 @@ while running:
             startIntroPhase()
 
     elif gamePhase == PHASE_ENTER_NAME:
+        resultTimer += 1
+        quitEnterName = False
+
         if keyPressed[KEY_LEFT]:
             cursorTx = (cursorTx + ALPHABET_COLUMNS - 1) % ALPHABET_COLUMNS
         if keyPressed[KEY_RIGHT]:
@@ -1581,10 +1633,8 @@ while running:
         if keyPressed[KEY_SPACE]:
             ch = chr(ord('A') + cursorTx + cursorTy * ALPHABET_COLUMNS)
             if ch == '\\' and len(yourName) > 0:
-                lb.add(penguin1.score, yourName, level)
-                lb.save()       # Add new entry and save leaderboard
-                startIntroPhase()
-            if (len(yourName) < leaderboard.LB_MAX_NAME_LENGTH):
+                quitEnterName = True
+            elif (len(yourName) < leaderboard.LB_MAX_NAME_LENGTH):
                 if (ch <= 'Z'):
                     yourName += ch
                 else:
@@ -1592,7 +1642,15 @@ while running:
                 soundTick.play()
 
         if keyPressed[KEY_BACK]:
-            yourName = yourName[:-1]
+            if len(yourName) > 0:
+                yourName = yourName[:-1]
+                soundTick.play()
+
+        if keyPressed[KEY_RETURN] or quitEnterName == True:
+            lb.add(penguin1.score, yourName, level)
+            lb.save()  # Add new entry and save leaderboard
+            startIntroPhase()
+
     ######
     # DRAW
     ######

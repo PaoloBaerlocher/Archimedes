@@ -35,7 +35,7 @@ class Leaderboard(object):
 
     def add(self, score, name, level):
         if self.canEnter(score):
-            self.entries.append((score, name, level))
+            self.entries.append([score, name, level])
             self.entries.sort(reverse = True)
 
     def setDefaultEntries(self):
