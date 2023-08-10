@@ -1557,7 +1557,7 @@ while running:
                     finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
                     turningBloc = scheme[finalOffset]
 
-                    if turningBloc < 24:
+                    if turningBloc < 24 and turningBloc != BLOC_ELECTRO:
                         turningBlocs.append(turningBloc)
 
                 # Rotate turning blocs (clockwise)
@@ -1569,7 +1569,7 @@ while running:
                     finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
                     turningBloc = scheme[finalOffset]
 
-                    if turningBloc < 24:
+                    if turningBloc < 24 and turningBloc != BLOC_ELECTRO:
                         blocX = finalOffset % SCHEME_WIDTH
                         blocY = int (finalOffset / SCHEME_WIDTH)
                         writeBloc(blocX, blocY, turningBlocs [i])
