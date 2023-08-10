@@ -34,7 +34,7 @@ SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
 
-# GAME PHASES
+# PHASE_
 PHASE_NONE      = 0
 PHASE_INTRO     = 1
 PHASE_LEVEL     = 2
@@ -43,16 +43,17 @@ PHASE_END_LEVEL = 4
 PHASE_GAME_WON  = 5
 PHASE_ENTER_NAME= 6
 
-# KEY
-KEY_UP    = 0
-KEY_DOWN  = 1
-KEY_LEFT  = 2
-KEY_RIGHT = 3
-KEY_SPACE = 4
-KEY_BACK  = 5       # Backspace
-KEY_RETURN= 6
+# KEY_
+KEY_UP          = 0
+KEY_DOWN        = 1
+KEY_LEFT        = 2
+KEY_RIGHT       = 3
+KEY_SPACE       = 4
+KEY_BACKSPACE   = 5
+KEY_RETURN      = 6
+KEY_ESCAPE      = 7
 
-# LANDS
+# LANDS_
 LAND_ICE      = 0
 LAND_ESA      = 1
 LAND_SPACE    = 2
@@ -1079,6 +1080,15 @@ def displayTextRight(font, str, col, text_x, text_y):        # Right-Aligned
     textRect.centery = text_y
     screen.blit(text, textRect)
 
+def displayMainTuto():
+    TEXT_COLOR = (240, 255, 255)
+
+    CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
+
+    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, 215)
+    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, 225)
+    displayText(font, "TO ASSEMBLE THE MAGIC DIAMONDS", TEXT_COLOR, CENTER_X, 235)
+
 def displayGameHud():
     WHITE = (255, 255, 255)
     LEVEL_COLOR = (180, 255, 255)
@@ -1304,7 +1314,7 @@ soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sa
 soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
 soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
 soundWow   = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
-soundTick  = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample
+soundTick  = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
 
 # Set volumes
 
@@ -1384,8 +1394,8 @@ for index in range(0, 2):
 # Variables
 absTime = 0
 
-keyDown = [False, False, False, False, False, False, False]   # Up Down Left Right Space Back Return
-keyPressed = [False, False, False, False, False, False, False]
+keyDown = [False, False, False, False, False, False, False, False]   # Up Down Left Right Space Backspace Return Escape
+keyPressed = [False, False, False, False, False, False, False, False]
 
 old_x_axis = 0.0
 old_y_axis = 0.0
@@ -1487,10 +1497,13 @@ while running:
                 keyDown[KEY_SPACE] = down
 
             if event.key == pygame.K_BACKSPACE:
-                keyDown[KEY_BACK] = down
+                keyDown[KEY_BACKSPACE] = down
 
             if event.key == pygame.K_RETURN:
                 keyDown[KEY_RETURN] = down
+
+            if event.key == pygame.K_ESCAPE:
+                keyDown[KEY_ESCAPE] = down
 
             if not down:
                 if event.key == pygame.K_F1:    # Start game
@@ -1499,12 +1512,6 @@ while running:
                         resetGame()
                         loadLevel()
                         windowFade = 0
-
-                if event.key == pygame.K_ESCAPE:  # Quit game
-                    if gamePhase == PHASE_LEVEL:
-                        startIntroPhase()
-                    elif gamePhase == PHASE_INTRO:
-                        running = False
 
                 if event.key == pygame.K_F5:    # Prev level
                     if (level > 1):
@@ -1532,6 +1539,12 @@ while running:
 
     for i in range(0, len(keyDown)):
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
+        
+    if keyPressed[KEY_ESCAPE] == True:
+        if gamePhase == PHASE_LEVEL:
+            startIntroPhase()
+        elif gamePhase == PHASE_INTRO:
+            running = False  # Quit game
 
     if gamePhase == PHASE_INTRO:
         introCounter += 1
@@ -1643,7 +1656,7 @@ while running:
                     yourName += ' '
                 soundTick.play()
 
-        if keyPressed[KEY_BACK]:
+        if keyPressed[KEY_BACKSPACE]:
             if len(yourName) > 0:
                 yourName = yourName[:-1]
                 soundTick.play()
@@ -1669,6 +1682,8 @@ while running:
 
         if windowFade > 140:
             displayLeaderboard(screen)
+        else:
+            displayMainTuto()
 
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
