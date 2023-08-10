@@ -1065,6 +1065,20 @@ def displayTextLeft(font, str, col, text_x, text_y):        # Left-Aligned
     textRect.centery = text_y
     screen.blit(text, textRect)
 
+def displayTextRight(font, str, col, text_x, text_y):        # Right-Aligned
+    # Shadow
+    text = font.render(str, True, (0, 0, 0))
+    textRect = text.get_rect()
+    textRect.right = text_x + 1
+    textRect.centery = text_y + 1
+    screen.blit(text, textRect)
+
+    text = font.render(str, True, col)
+    textRect = text.get_rect()
+    textRect.right = text_x
+    textRect.centery = text_y
+    screen.blit(text, textRect)
+
 def displayGameHud():
     WHITE = (255, 255, 255)
     LEVEL_COLOR = (180, 255, 255)
@@ -1101,17 +1115,10 @@ def displayLeaderboard(screen):
     BLACK = (10, 10, 10)
 
     # Title
-    text = font.render("BEST PENGUINS", True, TITLE_COLOR, BLACK)
-    textRect = text.get_rect()
-    textRect.center = (ORIGIN_X+WINDOW_WIDTH//2, 80)
-    screen.blit(text, textRect)
+    displayText(font, "BEST PENGUINS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     # Legend
-    text = font.render("SCORE       NAME             ZONE", True, LEGEND_COLOR, BLACK)
-    textRect = text.get_rect()
-    textRect.left = 55
-    textRect.top = 100
-    screen.blit(text, textRect)
+    displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 104)
 
     for index in range (0, leaderboard.LB_MAX_ENTRIES):
         entry = lb.entries [index]
@@ -1122,25 +1129,13 @@ def displayLeaderboard(screen):
         level = entry [2]
 
         # Score
-        text = font.render(str(score), True, SCORE_COLOR, BLACK)
-        textRect = text.get_rect()
-        textRect.right = 90
-        textRect.centery = y
-        screen.blit(text, textRect)
+        displayTextRight(font, str(score), SCORE_COLOR, 90, y)
 
         # Name
-        text = font.render(name, True, NAME_COLOR, BLACK)
-        textRect = text.get_rect()
-        textRect.left = 110
-        textRect.centery = y
-        screen.blit(text, textRect)
+        displayTextLeft(font, name, NAME_COLOR, 110, y)
 
         # Level
-        text = font.render(str(level), True, LEVEL_COLOR, BLACK)
-        textRect = text.get_rect()
-        textRect.left = 190
-        textRect.centery = y
-        screen.blit(text, textRect)
+        displayTextLeft(font, str(level), LEVEL_COLOR, 190, y)
 
 def displayResult():
     TITLE_COLOR = (50, 240, 200)
