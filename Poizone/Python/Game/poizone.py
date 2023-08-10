@@ -7,6 +7,7 @@ import math
 import random
 import spritesheet
 import leaderboard
+import particles
 from enum import Enum
 
 # Constants
@@ -110,7 +111,7 @@ class PenguinStatus(Enum):
 gamePhase           = PHASE_NONE
 gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
 level               = 1             # From 1 to 50
-currLand            = 0             # 0..4
+currLand            = 0             # 0..4 (LAND_...)
 electrifyBorder     = False
 electrifyBorderAnim = 0
 blocsCount          = []
@@ -994,13 +995,19 @@ def startResultPhase():
         bonus += 500 + 5 * int(gameTimer)           # 1 second = 5 points
 
 def startEndLevelPhase():
-    global gamePhase, endOfLevelTimer, windowFade
+    global gamePhase, endOfLevelTimer, windowFade, part, rocketOriginX, rocketOriginY
 
     print('PHASE_END_LEVEL')
     gamePhase = PHASE_END_LEVEL
     endOfLevelTimer = 250
     playMusic(musicEnd, -1)
     windowFade = 0
+
+    # Create rocket particles, if needed in this land
+    if currLand == LAND_ESA or currLand == LAND_SPACE:
+        rocketOriginX = 70 if currLand == LAND_ESA else 105
+        rocketOriginY = 60 if currLand == LAND_ESA else 35
+        part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
 
 def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
@@ -1600,7 +1607,7 @@ while running:
         resultTimer += 1
         if resultTimer > 60*8:
             percent = (100 * toxicBlocsLeft / totalToxicBlocs)
-            gameOver = (percent >= 10)
+            gameOver = (percent >= (100-SUCCESS_GOAL))
             penguin1.score += bonus         # Take bonus into account
 
             print(f"percent: {percent} gameOver : {gameOver}")
@@ -1726,10 +1733,12 @@ while running:
 
             # Show Rocket
             if currLand == LAND_ESA or currLand == LAND_SPACE:
-                propel = pow(250-endOfLevelTimer, 2) / 250
-                c = CropSprite(70 if currLand == LAND_ESA else 105,
-                               (60 if currLand == LAND_ESA else 35) - propel, rocket.get_width(), rocket.get_height())
+                propelY = pow(250-endOfLevelTimer, 2) / 250
+                c = CropSprite(rocketOriginX, rocketOriginY - propelY, rocket.get_width(), rocket.get_height())
                 screen.blit(rocket, (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                part.originY = ORIGIN_Y + c.posY + c.heightRegion
+                part.update(1./60.)     # TODO: should be dt
+                part.display(screen, ORIGIN_X, ORIGIN_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
 
             # For COMPUTER level: redraw a part of the disk drive, over monsters
             if currLand == LAND_COMPUTER:
