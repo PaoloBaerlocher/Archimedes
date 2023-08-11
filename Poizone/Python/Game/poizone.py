@@ -14,6 +14,8 @@ from enum import Enum
 # Texts
 
 TXT_MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS" ]
+TXT_OPTIONS = [ "SOUND FX", "MUSIC" ]
+TXT_VALUES = [ "ON", "OFF"]
 
 # Constants
 SCREEN_WIDTH = 320
@@ -38,6 +40,7 @@ JOY_LIMIT = 0.8
 SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
+OPTIONS_ID = ["SFX", "MUSIC"]
 
 # PHASE_
 PHASE_NONE      = 0
@@ -48,6 +51,13 @@ PHASE_RESULT    = 4
 PHASE_END_LEVEL = 5
 PHASE_GAME_WON  = 6
 PHASE_ENTER_NAME= 7
+
+# MENU
+
+MENU_MAIN       = -1
+MENU_HIGHSCORES = 1     # Submenus
+MENU_TUTORIAL   = 2
+MENU_OPTIONS    = 3
 
 # KEY_
 KEY_UP          = 0
@@ -977,7 +987,7 @@ def setElectrifyBorder(newStatus):
 # Game phases
 
 def startIntroPhase():
-    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, introTimer
+    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, introTimer
 
     print('PHASE_INTRO')
     gamePhase = PHASE_INTRO
@@ -993,7 +1003,7 @@ def startMenuPhase():
     menuCounter = 0
     pauseGame = False
     menuCursor = 0
-    subMenu = -1
+    subMenu = MENU_MAIN
 
 def startLevelPhase():
     global gamePhase, windowFade
@@ -1025,7 +1035,7 @@ def startEndLevelPhase():
     print('PHASE_END_LEVEL')
     gamePhase = PHASE_END_LEVEL
     endOfLevelTimer = 250
-    playMusic(musicEnd, -1)
+    playMusic(musicEnd)
     windowFade = 0
 
     # Create rocket particles, if needed in this land
@@ -1111,12 +1121,38 @@ def displayTextRight(font, str, col, text_x, text_y):        # Right-Aligned
 
 def displayMainTuto():
     TEXT_COLOR = (240, 255, 255)
+    TITLE_COLOR = (255, 255, 155)
 
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
-    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, 185)
-    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, 195)
-    displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, 205)
+    # Title
+    displayText(font, "TUTORIAL", TITLE_COLOR, CENTER_X, 80)
+
+    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, 105)
+    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, 115)
+    displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, 125)
+
+def displayOptions():
+    global optCursor
+
+    TITLE_COLOR = (255, 255, 155)
+    OPT_COLOR = (225, 250, 200)
+    VALUE_COLOR = (225, 225, 230)
+    HIGHLIGHT_COLOR = (255, 255, 255)
+
+    # Title
+    displayText(font, "OPTIONS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+
+    for i in range(0, len(OPTIONS_ID)):
+        y = 110 + 15 * i
+        highlight = (optCursor == i)
+        col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
+        displayTextRight(font, TXT_OPTIONS [i], col, ORIGIN_X + WINDOW_WIDTH // 2, y)
+
+        value = opt.getValue(OPTIONS_ID [i])
+        textValue = TXT_VALUES [0 if value == True else 1]
+        col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
+        displayTextLeft(font, textValue, col, ORIGIN_X + WINDOW_WIDTH // 2 + 30, y)
 
 def displayMainMenu():
     TEXT_COLOR = (155, 155,  55)
@@ -1582,10 +1618,10 @@ while running:
             running = False
         elif gamePhase == PHASE_MENU:
             playSFX(soundTick )
-            if subMenu == -1:
+            if subMenu == MENU_MAIN:
                 running = False  # Quit game
             else:
-                subMenu = -1        # Return to Main Menu
+                subMenu = MENU_MAIN        # Return to Main Menu
 
     if gamePhase == PHASE_INTRO:
         introTimer += 1
@@ -1594,10 +1630,10 @@ while running:
     elif gamePhase == PHASE_MENU:
         menuCounter += 1
         if windowFade < 160:
-            windowFade += 8
+            windowFade += 16
 
         # Main Menu navigation
-        if subMenu == -1:
+        if subMenu == MENU_MAIN:
             if keyPressed[KEY_DOWN] and menuCursor < 3:
                 menuCursor += 1
                 playSFX(soundTick)
@@ -1611,7 +1647,22 @@ while running:
                     startLevelPhase()
                 else:
                     subMenu = menuCursor
+                    optCursor = 0
                     playSFX(soundTick)
+
+        elif subMenu == MENU_OPTIONS:
+            if keyPressed[KEY_DOWN] and optCursor < 1:
+                optCursor += 1
+                playSFX(soundTick)
+
+            if keyPressed[KEY_UP] and optCursor > 0:
+                optCursor -= 1
+                playSFX(soundTick)
+
+            if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN] or keyPressed[KEY_LEFT] or keyPressed[KEY_RIGHT]:
+                opt.setValue(OPTIONS_ID[optCursor], not opt.getValue(OPTIONS_ID[optCursor]))     # Invert value
+                opt.save()
+                playSFX(soundTick)
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
@@ -1748,14 +1799,14 @@ while running:
         # Fade
         applyFade()
 
-        if subMenu == -1:
+        if subMenu == MENU_MAIN:
             displayMainMenu()
-        elif subMenu == 1:
+        elif subMenu == MENU_HIGHSCORES:
             displayLeaderboard()
-        elif subMenu == 2:
+        elif subMenu == MENU_TUTORIAL:
             displayMainTuto()
-        elif subMenu == 3:
-            pass        # Display Options
+        elif subMenu == MENU_OPTIONS:
+            displayOptions()
 
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
