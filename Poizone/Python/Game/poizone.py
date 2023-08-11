@@ -1068,15 +1068,21 @@ def startEnterNamePhase():
 # Sound/Music
 
 def playSFX(sfx, loop=0):
-    if opt.getValue('SFX'):
-        sfx.play(loop)
+    sfxChannel = pygame.mixer.Channel(0)
+    sfxChannel.play(sfx, loop)
 
 def playMusic(m, loop=0):
     print('playMusic loop=' + str(loop))
-    if opt.getValue('MUSIC'):
-        pygame.mixer.stop()
-        m.play(loop)
+    musicChannel = pygame.mixer.Channel(1)
+    pygame.mixer.stop()
+    musicChannel.play(m, loop)
 
+def applyChannelVolumes():
+    sfxChannel = pygame.mixer.Channel(0)
+    sfxChannel.set_volume(1 if opt.getValue(OPTIONS_ID [0]) == True else 0)
+
+    musicChannel = pygame.mixer.Channel(1)
+    musicChannel.set_volume(1 if opt.getValue(OPTIONS_ID [1]) == True else 0)
 # HUD
 
 def displayText(font, str, col, text_x, text_y):            # Centered
@@ -1126,25 +1132,28 @@ def displayMainTuto():
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
     # Title
-    displayText(font, "TUTORIAL", TITLE_COLOR, CENTER_X, 80)
+    displayText(font_big, "TUTORIAL", TITLE_COLOR, CENTER_X, 80)
 
-    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, 105)
-    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, 115)
-    displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, 125)
+    y = 105
+    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, y)
+    y += 10
+    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, y)
+    y += 10
+    displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, y)
 
 def displayOptions():
     global optCursor
 
     TITLE_COLOR = (255, 255, 155)
-    OPT_COLOR = (225, 250, 200)
-    VALUE_COLOR = (225, 225, 230)
-    HIGHLIGHT_COLOR = (255, 255, 255)
+    OPT_COLOR = (180, 255, 255)
+    VALUE_COLOR = (180, 255, 255)
+    HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font, "OPTIONS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, "OPTIONS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     for i in range(0, len(OPTIONS_ID)):
-        y = 110 + 15 * i
+        y = 120 + 15 * i
         highlight = (optCursor == i)
         col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
         displayTextRight(font, TXT_OPTIONS [i], col, ORIGIN_X + WINDOW_WIDTH // 2, y)
@@ -1199,15 +1208,15 @@ def displayLeaderboard():
     BLACK = (10, 10, 10)
 
     # Title
-    displayText(font, "HIGH SCORES", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, "HIGH SCORES", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     # Legend
-    displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 104)
+    displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 114)
 
     for index in range (0, leaderboard.LB_MAX_ENTRIES):
         entry = lb.entries [index]
 
-        y = 120 + 9 * index
+        y = 130 + 9 * index
         score = entry [0]
         name = entry [1]
         level = entry [2]
@@ -1219,7 +1228,7 @@ def displayLeaderboard():
         displayTextLeft(font, name, NAME_COLOR, 110, y)
 
         # Level
-        displayTextRight(font, str(level), LEVEL_COLOR, 200, y)
+        displayTextRight(font, str(level), LEVEL_COLOR, 206, y)
 
 def displayResult():
     TITLE_COLOR = (50, 240, 200)
@@ -1400,6 +1409,8 @@ soundLaunch.set_volume(0.3)
 soundMagic.set_volume(0.2)
 soundSplatch.set_volume(0.5)
 soundTick.set_volume(0.7)
+
+applyChannelVolumes()
 
 # Load Lands and extract teleporters positions.
 
@@ -1627,6 +1638,7 @@ while running:
         introTimer += 1
         if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
             startMenuPhase()
+            playSFX(soundTick)
     elif gamePhase == PHASE_MENU:
         menuCounter += 1
         if windowFade < 160:
@@ -1662,6 +1674,7 @@ while running:
             if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN] or keyPressed[KEY_LEFT] or keyPressed[KEY_RIGHT]:
                 opt.setValue(OPTIONS_ID[optCursor], not opt.getValue(OPTIONS_ID[optCursor]))     # Invert value
                 opt.save()
+                applyChannelVolumes()
                 playSFX(soundTick)
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
