@@ -41,12 +41,13 @@ ALPHABET_COLUMNS = 7
 
 # PHASE_
 PHASE_NONE      = 0
-PHASE_MENU      = 1
-PHASE_LEVEL     = 2
-PHASE_RESULT    = 3
-PHASE_END_LEVEL = 4
-PHASE_GAME_WON  = 5
-PHASE_ENTER_NAME= 6
+PHASE_INTRO     = 1
+PHASE_MENU      = 2
+PHASE_LEVEL     = 3
+PHASE_RESULT    = 4
+PHASE_END_LEVEL = 5
+PHASE_GAME_WON  = 6
+PHASE_ENTER_NAME= 7
 
 # KEY_
 KEY_UP          = 0
@@ -975,14 +976,21 @@ def setElectrifyBorder(newStatus):
 
 # Game phases
 
+def startIntroPhase():
+    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, introTimer
+
+    print('PHASE_INTRO')
+    gamePhase = PHASE_INTRO
+    playMusic(musicIntro, -1)
+    windowFade = 0
+    introTimer = 0
+
 def startMenuPhase():
     global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu
 
     print('PHASE_MENU')
     gamePhase = PHASE_MENU
-    playMusic(musicIntro, -1)
     menuCounter = 0
-    windowFade = 0
     pauseGame = False
     menuCursor = 0
     subMenu = -1
@@ -1117,7 +1125,7 @@ def displayMainMenu():
     CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
     for i in range(0, 4):
-        displayText(font, TXT_MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 200+12*i)
+        displayText(font, TXT_MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 120+15*i)
 
 def displayGameHud():
     WHITE = (255, 255, 255)
@@ -1147,7 +1155,7 @@ def displayGameHud():
 
 def displayLeaderboard():
 
-    TITLE_COLOR = (50, 240, 200)
+    TITLE_COLOR = (255, 255, 155)
     SCORE_COLOR = (225, 250, 200)
     NAME_COLOR  = (255, 255, 255)
     LEVEL_COLOR = (55, 155, 155)
@@ -1155,7 +1163,7 @@ def displayLeaderboard():
     BLACK = (10, 10, 10)
 
     # Title
-    displayText(font, "BEST PENGUINS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font, "HIGH SCORES", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     # Legend
     displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 104)
@@ -1441,7 +1449,7 @@ except pygame.error:
     print('JOY not found')
     joyFound = -1
 
-startMenuPhase()
+startIntroPhase()
 
 while running:
 
@@ -1569,7 +1577,9 @@ while running:
 
     if keyPressed[KEY_ESCAPE] == True:
         if gamePhase == PHASE_LEVEL:
-            startMenuPhase()
+            startIntroPhase()
+        elif gamePhase == PHASE_INTRO:
+            running = False
         elif gamePhase == PHASE_MENU:
             playSFX(soundTick )
             if subMenu == -1:
@@ -1577,10 +1587,14 @@ while running:
             else:
                 subMenu = -1        # Return to Main Menu
 
-    if gamePhase == PHASE_MENU:
+    if gamePhase == PHASE_INTRO:
+        introTimer += 1
+        if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
+            startMenuPhase()
+    elif gamePhase == PHASE_MENU:
         menuCounter += 1
-        if menuCounter > 300 and windowFade < 160:
-            windowFade += 20
+        if windowFade < 160:
+            windowFade += 8
 
         # Main Menu navigation
         if subMenu == -1:
@@ -1599,7 +1613,7 @@ while running:
                     subMenu = menuCursor
                     playSFX(soundTick)
 
-    if gamePhase == PHASE_LEVEL and not pauseGame:
+    elif gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
         if electrifyBorder == True:
             electrifyBorderAnim += 1
@@ -1659,7 +1673,7 @@ while running:
 
                 startResultPhase()
 
-    if gamePhase == PHASE_RESULT:
+    elif gamePhase == PHASE_RESULT:
         resultTimer += 1
         if resultTimer > 60*8:
             percent = (100 * toxicBlocsLeft / totalToxicBlocs)
@@ -1722,7 +1736,13 @@ while running:
     screen.fill("black")
     screen.blit(border, (0, 0))
 
-    if gamePhase == PHASE_MENU:
+    if gamePhase == PHASE_INTRO:
+        screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
+
+        if ((introTimer // 16) % 4 != 0):
+            displayText(font, "Press START", (215, 235, 125), ORIGIN_X + WINDOW_WIDTH // 2, 230)
+
+    elif gamePhase == PHASE_MENU:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
         
         # Fade
