@@ -7,8 +7,13 @@ import math
 import random
 import spritesheet
 import leaderboard
+import options
 import particles
 from enum import Enum
+
+# Texts
+
+TXT_MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS" ]
 
 # Constants
 SCREEN_WIDTH = 320
@@ -36,7 +41,7 @@ ALPHABET_COLUMNS = 7
 
 # PHASE_
 PHASE_NONE      = 0
-PHASE_INTRO     = 1
+PHASE_MENU      = 1
 PHASE_LEVEL     = 2
 PHASE_RESULT    = 3
 PHASE_END_LEVEL = 4
@@ -122,7 +127,7 @@ cyclonesList        = []
 
 itsChallenge        = False         # Challenge ?
 windowFade          = 0             # 0..255
-introCounter        = 0
+menuCounter         = 0
 
 # Utility functions
 
@@ -202,10 +207,10 @@ class Penguin():
                             print('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
                             cyclonesList[idx] = 0
 
-                        soundLaunch.play()
+                        playSFX(soundLaunch)
 
                         if bloc == BLOC_RED:        # Do NOT launch red chemical block!
-                            soundOhNo.play()
+                            playSFX(soundOhNo)
                             self.die()
                 else:
                     self.crushBloc(bloc)
@@ -235,15 +240,15 @@ class Penguin():
 
         if bloc == BLOC_ALCOOL:
             self.invert = not self.invert
-            soundAlcool.play()
+            playSFX(soundAlcool)
 
         if bloc == BLOC_BOMB:
             self.die()
-            soundBoom.play()
+            playSFX(soundBoom)
 
         if bloc == BLOC_MAGIC:  # Temporary invincibility
             self.ghost = 60 * 15
-            soundMagic.play()
+            playSFX(soundMagic)
 
         if bloc == BLOC_POISON:  # Must be in contact with at least one ALU bloc
             if not (blocUp == BLOC_ALU or blocDown == BLOC_ALU or blocLeft == BLOC_ALU or blocRight == BLOC_ALU):
@@ -282,13 +287,13 @@ class Penguin():
         writeBloc(blocX, blocY, 26)
         destroyBloc(bloc)
 
-        soundCrash.play()
+        playSFX(soundCrash)
 
     def die(self):
 
         self.animPhase = 0
         self.setStatus(PenguinStatus.DIE)
-        soundColl.play()
+        playSFX(soundColl)
         setElectrifyBorder(False)
 
     def checkSquareDiamond(self, bx, by):
@@ -471,7 +476,7 @@ class Penguin():
                 newPosY = found // SCHEME_WIDTH
                 self.posX = newPosX * BLOC_SIZE
                 self.posY = newPosY * BLOC_SIZE
-                soundMagic.play()
+                playSFX(soundMagic)
                 self.canTeleport = False
 
         # Update crushed bloc
@@ -517,11 +522,11 @@ class Penguin():
                         if (self.movBlocWhat == BLOC_DIAMOND):
                             if self.checkSquareDiamond(bx, by) == True:
                                 print('Square Diamond assembled')
-                                soundDiam.play()
+                                playSFX(soundDiam)
                                 self.score += 500
                     else:
                         destroyBloc(self.movBlocWhat)
-                        soundSplat.play()
+                        playSFX(soundSplatch)
                         # Start crush animation
                         self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 
@@ -616,7 +621,7 @@ class Monster():
                 if (deltaX <= 8) and (deltaY <= 8):
                     print('Kill monster')
                     self.killAndRebirth()
-                    soundColl.play()
+                    playSFX(soundColl)
                     penguin1.movMonsters += 1
                 elif (deltaX <= 10) and (deltaY <= 10):
                     print('Dizzy monster by bloc collision')
@@ -763,7 +768,7 @@ def resetLevel():
     itsChallenge = False  # Challenge ?
 
     playMusic(musicPlay[currLand], -1)
-    soundReady.play()
+    playSFX(soundReady)
 
 def resetChallenge(challenge):
     global baseX, baseY, penguin1, itsChallenge, gameTimer
@@ -961,7 +966,7 @@ def setElectrifyBorder(newStatus):
     global electrifyBorder
 
     if  newStatus == True and electrifyBorder == False:
-        soundElec.play(100)
+        playSFX(soundElec, 100)
 
     if newStatus == False and electrifyBorder == True:
         soundElec.stop()
@@ -970,15 +975,26 @@ def setElectrifyBorder(newStatus):
 
 # Game phases
 
-def startIntroPhase():
-    global gamePhase, introCounter, windowFade, pauseGame
+def startMenuPhase():
+    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu
 
-    print('PHASE_INTRO')
-    gamePhase = PHASE_INTRO
+    print('PHASE_MENU')
+    gamePhase = PHASE_MENU
     playMusic(musicIntro, -1)
-    introCounter = 0
+    menuCounter = 0
     windowFade = 0
     pauseGame = False
+    menuCursor = 0
+    subMenu = -1
+
+def startLevelPhase():
+    global gamePhase, windowFade
+
+    print('PHASE_LEVEL')
+    gamePhase = PHASE_LEVEL
+    resetGame()
+    loadLevel()
+    windowFade = 0
 
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
@@ -1033,10 +1049,15 @@ def startEnterNamePhase():
 
 # Sound/Music
 
+def playSFX(sfx, loop=0):
+    if opt.getValue('SFX'):
+        sfx.play(loop)
+
 def playMusic(m, loop=0):
     print('playMusic loop=' + str(loop))
-    pygame.mixer.stop()
-    m.play(loop)
+    if opt.getValue('MUSIC'):
+        pygame.mixer.stop()
+        m.play(loop)
 
 # HUD
 
@@ -1085,9 +1106,18 @@ def displayMainTuto():
 
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
-    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, 215)
-    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, 225)
-    displayText(font, "TO ASSEMBLE THE MAGIC DIAMONDS", TEXT_COLOR, CENTER_X, 235)
+    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, 185)
+    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, 195)
+    displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, 205)
+
+def displayMainMenu():
+    TEXT_COLOR = (155, 155,  55)
+    HIGH_COLOR = (255, 255, 155)
+    
+    CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
+
+    for i in range(0, 4):
+        displayText(font, TXT_MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 200+12*i)
 
 def displayGameHud():
     WHITE = (255, 255, 255)
@@ -1115,7 +1145,7 @@ def displayGameHud():
     timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
     displayText(font, timeStr, WHITE, HUD_CENTER, 166)
 
-def displayLeaderboard(screen):
+def displayLeaderboard():
 
     TITLE_COLOR = (50, 240, 200)
     SCORE_COLOR = (225, 250, 200)
@@ -1145,7 +1175,7 @@ def displayLeaderboard(screen):
         displayTextLeft(font, name, NAME_COLOR, 110, y)
 
         # Level
-        displayTextLeft(font, str(level), LEVEL_COLOR, 190, y)
+        displayTextRight(font, str(level), LEVEL_COLOR, 200, y)
 
 def displayResult():
     TITLE_COLOR = (50, 240, 200)
@@ -1278,6 +1308,9 @@ pauseGame = False
 lb = leaderboard.Leaderboard()
 lb.load()
 
+opt = options.Options()
+opt.load()
+
 # For fade effect
 blackSurface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
 blackSurface.fill((0, 0, 0, 128))
@@ -1301,27 +1334,27 @@ musicPlay.append(pygame.mixer.Sound('Data/musics/play4.wav'))   # Patterns 51-56
 musicPlay.append(pygame.mixer.Sound('Data/musics/play5.wav'))   # Patterns 57-62
 
 # Load sounds recorded from SoundTracker: samples indexes from 23 to 35
-soundReady = pygame.mixer.Sound('Data/bruitages/READY.wav')             # 23 (sample N) - START OF LEVEL
-soundLaunch= pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
-soundCrash = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')        # 25 (sample P)
-soundBoom  = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q) - bomb
-soundElec  = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R) - border
-soundMagic = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')             # 28 (sample S)
-soundDiam  = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T) - when 4 diamonds assembled
+soundReady  = pygame.mixer.Sound('Data/bruitages/READY.wav')             # 23 (sample N) - START OF LEVEL
+soundLaunch = pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
+soundCrash  = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')        # 25 (sample P)
+soundBoom   = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q) - bomb
+soundElec   = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R) - border
+soundMagic  = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')             # 28 (sample S)
+soundDiam   = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T) - when 4 diamonds assembled
 # soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - laugh (not used)
-soundOhNo  = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V) - wrong move / death
-soundAlcool= pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
-soundColl  = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
-soundSplat = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
-soundWow   = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
-soundTick  = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
+soundOhNo   = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V) - wrong move / death
+soundAlcool = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
+soundColl   = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
+soundSplatch= pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
+soundWow    = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
+soundTick   = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
 
 # Set volumes
 
 soundCrash.set_volume(0.5)
 soundLaunch.set_volume(0.3)
 soundMagic.set_volume(0.2)
-soundSplat.set_volume(0.5)
+soundSplatch.set_volume(0.5)
 soundTick.set_volume(0.7)
 
 # Load Lands and extract teleporters positions.
@@ -1408,7 +1441,7 @@ except pygame.error:
     print('JOY not found')
     joyFound = -1
 
-startIntroPhase()
+startMenuPhase()
 
 while running:
 
@@ -1423,7 +1456,7 @@ while running:
 
         for tick in range(1, 6):
             if (prevGameTimer >= tick and gameTimer <= tick):
-                soundTick.play()
+                playSFX(soundTick)
 
     # INPUT
     #######
@@ -1506,12 +1539,6 @@ while running:
                 keyDown[KEY_ESCAPE] = down
 
             if not down:
-                if event.key == pygame.K_F1:    # Start game
-                    if gamePhase == PHASE_INTRO:
-                        gamePhase = PHASE_LEVEL
-                        resetGame()
-                        loadLevel()
-                        windowFade = 0
 
                 if event.key == pygame.K_F5:    # Prev level
                     if (level > 1):
@@ -1539,17 +1566,38 @@ while running:
 
     for i in range(0, len(keyDown)):
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
-        
+
     if keyPressed[KEY_ESCAPE] == True:
         if gamePhase == PHASE_LEVEL:
-            startIntroPhase()
-        elif gamePhase == PHASE_INTRO:
-            running = False  # Quit game
+            startMenuPhase()
+        elif gamePhase == PHASE_MENU:
+            playSFX(soundTick )
+            if subMenu == -1:
+                running = False  # Quit game
+            else:
+                subMenu = -1        # Return to Main Menu
 
-    if gamePhase == PHASE_INTRO:
-        introCounter += 1
-        if introCounter > 300 and windowFade < 160:
+    if gamePhase == PHASE_MENU:
+        menuCounter += 1
+        if menuCounter > 300 and windowFade < 160:
             windowFade += 20
+
+        # Main Menu navigation
+        if subMenu == -1:
+            if keyPressed[KEY_DOWN] and menuCursor < 3:
+                menuCursor += 1
+                playSFX(soundTick)
+
+            if keyPressed[KEY_UP] and menuCursor > 0:
+                menuCursor -= 1
+                playSFX(soundTick)
+
+            if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
+                if menuCursor == 0:
+                    startLevelPhase()
+                else:
+                    subMenu = menuCursor
+                    playSFX(soundTick)
 
     if gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
@@ -1607,7 +1655,7 @@ while running:
                     loadLevel()
             else:
                 if (toxicBlocsLeft == 0):
-                    soundWow.play()
+                    playSFX(soundWow)
 
                 startResultPhase()
 
@@ -1624,14 +1672,14 @@ while running:
                 if lb.canEnter(penguin1.score):
                     startEnterNamePhase()
                 else:
-                    startIntroPhase()
+                    startMenuPhase()
             else:
                 startEndLevelPhase()
 
     elif gamePhase == PHASE_GAME_WON:
         resultTimer += 1
         if resultTimer > 60*10:
-            startIntroPhase()
+            startMenuPhase()
 
     elif gamePhase == PHASE_ENTER_NAME:
         resultTimer += 1
@@ -1654,17 +1702,17 @@ while running:
                     yourName += ch
                 else:
                     yourName += ' '
-                soundTick.play()
+                playSFX(soundTick)
 
         if keyPressed[KEY_BACKSPACE]:
             if len(yourName) > 0:
                 yourName = yourName[:-1]
-                soundTick.play()
+                playSFX(soundTick)
 
         if keyPressed[KEY_RETURN] or quitEnterName == True:
             lb.add(penguin1.score, yourName, level)
             lb.save()  # Add new entry and save leaderboard
-            startIntroPhase()
+            startMenuPhase()
 
     ######
     # DRAW
@@ -1674,16 +1722,20 @@ while running:
     screen.fill("black")
     screen.blit(border, (0, 0))
 
-    if gamePhase == PHASE_INTRO:
+    if gamePhase == PHASE_MENU:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
-
+        
         # Fade
         applyFade()
 
-        if windowFade > 140:
-            displayLeaderboard(screen)
-        else:
+        if subMenu == -1:
+            displayMainMenu()
+        elif subMenu == 1:
+            displayLeaderboard()
+        elif subMenu == 2:
             displayMainTuto()
+        elif subMenu == 3:
+            pass        # Display Options
 
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))

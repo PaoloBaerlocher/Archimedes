@@ -1,4 +1,4 @@
-# Pengo animations offsets:
+# Penguin animations offsets:
 
 # 00-03: walk left
 # 04-07: walk right
@@ -15,7 +15,7 @@
 # 34: push up
 # 35: push down
 
-# 36-71: SAME for second Pengo (yellow)
+# 36-71: SAME for second Penguin (yellow)
 
 # 72: Score +20
 # 73: Score +50
