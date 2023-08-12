@@ -10,23 +10,8 @@ import leaderboard
 import options
 import particles
 import tuto
+import texts
 from enum import Enum
-
-# Texts
-
-TXT_MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS" ]
-TXT_OPTIONS = [ "SOUND FX", "MUSIC" ]
-TXT_VALUES = [ "ON", "OFF"]
-TXT_TUTO = [
-    "THROW THIS CHEMICAL SUBSTANCE AWAY",
-    "DESTROY CFC BY PUSHING IT FROM THE TOP",
-    "CRUSH THE URANIUM WHEN NOT NEAR ANOTHER ONE",
-    "CRUSH BUT DONT THROW THIS REACTIVE THING AWAY",
-    "CRUSH BATTERY FROM THE TOP OR FROM THE BOTTOM",
-    "DESTROY IT ONLY WHEN NEAR ANOTHER DDT BLOCK",
-    "FLING THE ALU AGAINST THE ELECTRIC BORDER",
-    "BREAK POISON WHEN NEAR AN ALUMINIUM BLOCK",
-]
 
 # Constants
 SCREEN_WIDTH = 320
@@ -111,7 +96,7 @@ BLOC_ALU         = 5
 BLOC_BATTERY     = 6
 BLOC_DDT         = 7
 BLOC_CFC         = 8
-BLOC_RADIO       = 9
+BLOC_URANIUM     = 9
 BLOC_GREEN_CHEM  = 10
 BLOC_MAGIC       = 11
 BLOC_ROCK        = 12
@@ -295,8 +280,8 @@ class Penguin():
             if self.dirY != 1:  # Crushed from up ?
                 self.die()
 
-        if bloc == BLOC_RADIO:  # Are other RADIOACTIVE blocs nearby ?
-            if (blocUp == BLOC_RADIO or blocDown == BLOC_RADIO or blocLeft == BLOC_RADIO or blocRight == BLOC_RADIO):
+        if bloc == BLOC_URANIUM:  # Are other BLOC_URANIUM blocs nearby ?
+            if (blocUp == BLOC_URANIUM or blocDown == BLOC_URANIUM or blocLeft == BLOC_URANIUM or blocRight == BLOC_URANIUM):
                 self.die()
 
         if bloc == BLOC_GREEN_CHEM:
@@ -772,6 +757,7 @@ def resetGame():
     global level
 
     level = 1
+    penguin1.score = 0
 
 def resetLevel():
     global baseX, baseY, penguin1, itsChallenge, gameTimer
@@ -877,10 +863,10 @@ def loadLevel():
             print('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
             cyclonesNb += 1
             
-    toxicBlocsLeft  = blocsCount[BLOC_POISON]+blocsCount[BLOC_RED]
-    toxicBlocsLeft += blocsCount[BLOC_ALU]   +blocsCount[BLOC_BATTERY]
-    toxicBlocsLeft += blocsCount[BLOC_DDT]   +blocsCount[BLOC_CFC]
-    toxicBlocsLeft += blocsCount[BLOC_RADIO] +blocsCount[BLOC_GREEN_CHEM]
+    toxicBlocsLeft  = blocsCount[BLOC_POISON]  + blocsCount[BLOC_RED]
+    toxicBlocsLeft += blocsCount[BLOC_ALU]     + blocsCount[BLOC_BATTERY]
+    toxicBlocsLeft += blocsCount[BLOC_DDT]     + blocsCount[BLOC_CFC]
+    toxicBlocsLeft += blocsCount[BLOC_URANIUM] + blocsCount[BLOC_GREEN_CHEM]
 
     print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
     totalToxicBlocs = toxicBlocsLeft
@@ -1158,15 +1144,16 @@ def displayMainTuto():
     # Title
     displayText(font_big, "TUTORIAL", TITLE_COLOR, CENTER_X, 80)
 
-    y = 105
-    displayText(font, "HELP ZOZO TO DESTROY AT LEAST 90%", TEXT_COLOR, CENTER_X, y)
-    y += 10
-    displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, y)
-    y += 10
-    displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, y)
+    if currTutoPage == 0:
+        y = 105
+        for line in texts.TUTO_INTRO:
+            displayText(font, line, TEXT_COLOR, CENTER_X, y)
+            y += 10
 
-    if currTutoPage >= 0 and currTutoPage < 8:
-        displayTutoMap(currTutoPage, 10, 130)
+    if currTutoPage >= 1 and currTutoPage < 9:
+        blocIndex = currTutoPage-1
+        displayText(font, texts.TUTO_BLOC [blocIndex], TEXT_COLOR, CENTER_X, 130)
+        displayTutoMap(blocIndex, 10, 130)
 
     displayLegend(LEGEND_LEFT)
     displayLegend(LEGEND_RIGHT)
@@ -1218,10 +1205,10 @@ def displayOptions():
         y = 120 + 15 * i
         highlight = (optCursor == i)
         col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
-        displayTextRight(font, TXT_OPTIONS [i], col, ORIGIN_X + WINDOW_WIDTH // 2, y)
+        displayTextRight(font, texts.OPTIONS [i], col, ORIGIN_X + WINDOW_WIDTH // 2, y)
 
         value = opt.getValue(OPTIONS_ID [i])
-        textValue = TXT_VALUES [0 if value == True else 1]
+        textValue = texts.VALUES [0 if value == True else 1]
         col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
         displayTextLeft(font, textValue, col, ORIGIN_X + WINDOW_WIDTH // 2 + 30, y)
 
@@ -1234,8 +1221,8 @@ def displayMainMenu():
     
     CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
-    for i in range(0, len(TXT_MAIN_MENU)):
-        displayText(font, TXT_MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 120+15*i)
+    for i in range(0, len(texts.MAIN_MENU)):
+        displayText(font, texts.MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 120+15*i)
 
 def displayGameHud():
     WHITE = (255, 255, 255)
