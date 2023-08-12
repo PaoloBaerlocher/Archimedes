@@ -9,6 +9,7 @@ import spritesheet
 import leaderboard
 import options
 import particles
+import tuto
 from enum import Enum
 
 # Texts
@@ -16,6 +17,16 @@ from enum import Enum
 TXT_MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS" ]
 TXT_OPTIONS = [ "SOUND FX", "MUSIC" ]
 TXT_VALUES = [ "ON", "OFF"]
+TXT_TUTO = [
+    "THROW THIS CHEMICAL SUBSTANCE AWAY",
+    "DESTROY CFC BY PUSHING IT FROM THE TOP",
+    "CRUSH THE URANIUM WHEN NOT NEAR ANOTHER ONE",
+    "CRUSH BUT DONT THROW THIS REACTIVE THING AWAY",
+    "CRUSH BATTERY FROM THE TOP OR FROM THE BOTTOM",
+    "DESTROY IT ONLY WHEN NEAR ANOTHER DDT BLOCK",
+    "FLING THE ALU AGAINST THE ELECTRIC BORDER",
+    "BREAK POISON WHEN NEAR AN ALUMINIUM BLOCK",
+]
 
 # Constants
 SCREEN_WIDTH = 320
@@ -41,6 +52,7 @@ SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
 OPTIONS_ID = ["SFX", "MUSIC"]
+TUTO_PAGES = 10
 
 # PHASE_
 PHASE_NONE      = 0
@@ -52,12 +64,15 @@ PHASE_END_LEVEL = 5
 PHASE_GAME_WON  = 6
 PHASE_ENTER_NAME= 7
 
-# MENU
-
+# MENU_
 MENU_MAIN       = -1
 MENU_HIGHSCORES = 1     # Submenus
 MENU_TUTORIAL   = 2
 MENU_OPTIONS    = 3
+
+# LEGEND_
+LEGEND_RIGHT    = 0
+LEGEND_LEFT     = 1
 
 # KEY_
 KEY_UP          = 0
@@ -996,7 +1011,7 @@ def startIntroPhase():
     introTimer = 0
 
 def startMenuPhase():
-    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu
+    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, currLand
 
     print('PHASE_MENU')
     gamePhase = PHASE_MENU
@@ -1004,6 +1019,10 @@ def startMenuPhase():
     pauseGame = False
     menuCursor = 0
     subMenu = MENU_MAIN
+
+    # Load sprites for tutos
+    currLand = 0
+    loadSprites()
 
 def startLevelPhase():
     global gamePhase, windowFade
@@ -1125,7 +1144,12 @@ def displayTextRight(font, str, col, text_x, text_y):        # Right-Aligned
     textRect.centery = text_y
     screen.blit(text, textRect)
 
+def displayLegend(legendIdx):
+    x = 2 if legendIdx == LEGEND_LEFT else WINDOW_WIDTH-2-20
+    screen.blit(legendSprites[legendIdx], (ORIGIN_X + x, ORIGIN_Y + 220))
+
 def displayMainTuto():
+    global tutoCounter, currTutoPage
     TEXT_COLOR = (240, 255, 255)
     TITLE_COLOR = (255, 255, 155)
 
@@ -1140,6 +1164,44 @@ def displayMainTuto():
     displayText(font, "OF THE TOXIC BLOCKS AND IF POSSIBLE", TEXT_COLOR, CENTER_X, y)
     y += 10
     displayText(font, "TO ASSEMBLE THE 4 DIAMONDS", TEXT_COLOR, CENTER_X, y)
+
+    if currTutoPage >= 0 and currTutoPage < 8:
+        displayTutoMap(currTutoPage, 10, 130)
+
+    displayLegend(LEGEND_LEFT)
+    displayLegend(LEGEND_RIGHT)
+
+    tutoCounter += 1
+
+def displayTutoMap(tutoIndex, offsetX, offsetY):
+    global tutoCounter, currLand
+
+    offsetX += ORIGIN_X
+    offsetY += ORIGIN_Y
+
+    BORDER = 4
+    screen.fill((20, 20, 30), (offsetX - BORDER, offsetY - BORDER, 4*BLOC_SIZE + 2*BORDER, 4*BLOC_SIZE + 2*BORDER))
+
+    # Mini-map
+    for y in range(0, 4):
+        for x in range(0, 4):
+            b = tuto.maps [tutoIndex][x + y * 4]
+            if b == 0:
+                # Use corresponding basic bloc
+                currLand = tutoIndex // 2
+                b = getAliasBlocIndex(b)
+            if b != -1:
+                screen.blit(sprites[0][b], (offsetX + x * BLOC_SIZE, offsetY + y * BLOC_SIZE))
+
+    # Animated arrows (red or green)
+    if (tutoCounter % 32) >= 4:
+        arrowType = (tutoCounter // 64) % 2
+        d = 4 + ((tutoCounter % 32) / 8)
+        for arrow in tuto.arrows[tutoIndex][arrowType]:
+            idx = arrow [2]
+            deltaX = offsetX + d * (1 if idx == 0 else -1 if idx == 1 else 0)
+            deltaY = offsetY + d * (1 if idx == 3 else -1 if idx == 2 else 0)
+            screen.blit(arrowsSprites[idx+4*arrowType], (deltaX + arrow [0] * BLOC_SIZE, deltaY + arrow [1] * BLOC_SIZE))
 
 def displayOptions():
     global optCursor
@@ -1163,40 +1225,53 @@ def displayOptions():
         col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
         displayTextLeft(font, textValue, col, ORIGIN_X + WINDOW_WIDTH // 2 + 30, y)
 
+    displayLegend(LEGEND_LEFT)
+    displayLegend(LEGEND_RIGHT)
+
 def displayMainMenu():
     TEXT_COLOR = (155, 155,  55)
     HIGH_COLOR = (255, 255, 155)
     
     CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
-    for i in range(0, 4):
+    for i in range(0, len(TXT_MAIN_MENU)):
         displayText(font, TXT_MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 120+15*i)
 
 def displayGameHud():
     WHITE = (255, 255, 255)
     LEVEL_COLOR = (180, 255, 255)
     COMPLETION_COLOR = (255, 255, 180)
+    SUCCESS_COLOR = (50, 255, 140)
 
     HUD_WIDTH = (320 - 244 - 8)
     HUD_CENTER = 320 - HUD_WIDTH / 2
 
+    y = 110
+
     # Level
     if not itsChallenge:
-        displayText(font, "ZONE", LEVEL_COLOR, HUD_CENTER, 78)
-        displayText(font, f"{level:02d}", LEVEL_COLOR, HUD_CENTER, 90)
+        displayText(font, "ZONE", LEVEL_COLOR, HUD_CENTER, y)
+        y += 12
+        displayText(font, f"{level:02d}", LEVEL_COLOR, HUD_CENTER, y)
+        y += 30
 
     # Completion
     if not itsChallenge:
         percent = int(100 * (totalToxicBlocs - toxicBlocsLeft) / totalToxicBlocs)
-        displayText(font, f"{percent:02d} %", COMPLETION_COLOR, HUD_CENTER, 120)
+        col = COMPLETION_COLOR if percent < SUCCESS_GOAL else SUCCESS_COLOR
+        displayText(font, "GOAL", col, HUD_CENTER, y)
+        y += 12
+        displayText(font, f"{percent:02d} %", col, HUD_CENTER, y)
+        y += 30
 
-    # TIM
-    displayText(font, 'TIME', WHITE, HUD_CENTER, 154)
+    # TIME
+    displayText(font, 'TIME', WHITE, HUD_CENTER, y)
+    y += 12
 
     # Time value
     seconds = int(gameTimer % 60)
     timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
-    displayText(font, timeStr, WHITE, HUD_CENTER, 166)
+    displayText(font, timeStr, WHITE, HUD_CENTER, y)
 
 def displayLeaderboard():
 
@@ -1401,6 +1476,7 @@ soundColl   = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (s
 soundSplatch= pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
 soundWow    = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
 soundTick   = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
+soundValid  = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')          # New sample for menus
 
 # Set volumes
 
@@ -1409,6 +1485,7 @@ soundLaunch.set_volume(0.3)
 soundMagic.set_volume(0.2)
 soundSplatch.set_volume(0.5)
 soundTick.set_volume(0.7)
+soundValid.set_volume(0.3)
 
 applyChannelVolumes()
 
@@ -1443,9 +1520,10 @@ ss_border   = spritesheet.SpriteSheet('Data/border.png')
 ss_rocket   = spritesheet.SpriteSheet('Data/rocket.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
-ss_chars_wh = spritesheet.SpriteSheet('Data/chars_white.png')
 ss_challenge= spritesheet.SpriteSheet('Data/challengeTile.png')
 ss_panels   = spritesheet.SpriteSheet('Data/panels.png')
+ss_arrows   = spritesheet.SpriteSheet('Data/arrows.png')    # 4 red and 4 green arrows
+ss_legend   = spritesheet.SpriteSheet('Data/legend.png')
 
 ss_levels = []
 ss_endScreens = []
@@ -1479,8 +1557,18 @@ panelSprites = []
 for index in range(0, 2):
     panelSprites.append(ss_panels.get_indexed_image(index, 60, 20))
 
+arrowsSprites = []
+for index in range(0, 8):
+    arrowsSprites.append(ss_arrows.get_indexed_image(index, 20, 20))
+
+legendSprites = []
+for index in range(0, 2):
+    legendSprites.append(ss_legend.get_indexed_image(index, 20, 20))
+
 # Variables
 absTime = 0
+tutoCounter = 0
+currTutoPage = 0
 
 keyDown = [False, False, False, False, False, False, False, False]   # Up Down Left Right Space Backspace Return Escape
 keyPressed = [False, False, False, False, False, False, False, False]
@@ -1501,9 +1589,10 @@ startIntroPhase()
 while running:
 
     # Time
+    dt = clock.get_time()
+    absTime += dt
+
     if gamePhase == PHASE_LEVEL and not pauseGame:
-        dt = clock.get_time()
-        absTime += dt
         prevGameTimer = gameTimer
         gameTimer -= dt / 1000
         if gameTimer < 0.0:
@@ -1628,17 +1717,17 @@ while running:
         elif gamePhase == PHASE_INTRO:
             running = False
         elif gamePhase == PHASE_MENU:
-            playSFX(soundTick )
             if subMenu == MENU_MAIN:
                 running = False  # Quit game
             else:
                 subMenu = MENU_MAIN        # Return to Main Menu
+                playSFX(soundValid)
 
     if gamePhase == PHASE_INTRO:
         introTimer += 1
         if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
             startMenuPhase()
-            playSFX(soundTick)
+            playSFX(soundValid)
     elif gamePhase == PHASE_MENU:
         menuCounter += 1
         if windowFade < 160:
@@ -1648,34 +1737,49 @@ while running:
         if subMenu == MENU_MAIN:
             if keyPressed[KEY_DOWN] and menuCursor < 3:
                 menuCursor += 1
-                playSFX(soundTick)
+                playSFX(soundValid)
 
             if keyPressed[KEY_UP] and menuCursor > 0:
                 menuCursor -= 1
-                playSFX(soundTick)
+                playSFX(soundValid)
 
             if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
                 if menuCursor == 0:
                     startLevelPhase()
                 else:
                     subMenu = menuCursor
-                    optCursor = 0
-                    playSFX(soundTick)
+
+                    if subMenu == MENU_OPTIONS:
+                        optCursor = 0
+                    if subMenu == MENU_TUTORIAL:
+                        tutoCounter = 0
+                        currTutoPage = 0
+
+                    playSFX(soundValid)
+
+        elif subMenu == MENU_TUTORIAL:
+            if keyPressed[KEY_LEFT]:
+                currTutoPage = (currTutoPage + TUTO_PAGES - 1) % TUTO_PAGES
+                playSFX(soundValid)
+
+            if keyPressed[KEY_RIGHT]:
+                currTutoPage = (currTutoPage + 1) % TUTO_PAGES
+                playSFX(soundValid)
 
         elif subMenu == MENU_OPTIONS:
             if keyPressed[KEY_DOWN] and optCursor < 1:
                 optCursor += 1
-                playSFX(soundTick)
+                playSFX(soundValid)
 
             if keyPressed[KEY_UP] and optCursor > 0:
                 optCursor -= 1
-                playSFX(soundTick)
+                playSFX(soundValid)
 
             if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN] or keyPressed[KEY_LEFT] or keyPressed[KEY_RIGHT]:
                 opt.setValue(OPTIONS_ID[optCursor], not opt.getValue(OPTIONS_ID[optCursor]))     # Invert value
                 opt.save()
                 applyChannelVolumes()
-                playSFX(soundTick)
+                playSFX(soundValid)
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
@@ -1780,12 +1884,12 @@ while running:
                     yourName += ch
                 else:
                     yourName += ' '
-                playSFX(soundTick)
+                playSFX(soundValid)
 
         if keyPressed[KEY_BACKSPACE]:
             if len(yourName) > 0:
                 yourName = yourName[:-1]
-                playSFX(soundTick)
+                playSFX(soundValid)
 
         if keyPressed[KEY_RETURN] or quitEnterName == True:
             lb.add(penguin1.score, yourName, level)
@@ -1951,7 +2055,7 @@ while running:
 
     # Display Scores
     displayScore(penguin1.score, 256, 45)
-    displayScore(0, 256, 188)   # No 2nd player supported, for now
+    # displayScore(0, 256, 188)   # No 2nd player supported, for now
 
     # Display panel (PAUSE or DEMO)
 

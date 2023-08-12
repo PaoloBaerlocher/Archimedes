@@ -26,6 +26,7 @@ class Particles(object):
 
         self.originX = originX
         self.originY = originY
+        self.particles = []
 
         for i in range(0, particlesNumber):
             self.particles.append(self.createNewParticle())
