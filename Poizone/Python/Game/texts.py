@@ -5,21 +5,71 @@ OPTIONS = [ "SOUND FX", "MUSIC" ]
 VALUES = [ "ON", "OFF"]
 
 TUTO_INTRO = [
-    "Help penguin ZOZO to destroy at least 90%",
-    "of the toxic blocks and if possible",
-    "to assemble the 4 diamonds"
+    "Looking at the ecological disaster due to",
+    "human irresponsibility, penguin Zozo",
+    "decided it was time to do something.",
+    "",
+    "Help him to decontaminate the 50 polluted",
+    "zones where dangerous creatures live: they",
+    "were born from the toxic elements, and",
+    "will try to catch you.",
+    "",
+    "In each zone, destroy at least 90% of the",
+    "toxic blocks before time runs out.",
+    "",
+    "Now let's go:",
+    "Your sacrifice is our hope...!",
+]
+
+TUTO_DIAMONDS = [
+    "If you have spare time, try to assemble",
+    "the 4 magic diamonds to get a bonus",
+    "of 500 points."
+]
+
+TUTO_BORDER = [
+    "Push the electric border to freeze the",
+    "creatures touching the border.",
 ]
 
 TUTO_BLOC = [
-    "Destroy cfc by pushing it from the top",           # BLOC_CFC
-    "Throw this chemical substance away",               # BLOC_GREEN_CHEM
+    [ # BLOC_CFC
+        "Destroy CFC by crushing it",
+        "from the top side only.",
+    ],
 
-    "Crush but don't throw this reactive thing away",   # BLOC_RED
-    "Crush the uranium when not near another one",      # BLOC_URANIUM
+    [ # BLOC_GREEN_CHEM
+        "Throw this chemical substance away.",
+        "Don't crush it!"
+    ],
 
-    "Destroy it only when near another ddt block",      # BLOC_DDT
-    "Crush battery from the top or from the bottom",    # BLOC_BATTERY
+    [ # BLOC_RED
+        "Crush this reactive substance.",
+        "Don't throw it away!"
+    ],
 
-    "Break poison when near an aluminium block",        # BLOC_POISON
-    "Fling the alu against the electric border",        # BLOC_ALU
+    [ # BLOC_URANIUM
+        "Crush uranium block only when it",
+        "is not near another one.",
+    ],
+
+    [ # BLOC_DDT
+        "Destroy DDT only when",
+        "near another DDT block.",
+    ],
+
+    [ # BLOC_BATTERY
+        "Crush battery from the top or",
+        "bottom sides only.",
+    ],
+
+    [ # BLOC_POISON
+        "Crush poison only when near",
+        "an ALU block.",
+    ],
+
+    [ # BLOC_ALU
+        "Fling ALU against the electric",
+        "border. Don't crush it!",
+    ]
 ]

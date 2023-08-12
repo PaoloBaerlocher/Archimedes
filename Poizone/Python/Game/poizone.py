@@ -37,7 +37,7 @@ SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
 OPTIONS_ID = ["SFX", "MUSIC"]
-TUTO_PAGES = 10
+TUTO_PAGES = 11
 
 # PHASE_
 PHASE_NONE      = 0
@@ -1134,10 +1134,12 @@ def displayLegend(legendIdx):
     x = 2 if legendIdx == LEGEND_LEFT else WINDOW_WIDTH-2-20
     screen.blit(legendSprites[legendIdx], (ORIGIN_X + x, ORIGIN_Y + 220))
 
-def displayMainTuto():
-    global tutoCounter, currTutoPage
-    TEXT_COLOR = (240, 255, 255)
+def displayTuto():
+    global tutoCounter, currTutoPage, electrifyBorderAnim, tutoCounter
+
+    TEXT_COLOR = (235, 235, 255)
     TITLE_COLOR = (255, 255, 155)
+    BORDER_COLOR = (0, 0, 0)
 
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
@@ -1149,11 +1151,30 @@ def displayMainTuto():
         for line in texts.TUTO_INTRO:
             displayText(font, line, TEXT_COLOR, CENTER_X, y)
             y += 10
+    elif currTutoPage == 9:
+        y = 115
+        for line in texts.TUTO_DIAMONDS:
+            displayText(font, line, TEXT_COLOR, CENTER_X, y)
+            y += 10
+        displayTutoMap(8, 82, 150)
+    elif currTutoPage == 10:
+        y = 115
+        for line in texts.TUTO_BORDER:
+            displayText(font, line, TEXT_COLOR, CENTER_X, y)
+            y += 10
+        displayTutoMap(9, 82, 150)
+        if (tutoCounter % 32) >= 4 and ((tutoCounter // 64) % 2 == 1):
+            electrifyBorderAnim += 1        # Animate border if green arrows are displayed
 
     if currTutoPage >= 1 and currTutoPage < 9:
         blocIndex = currTutoPage-1
-        displayText(font, texts.TUTO_BLOC [blocIndex], TEXT_COLOR, CENTER_X, 130)
-        displayTutoMap(blocIndex, 10, 130)
+        y = 135
+        for line in texts.TUTO_BLOC[blocIndex]:
+            displayText(font, line, TEXT_COLOR, CENTER_X, y)
+            y += 10
+        displayTutoMap(blocIndex, 82, 150)
+        screen.fill(BORDER_COLOR, (CENTER_X-BLOC_SIZE//2-2, 105-2, BLOC_SIZE+4, BLOC_SIZE+4))
+        screen.blit(sprites[0][tuto.bloc[blocIndex]], (CENTER_X-BLOC_SIZE//2, 105))
 
     displayLegend(LEGEND_LEFT)
     displayLegend(LEGEND_RIGHT)
@@ -1166,29 +1187,27 @@ def displayTutoMap(tutoIndex, offsetX, offsetY):
     offsetX += ORIGIN_X
     offsetY += ORIGIN_Y
 
-    BORDER = 4
-    screen.fill((20, 20, 30), (offsetX - BORDER, offsetY - BORDER, 4*BLOC_SIZE + 2*BORDER, 4*BLOC_SIZE + 2*BORDER))
-
+    BORDER = 1
+    screen.fill((220, 220, 220), (offsetX - BORDER, offsetY - BORDER, 4*BLOC_SIZE + 2*BORDER, 4*BLOC_SIZE + 2*BORDER))
+    screen.fill((20, 20, 20), (offsetX, offsetY, 4*BLOC_SIZE, 4*BLOC_SIZE))
     # Mini-map
+    currLand = tutoIndex // 2
     for y in range(0, 4):
         for x in range(0, 4):
             b = tuto.maps [tutoIndex][x + y * 4]
-            if b == 0:
-                # Use corresponding basic bloc
-                currLand = tutoIndex // 2
-                b = getAliasBlocIndex(b)
             if b != -1:
+                b = getAliasBlocIndex(b)
                 screen.blit(sprites[0][b], (offsetX + x * BLOC_SIZE, offsetY + y * BLOC_SIZE))
 
     # Animated arrows (red or green)
     if (tutoCounter % 32) >= 4:
         arrowType = (tutoCounter // 64) % 2
-        d = 4 + ((tutoCounter % 32) / 8)
+        d = 4 + ((tutoCounter % 32) / 8)        # Animate arrow
         for arrow in tuto.arrows[tutoIndex][arrowType]:
-            idx = arrow [2]
-            deltaX = offsetX + d * (1 if idx == 0 else -1 if idx == 1 else 0)
-            deltaY = offsetY + d * (1 if idx == 3 else -1 if idx == 2 else 0)
-            screen.blit(arrowsSprites[idx+4*arrowType], (deltaX + arrow [0] * BLOC_SIZE, deltaY + arrow [1] * BLOC_SIZE))
+            dir = arrow [2]
+            deltaX = offsetX + d * (1 if dir == 0 else -1 if dir == 1 else 0)
+            deltaY = offsetY + d * (1 if dir == 3 else -1 if dir == 2 else 0)
+            screen.blit(arrowsSprites[dir+4*arrowType], (deltaX + arrow [0] * BLOC_SIZE, deltaY + arrow [1] * BLOC_SIZE))
 
 def displayOptions():
     global optCursor
@@ -1747,10 +1766,12 @@ while running:
         elif subMenu == MENU_TUTORIAL:
             if keyPressed[KEY_LEFT]:
                 currTutoPage = (currTutoPage + TUTO_PAGES - 1) % TUTO_PAGES
+                tutoCounter = 0
                 playSFX(soundValid)
 
             if keyPressed[KEY_RIGHT]:
                 currTutoPage = (currTutoPage + 1) % TUTO_PAGES
+                tutoCounter = 0
                 playSFX(soundValid)
 
         elif subMenu == MENU_OPTIONS:
@@ -1908,7 +1929,7 @@ while running:
         elif subMenu == MENU_HIGHSCORES:
             displayLeaderboard()
         elif subMenu == MENU_TUTORIAL:
-            displayMainTuto()
+            displayTuto()
         elif subMenu == MENU_OPTIONS:
             displayOptions()
 
