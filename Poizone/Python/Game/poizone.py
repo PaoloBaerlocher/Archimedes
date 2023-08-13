@@ -37,7 +37,7 @@ SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
 OPTIONS_ID = ["SFX", "MUSIC"]
-TUTO_PAGES = 11
+TUTO_PAGES = 15
 
 # PHASE_
 PHASE_NONE      = 0
@@ -1151,30 +1151,29 @@ def displayTuto():
         for line in texts.TUTO_INTRO:
             displayText(font, line, TEXT_COLOR, CENTER_X, y)
             y += 10
-    elif currTutoPage == 9:
-        y = 115
-        for line in texts.TUTO_DIAMONDS:
-            displayText(font, line, TEXT_COLOR, CENTER_X, y)
-            y += 10
-        displayTutoMap(8, 82, 150)
-    elif currTutoPage == 10:
-        y = 115
-        for line in texts.TUTO_BORDER:
-            displayText(font, line, TEXT_COLOR, CENTER_X, y)
-            y += 10
-        displayTutoMap(9, 82, 150)
-        if (tutoCounter % 32) >= 4 and ((tutoCounter // 64) % 2 == 1):
-            electrifyBorderAnim += 1        # Animate border if green arrows are displayed
 
-    if currTutoPage >= 1 and currTutoPage < 9:
+    # Animate electric border if green arrows are displayed
+    if (tutoCounter % 32) >= 4 and ((tutoCounter // 64) % 2 == 1):
+        electrifyBorderAnim += 1
+
+    if currTutoPage >= 1:
         blocIndex = currTutoPage-1
-        y = 135
+
+        # Bloc Icon
+        blocIconIndex = tuto.bloc[blocIndex]
+        if blocIconIndex != -1:
+            screen.fill(BORDER_COLOR, (CENTER_X - BLOC_SIZE // 2 - 2, 105 - 2, BLOC_SIZE + 4, BLOC_SIZE + 4))
+            screen.blit(sprites[0][blocIconIndex], (CENTER_X-BLOC_SIZE//2, 105))
+            y = 135
+        else:
+            y = 115
+
         for line in texts.TUTO_BLOC[blocIndex]:
             displayText(font, line, TEXT_COLOR, CENTER_X, y)
             y += 10
         displayTutoMap(blocIndex, 82, 150)
-        screen.fill(BORDER_COLOR, (CENTER_X-BLOC_SIZE//2-2, 105-2, BLOC_SIZE+4, BLOC_SIZE+4))
-        screen.blit(sprites[0][tuto.bloc[blocIndex]], (CENTER_X-BLOC_SIZE//2, 105))
+
+
 
     displayLegend(LEGEND_LEFT)
     displayLegend(LEGEND_RIGHT)
@@ -1187,17 +1186,19 @@ def displayTutoMap(tutoIndex, offsetX, offsetY):
     offsetX += ORIGIN_X
     offsetY += ORIGIN_Y
 
-    BORDER = 1
-    screen.fill((220, 220, 220), (offsetX - BORDER, offsetY - BORDER, 4*BLOC_SIZE + 2*BORDER, 4*BLOC_SIZE + 2*BORDER))
-    screen.fill((20, 20, 20), (offsetX, offsetY, 4*BLOC_SIZE, 4*BLOC_SIZE))
     # Mini-map
     currLand = tutoIndex // 2
-    for y in range(0, 4):
-        for x in range(0, 4):
-            b = tuto.maps [tutoIndex][x + y * 4]
-            if b != -1:
-                b = getAliasBlocIndex(b)
-                screen.blit(sprites[0][b], (offsetX + x * BLOC_SIZE, offsetY + y * BLOC_SIZE))
+    if len(tuto.maps [tutoIndex]) == 16:
+        FRAME_SIZE = 1
+        sz = 4 * BLOC_SIZE + 2 * FRAME_SIZE
+        screen.fill((220, 220, 220), (offsetX - FRAME_SIZE, offsetY - FRAME_SIZE, sz, sz))
+        screen.fill((20, 20, 20), (offsetX, offsetY, 4 * BLOC_SIZE, 4 * BLOC_SIZE))
+        for y in range(0, 4):
+            for x in range(0, 4):
+                b = tuto.maps [tutoIndex][x + y * 4]
+                if b != -1:
+                    b = getAliasBlocIndex(b)
+                    screen.blit(sprites[0][b], (offsetX + x * BLOC_SIZE, offsetY + y * BLOC_SIZE))
 
     # Animated arrows (red or green)
     if (tutoCounter % 32) >= 4:

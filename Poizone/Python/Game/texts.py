@@ -21,17 +21,6 @@ TUTO_INTRO = [
     "Your sacrifice is our hope...!",
 ]
 
-TUTO_DIAMONDS = [
-    "If you have spare time, try to assemble",
-    "the 4 magic diamonds to get a bonus",
-    "of 500 points."
-]
-
-TUTO_BORDER = [
-    "Push the electric border to freeze the",
-    "creatures touching the border.",
-]
-
 TUTO_BLOC = [
     [ # BLOC_CFC
         "Destroy CFC by crushing it",
@@ -63,13 +52,45 @@ TUTO_BLOC = [
         "bottom sides only.",
     ],
 
-    [ # BLOC_POISON
+    [ # BLOC_ALU
+        "Fling ALU against the electric",
+        "border. Don't crush it!",
+    ],
+
+    [  # BLOC_POISON
         "Crush poison only when near",
         "an ALU block.",
     ],
 
-    [ # BLOC_ALU
-        "Fling ALU against the electric",
-        "border. Don't crush it!",
+    [   # DIAMOND
+        "If you have spare time, try to assemble",
+        "the 4 magic diamonds to get a bonus",
+        "of 500 points."
+    ],
+
+    [   # ELECTRIC BORDER
+        "Push the electric border to freeze the",
+        "creatures in contact with the border."
+    ],
+
+    [   # MAGIC
+        "The magic pill provides invincibility",
+        "for few seconds."
+    ],
+
+    [  # ALCOOL
+        "Crushing this substance makes you clumsy",
+        "for a few seconds. Avoid that, if possible."
+    ],
+
+    [  # TELEPORT
+        "Teleporter gates are available on",
+        "some maps. Toxic creatures are not allowed."
+    ],
+
+    [  # Others
+        "Discover the power of the other blocs",
+        "by yourself.",
+        "You're an adult penguin now."
     ]
 ]
