@@ -40,14 +40,15 @@ OPTIONS_ID = ["SFX", "MUSIC"]
 TUTO_PAGES = 15
 
 # PHASE_
-PHASE_NONE      = 0
-PHASE_INTRO     = 1
-PHASE_MENU      = 2
-PHASE_LEVEL     = 3
-PHASE_RESULT    = 4
-PHASE_END_LEVEL = 5
-PHASE_GAME_WON  = 6
-PHASE_ENTER_NAME= 7
+PHASE_NONE              = 0
+PHASE_INTRO             = 1
+PHASE_MENU              = 2
+PHASE_LEVEL             = 3
+PHASE_RESULT            = 4
+PHASE_END_LEVEL         = 5
+PHASE_CHALLENGE_INTRO   = 6
+PHASE_GAME_WON          = 7
+PHASE_ENTER_NAME        = 8
 
 # MENU_
 MENU_MAIN       = -1
@@ -804,8 +805,6 @@ def resetChallenge(challenge):
 
     setElectrifyBorder(False)
 
-    playMusic(musicChall)
-
 def loadSprites():
     global sprites, monstersSprites, endScreenSprite
 
@@ -1015,7 +1014,6 @@ def startLevelPhase():
 
     print('PHASE_LEVEL')
     gamePhase = PHASE_LEVEL
-    resetGame()
     loadLevel()
     windowFade = 0
 
@@ -1048,6 +1046,21 @@ def startEndLevelPhase():
         rocketOriginX = 70 if currLand == LAND_ESA else 105
         rocketOriginY = 60 if currLand == LAND_ESA else 35
         part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
+
+def startChallengeIntroPhase():
+    global gamePhase, windowFade
+
+    print('PHASE_CHALLENGE_INTRO')
+    gamePhase = PHASE_CHALLENGE_INTRO
+    windowFade = 0
+    loadChallenge()
+
+def startChallengeLevelPhase():
+    global gamePhase, windowFade
+
+    windowFade = 0
+    playMusic(musicChall)
+    gamePhase = PHASE_LEVEL
 
 def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
@@ -1088,6 +1101,7 @@ def applyChannelVolumes():
 
     musicChannel = pygame.mixer.Channel(1)
     musicChannel.set_volume(1 if opt.getValue(OPTIONS_ID [1]) == True else 0)
+
 # HUD
 
 def displayText(font, str, col, text_x, text_y):            # Centered
@@ -1172,8 +1186,6 @@ def displayTuto():
             displayText(font, line, TEXT_COLOR, CENTER_X, y)
             y += 10
         displayTutoMap(blocIndex, 82, 150)
-
-
 
     displayLegend(LEGEND_LEFT)
     displayLegend(LEGEND_RIGHT)
@@ -1369,6 +1381,17 @@ def displayDancingPenguins():
         p.posX = px + 20 * i - 10
         p.posY = py
         p.display(screen, 0, 0)
+
+def displayChallengeIntroMode():
+    TITLE_COLOR = (100, 255, 250)
+    TEXT_COLOR = (50, 255, 140)
+
+    displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+
+    y = 110
+    for line in texts.REVENGE_TEXTS:
+        displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
+        y += 15
 
 def displayEnterYourName():
     global cursorPx, cursorPy
@@ -1704,12 +1727,12 @@ while running:
                 if event.key == pygame.K_F7:  # Prev challenge
                     if (level > 5):
                         level -= 5
-                        loadChallenge()
+                        startChallengeIntroPhase()
 
                 if event.key == pygame.K_F8:  # Next challenge
                     if (level < 45):
                         level += 5
-                        loadChallenge()
+                        startChallengeIntroPhase()
 
                 if event.key == pygame.K_F12:    # Pause game
                     if gamePhase == PHASE_LEVEL:
@@ -1752,6 +1775,7 @@ while running:
 
             if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
                 if menuCursor == 0:
+                    resetGame()
                     startLevelPhase()
                 else:
                     subMenu = menuCursor
@@ -1866,6 +1890,13 @@ while running:
                     startMenuPhase()
             else:
                 startEndLevelPhase()
+
+    elif gamePhase == PHASE_CHALLENGE_INTRO:
+        if windowFade < 128:
+            windowFade += 16
+
+        if keyPressed[KEY_SPACE]:
+            startChallengeLevelPhase()
 
     elif gamePhase == PHASE_GAME_WON:
         resultTimer += 1
@@ -2005,14 +2036,11 @@ while running:
 
         else:
             if level % 5 == 0:
-                loadChallenge()
+                startChallengeIntroPhase()
             else:
                 level += 1
-                loadLevel()
-
-            print('Switch to PHASE_LEVEL')
-            gamePhase = PHASE_LEVEL
-    else: # PHASE_LEVEL or PHASE_RESULT
+                startLevelPhase()
+    else: # PHASE_LEVEL or PHASE_RESULT or PHASE_CHALLENGE_INTRO
         # Draw BG
 
         anim = absTime // 4
@@ -2054,6 +2082,8 @@ while running:
         if gamePhase == PHASE_RESULT:
             # Display result over game
             displayResult()
+        elif gamePhase == PHASE_CHALLENGE_INTRO:
+            displayChallengeIntroMode()
         elif gamePhase == PHASE_GAME_WON:
             displayGameWon()
         elif gamePhase == PHASE_ENTER_NAME:

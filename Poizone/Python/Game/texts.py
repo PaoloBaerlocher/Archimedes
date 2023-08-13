@@ -79,8 +79,7 @@ TUTO_BLOC = [
     ],
 
     [  # ALCOOL
-        "Crushing this substance makes you clumsy",
-        "for a few seconds.",
+        "Crushing this substance makes you clumsy.",
         "Avoid that, if possible."
     ],
 
@@ -96,8 +95,8 @@ TUTO_BLOC = [
     ]
 ]
 
-REV_TITLE = "REVENGE ZONE"
-REV_TEXTS = [
+REVENGE_TITLE = "REVENGE ZONE"
+REVENGE_TEXTS = [
     "CRUSH ALL THE",
-    "NAUGHTIES YOU CAN"
+    "NAUGHTIES YOU CAN!"
 ]
