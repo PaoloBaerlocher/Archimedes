@@ -488,7 +488,7 @@ class Penguin():
                 newPosY = found // SCHEME_WIDTH
                 self.posX = newPosX * BLOC_SIZE
                 self.posY = newPosY * BLOC_SIZE
-                playSFX(soundMagic)
+                playSFX(soundTele)
                 self.canTeleport = False
 
         # Update crushed bloc
@@ -1088,7 +1088,7 @@ def startEnterNamePhase():
 def playSFX(sfx, loop=0):
     if opt.getValue(OPTIONS_ID[0]) == True:
         sfx.play(loop)
-        
+
 def playMusic(m, loop=0):
     print('playMusic loop=' + str(loop))
     musicChannel = pygame.mixer.Channel(1)
@@ -1096,9 +1096,6 @@ def playMusic(m, loop=0):
     musicChannel.play(m, loop)
 
 def applyChannelVolumes():
-    sfxChannel = pygame.mixer.Channel(0)
-    sfxChannel.set_volume(1 if opt.getValue(OPTIONS_ID [0]) == True else 0)
-
     musicChannel = pygame.mixer.Channel(1)
     musicChannel.set_volume(1 if opt.getValue(OPTIONS_ID [1]) == True else 0)
 
@@ -1507,6 +1504,7 @@ soundSplatch= pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (s
 soundWow    = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
 soundTick   = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
 soundValid  = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')          # New sample for menus
+soundTele   = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')          # New sample (same as S but with lower ptich)
 
 # Set volumes
 
@@ -1516,6 +1514,7 @@ soundMagic.set_volume(0.2)
 soundSplatch.set_volume(0.5)
 soundTick.set_volume(0.7)
 soundValid.set_volume(0.3)
+soundTele.set_volume(0.5)
 
 applyChannelVolumes()
 
