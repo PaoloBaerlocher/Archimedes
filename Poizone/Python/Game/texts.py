@@ -80,7 +80,8 @@ TUTO_BLOC = [
 
     [  # ALCOOL
         "Crushing this substance makes you clumsy",
-        "for a few seconds. Avoid that, if possible."
+        "for a few seconds.",
+        "Avoid that, if possible."
     ],
 
     [  # TELEPORT
@@ -89,8 +90,14 @@ TUTO_BLOC = [
     ],
 
     [  # Others
-        "Discover the power of the other blocs",
+        "Discover the power of the other blocks",
         "by yourself.",
         "You're an adult penguin now."
     ]
+]
+
+REV_TITLE = "REVENGE ZONE"
+REV_TEXTS = [
+    "CRUSH ALL THE",
+    "NAUGHTIES YOU CAN"
 ]
