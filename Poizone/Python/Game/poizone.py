@@ -1086,9 +1086,9 @@ def startEnterNamePhase():
 # Sound/Music
 
 def playSFX(sfx, loop=0):
-    sfxChannel = pygame.mixer.Channel(0)
-    sfxChannel.play(sfx, loop)
-
+    if opt.getValue(OPTIONS_ID[0]) == True:
+        sfx.play(loop)
+        
 def playMusic(m, loop=0):
     print('playMusic loop=' + str(loop))
     musicChannel = pygame.mixer.Channel(1)
