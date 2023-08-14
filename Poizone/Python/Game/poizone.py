@@ -52,10 +52,12 @@ PHASE_ENTER_NAME        = 8
 
 # MENU_
 MENU_MAIN       = -1
-MENU_HIGHSCORES = 1     # Submenus
-MENU_TUTORIAL   = 2
-MENU_OPTIONS    = 3
-MENU_CREDITS    = 4
+MENU_PLAY       = 0
+MENU_CONTINUE   = 1
+MENU_HIGHSCORES = 2     # Submenus
+MENU_TUTORIAL   = 3
+MENU_OPTIONS    = 4
+MENU_CREDITS    = 5
 
 # LEGEND_
 LEGEND_RIGHT    = 0
@@ -1280,11 +1282,14 @@ def displayCredits():
 def displayMainMenu():
     TEXT_COLOR = (155, 155,  55)
     HIGH_COLOR = (255, 255, 155)
+    DEACT_COLOR  = (40,   40,  30)
     
     CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
     for i in range(0, len(texts.MAIN_MENU)):
-        displayText(font, texts.MAIN_MENU[i], HIGH_COLOR if menuCursor == i else TEXT_COLOR, CENTER_X, 120+15*i)
+        deactivated = isMenuDeactivated(i)
+        col = DEACT_COLOR if deactivated else (HIGH_COLOR if (menuCursor == i) else TEXT_COLOR)
+        displayText(font, texts.MAIN_MENU[i], col, CENTER_X, 120 + 15*i)
 
 def displayGameHud():
     WHITE = (255, 255, 255)
@@ -1483,6 +1488,9 @@ def applyFade():
         blackSurface.fill((0, 0, 0, windowFade))
         screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
 
+def isMenuDeactivated(index):
+    return index == MENU_CONTINUE and maxLevelReached == 1
+
 # pygame setup
 pygame.init()
 pygame.display.set_caption('Poizone')
@@ -1630,6 +1638,7 @@ for index in range(0, 2):
 absTime = 0
 tutoCounter = 0
 currTutoPage = 0
+maxLevelReached = 1     # For CONTINUE option
 
 #             Up     Down   Left   Right  Space  Backsp Return Escape Pause
 keyDown    = [False, False, False, False, False, False, False, False, False]
@@ -1807,17 +1816,25 @@ while running:
 
         # Main Menu navigation
         if subMenu == MENU_MAIN:
-            if keyPressed[KEY_DOWN] and menuCursor < 4:
+            if keyPressed[KEY_DOWN] and menuCursor < 5:
                 menuCursor += 1
+                while isMenuDeactivated(menuCursor):
+                    menuCursor += 1
                 playSFX(soundValid)
 
             if keyPressed[KEY_UP] and menuCursor > 0:
                 menuCursor -= 1
+                while isMenuDeactivated(menuCursor):
+                    menuCursor -= 1
                 playSFX(soundValid)
 
             if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
-                if menuCursor == 0:
+                if menuCursor == MENU_PLAY or menuCursor == MENU_CONTINUE:
                     resetGame()
+
+                    if menuCursor == MENU_CONTINUE:
+                        level = maxLevelReached
+                        
                     startLevelPhase()
                 else:
                     subMenu = menuCursor
@@ -1931,6 +1948,10 @@ while running:
                 else:
                     startMenuPhase()
                     playMusic(musicIntro, -1)
+
+                # Store level for Continue
+                maxLevelReached = max(level, maxLevelReached)
+
             else:
                 startEndLevelPhase()
 
