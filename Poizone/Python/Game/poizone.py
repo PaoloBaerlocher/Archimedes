@@ -1087,7 +1087,7 @@ def startGameWonPhase():
     resultTimer = 0
     print('PHASE_GAME_WON')
     gamePhase = PHASE_GAME_WON
-    windowFade = 0
+    windowFade = 128
     playMusic(musicWinGame)
 
 def startEnterNamePhase():
@@ -1471,15 +1471,13 @@ def displayEnterYourName():
     displayTextLeft(font_big, displayName, NAME_COLOR, ORIGIN_X + 40, 220)
 
 def displayGameWon():
-    TEXT_COLOR = (50, 240, 200)
+    TEXT_COLOR = (80, 250, 230)
 
-    windowFade = 100
-
-    displayText(font_big, "IT'S UNBELIEVABLE!", TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
-    displayText(font_big, "YOU HAVE FINISHED",  TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 100)
-    displayText(font_big, "THE GAME!!! HAVE",  TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 120)
-    displayText(font_big, "YOU CHEATED ?", TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 140)
-
+    y = 80
+    for line in texts.GAME_WON:
+        displayText(font_big, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
+        y += 20
+        
 def applyFade():
     if windowFade > 0:
         blackSurface.fill((0, 0, 0, windowFade))
@@ -1932,6 +1930,7 @@ while running:
                     startEnterNamePhase()
                 else:
                     startMenuPhase()
+                    playMusic(musicIntro, -1)
             else:
                 startEndLevelPhase()
 
@@ -1947,8 +1946,9 @@ while running:
 
     elif gamePhase == PHASE_GAME_WON:
         resultTimer += 1
-        if resultTimer > 60*10:
+        if resultTimer > 60*21:     # Match music duration
             startMenuPhase()
+            playMusic(musicIntro, -1)
 
     elif gamePhase == PHASE_ENTER_NAME:
         resultTimer += 1

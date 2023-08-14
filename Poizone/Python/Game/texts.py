@@ -91,7 +91,7 @@ TUTO_BLOC = [
     [  # Others
         "Discover the power of the other blocks",
         "by yourself.",
-        "You're an adult penguin now."
+        "You're a grown penguin now."
     ]
 ]
 
@@ -99,6 +99,13 @@ REVENGE_TITLE = "REVENGE ZONE"
 REVENGE_TEXTS = [
     "CRUSH ALL THE",
     "NAUGHTIES YOU CAN!"
+]
+
+GAME_WON = [
+    "IT'S UNBELIEVABLE!",
+    "YOU HAVE FINISHED",
+    "THE GAME!!! HAVE",
+    "YOU CHEATED ?",
 ]
 
 CREDITS = [ "CODE by Paolo Baerlocher",
