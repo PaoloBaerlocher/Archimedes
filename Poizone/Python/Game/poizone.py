@@ -55,6 +55,7 @@ MENU_MAIN       = -1
 MENU_HIGHSCORES = 1     # Submenus
 MENU_TUTORIAL   = 2
 MENU_OPTIONS    = 3
+MENU_CREDITS    = 4
 
 # LEGEND_
 LEGEND_RIGHT    = 0
@@ -1260,6 +1261,19 @@ def displayOptions():
     displayLegend(LEGEND_LEFT)
     displayLegend(LEGEND_RIGHT)
 
+def displayCredits():
+
+    TITLE_COLOR = (255, 255, 155)
+    TEXT_COLOR = (180, 255, 255)
+
+    # Title
+    displayText(font_big, "CREDITS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+
+    y = 120
+    for line in texts.CREDITS:
+        displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
+        y += 15
+
 def displayMainMenu():
     TEXT_COLOR = (155, 155,  55)
     HIGH_COLOR = (255, 255, 155)
@@ -1401,10 +1415,11 @@ def displayChallengeIntroMode():
 
     displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
-    y = 110
-    for line in texts.REVENGE_TEXTS:
-        displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
-        y += 15
+    if (int(absTime) // 4) % 4 != 0:        # Flash
+        y = 110
+        for line in texts.REVENGE_TEXTS:
+            displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
+            y += 15
 
 def displayEnterYourName():
     global cursorPx, cursorPy
@@ -1780,7 +1795,7 @@ while running:
 
         # Main Menu navigation
         if subMenu == MENU_MAIN:
-            if keyPressed[KEY_DOWN] and menuCursor < 3:
+            if keyPressed[KEY_DOWN] and menuCursor < 4:
                 menuCursor += 1
                 playSFX(soundValid)
 
@@ -1979,6 +1994,8 @@ while running:
             displayTuto()
         elif subMenu == MENU_OPTIONS:
             displayOptions()
+        elif subMenu == MENU_CREDITS:
+            displayCredits()
 
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))

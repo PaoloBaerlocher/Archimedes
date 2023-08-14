@@ -1,6 +1,6 @@
 # Texts
 
-MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS" ]
+MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS", "CREDITS" ]
 OPTIONS = [ "SOUND FX", "MUSIC" ]
 VALUES = [ "ON", "OFF"]
 
@@ -99,4 +99,9 @@ REVENGE_TITLE = "REVENGE ZONE"
 REVENGE_TEXTS = [
     "CRUSH ALL THE",
     "NAUGHTIES YOU CAN!"
+]
+
+CREDITS = [ "CODE by Paolo Baerlocher",
+            "GRAPHICS by Marc Andreoli",
+            "MUSIC by Fabrice Hautecloque",
 ]
