@@ -644,12 +644,12 @@ class Monster():
             if self.isAlive() and (penguin1.movBlocWhat != NONE):
                 deltaX = abs(penguin1.movBlocPosX - self.posX)
                 deltaY = abs(penguin1.movBlocPosY - self.posY)
-                if (deltaX <= 8) and (deltaY <= 8):
+                if (deltaX <= 10) and (deltaY <= 10):
                     print('Kill monster')
                     self.killAndRebirth()
                     playSFX(soundColl)
                     penguin1.movMonsters += 1
-                elif (deltaX <= 10) and (deltaY <= 10):
+                elif (deltaX <= 12) and (deltaY <= 12):
                     print('Dizzy monster by bloc collision')
                     self.dizzyCounter = 4*60
 
@@ -1066,12 +1066,13 @@ def startEndLevelPhase():
         part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
 
 def startChallengeIntroPhase():
-    global gamePhase, windowFade
+    global gamePhase, windowFade, introTimer
 
     print('PHASE_CHALLENGE_INTRO')
     gamePhase = PHASE_CHALLENGE_INTRO
     windowFade = 0
     loadChallenge()
+    introTimer = 0
 
 def startChallengeLevelPhase():
     global gamePhase, windowFade
@@ -1087,6 +1088,7 @@ def startGameWonPhase():
     print('PHASE_GAME_WON')
     gamePhase = PHASE_GAME_WON
     windowFade = 0
+    playMusic(musicWinGame)
 
 def startEnterNamePhase():
     global gamePhase, yourName, cursorTx, cursorTy, cursorPx, cursorPy, resultTimer
@@ -1411,10 +1413,10 @@ def displayDancingPenguins():
         p.display(screen, 0, 0)
 
 def displayChallengeIntroMode():
-    TITLE_COLOR = (100, 255, 250)
+    TITLE_COLOR = (105, 255, 255)
     TEXT_COLOR = (50, 255, 140)
 
-    displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60)
 
     if (int(absTime) // 4) % 4 != 0:        # Flash
         y = 110
@@ -1507,11 +1509,11 @@ font = pygame.font.Font('Data/font/small/8-bit-hud.ttf', 5)
 font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
 # Load musics recorded from SoundTracker
-musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
-musicChall = pygame.mixer.Sound('Data/musics/challenge.wav')    # Patterns 16-20
-musicWin   = pygame.mixer.Sound('Data/musics/win.wav')          # Patterns 21-26
-musicLose  = pygame.mixer.Sound('Data/musics/lose.wav')         # Patterns 27-29
-musicEnd   = pygame.mixer.Sound('Data/musics/endLand.wav')      # Pattern 29
+musicIntro  = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
+musicChall  = pygame.mixer.Sound('Data/musics/challenge.wav')    # Patterns 16-20
+musicWin    = pygame.mixer.Sound('Data/musics/win.wav')          # Patterns 21-26
+musicWinGame= pygame.mixer.Sound('Data/musics/winGame.wav')      # Patterns 27-29
+musicEnd    = pygame.mixer.Sound('Data/musics/endLand.wav')      # Pattern 29
 
 musicPlay = []
 musicPlay.append(pygame.mixer.Sound('Data/musics/play1.wav'))   # Patterns 30-35
@@ -1934,10 +1936,13 @@ while running:
                 startEndLevelPhase()
 
     elif gamePhase == PHASE_CHALLENGE_INTRO:
+
         if windowFade < 128:
             windowFade += 16
 
-        if keyPressed[KEY_SPACE]:
+        introTimer += 1
+
+        if keyPressed[KEY_SPACE] or (introTimer > 60*4):
             startChallengeLevelPhase()
 
     elif gamePhase == PHASE_GAME_WON:
