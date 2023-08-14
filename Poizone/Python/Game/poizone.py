@@ -70,6 +70,7 @@ KEY_SPACE       = 4
 KEY_BACKSPACE   = 5
 KEY_RETURN      = 6
 KEY_ESCAPE      = 7
+KEY_PAUSE       = 8
 
 # LANDS_
 LAND_ICE      = 0
@@ -1630,8 +1631,9 @@ absTime = 0
 tutoCounter = 0
 currTutoPage = 0
 
-keyDown = [False, False, False, False, False, False, False, False]   # Up Down Left Right Space Backspace Return Escape
-keyPressed = [False, False, False, False, False, False, False, False]
+#             Up     Down   Left   Right  Space  Backsp Return Escape Pause
+keyDown    = [False, False, False, False, False, False, False, False, False]
+keyPressed = [False, False, False, False, False, False, False, False, False]
 
 old_x_axis = 0.0
 old_y_axis = 0.0
@@ -1665,6 +1667,8 @@ while running:
     # INPUT
     #######
 
+    oldKeyDown = keyDown.copy()
+
     if joyFound != -1:
         # Test joystick stick
         x_axis = joy.get_axis(0)
@@ -1672,10 +1676,10 @@ while running:
 
         # X
 
-        if x_axis > JOY_LIMIT and old_x_axis <= JOY_LIMIT:
+        if x_axis > JOY_LIMIT:
             keyDown[KEY_RIGHT] = True
 
-        if x_axis < -JOY_LIMIT and old_x_axis >= -JOY_LIMIT:
+        if x_axis < -JOY_LIMIT:
             keyDown[KEY_LEFT] = True
 
         if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
@@ -1686,10 +1690,10 @@ while running:
 
         # Y
 
-        if y_axis > JOY_LIMIT and old_y_axis <= JOY_LIMIT:
+        if y_axis > JOY_LIMIT:
             keyDown[KEY_DOWN] = True
 
-        if y_axis < -JOY_LIMIT and old_y_axis >= -JOY_LIMIT:
+        if y_axis < -JOY_LIMIT:
             keyDown[KEY_UP] = True
 
         if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
@@ -1701,8 +1705,6 @@ while running:
         old_x_axis = x_axis
         old_y_axis = y_axis
 
-    oldKeyDown = keyDown.copy()
-
     # Poll for events
     # pygame.QUIT event means the user clicked X to close your window
     for event in pygame.event.get():
@@ -1711,10 +1713,17 @@ while running:
 
         if event.type == pygame.JOYBUTTONDOWN or event.type == pygame.JOYBUTTONUP:
             buttonIsDown = (event.type == pygame.JOYBUTTONDOWN)
+            # Map joy buttons to virtual keys
             if event.button == 0:
                 keyDown[KEY_SPACE] = buttonIsDown
+            if event.button == 1:
+                keyDown[KEY_ESCAPE] = buttonIsDown
+            elif event.button == 6:
+                keyDown[KEY_ESCAPE] = buttonIsDown
+            elif event.button == 7:
+                keyDown[KEY_PAUSE] = buttonIsDown
             else:
-                print('JOY button ' + str(event.button))
+                print('Unhandled JOY button ' + str(event.button))
 
         if event.type == pygame.KEYUP or event.type == pygame.KEYDOWN:
             down = (event.type == pygame.KEYDOWN)
@@ -1742,6 +1751,9 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 keyDown[KEY_ESCAPE] = down
 
+            if event.key == pygame.K_F12:
+                keyDown[KEY_PAUSE] = down
+
             if not down:
 
                 if event.key == pygame.K_F5:    # Prev level
@@ -1764,12 +1776,12 @@ while running:
                         level += 5
                         startChallengeIntroPhase()
 
-                if event.key == pygame.K_F12:    # Pause game
-                    if gamePhase == PHASE_LEVEL:
-                        pauseGame = not pauseGame
-
     for i in range(0, len(keyDown)):
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
+
+    if keyPressed[KEY_PAUSE]:  # Pause game
+        if gamePhase == PHASE_LEVEL:
+            pauseGame = not pauseGame
 
     if keyPressed[KEY_ESCAPE] == True:
         if gamePhase == PHASE_LEVEL:
