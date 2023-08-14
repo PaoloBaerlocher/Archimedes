@@ -186,7 +186,7 @@ class Penguin():
             print('New Penguin status: ' + str(status))
             self.status = status
 
-    def getBloc(self, dirX, dirY):
+    def getBlocOnDir(self, dirX, dirY):
         return getBloc(self.posX // BLOC_SIZE + dirX, self.posY // BLOC_SIZE + dirY)
 
     def launchBloc(self, bloc, posX, posY, dirX, dirY):
@@ -202,12 +202,12 @@ class Penguin():
         global electrifyBorder
 
         if self.dirX != 0 or self.dirY != 0:
-            bloc = self.getBloc(self.dirX, self.dirY)
+            bloc = self.getBlocOnDir(self.dirX, self.dirY)
             self.setStatus(PenguinStatus.PUSH)
             if bloc == BLOC_ELECTRO:
                 setElectrifyBorder(True)
             elif bloc < 24:
-                nextBloc = self.getBloc(self.dirX * 2, self.dirY * 2)
+                nextBloc = self.getBlocOnDir(self.dirX * 2, self.dirY * 2)
                 if (nextBloc >= 24):
                     if self.movBlocWhat == NONE:        # Avoid overriding ongoing launch bloc
                         self.launchBloc(bloc, self.posX, self.posY, self.dirX, self.dirY)
@@ -245,10 +245,10 @@ class Penguin():
         if bloc >= BLOC_ROCK:  # Cannot crush that bloc
             return
 
-        blocUp    = self.getBloc(self.dirX, self.dirY - 1)
-        blocDown  = self.getBloc(self.dirX, self.dirY + 1)
-        blocLeft  = self.getBloc(self.dirX - 1, self.dirY)
-        blocRight = self.getBloc(self.dirX + 1, self.dirY)
+        blocUp    = self.getBlocOnDir(self.dirX, self.dirY - 1)
+        blocDown  = self.getBlocOnDir(self.dirX, self.dirY + 1)
+        blocLeft  = self.getBlocOnDir(self.dirX - 1, self.dirY)
+        blocRight = self.getBlocOnDir(self.dirX + 1, self.dirY)
 
         if bloc == BLOC_ALCOOL:
             self.invert = not self.invert
@@ -325,6 +325,15 @@ class Penguin():
 
     def isOnBlock(self):
         return isOnBlock(self.posX, self.posY)
+
+    def blocIsWalkable(self, dirX, dirY):
+
+        # Check occupy table
+        blocIndex =(self.posX // BLOC_SIZE + dirX) + (self.posY // BLOC_SIZE + dirY) * SCHEME_WIDTH
+        if (occupyTable[blocIndex] & 0b10) != 0:
+            return False
+
+        return self.getBlocOnDir(dirX, dirY) >= 24
 
     def getNextTeleportIndex(self):     # Or -1 if none
         penguinIndex = self.posX // BLOC_SIZE + (self.posY // BLOC_SIZE) * SCHEME_WIDTH
@@ -410,25 +419,25 @@ class Penguin():
             if keyDown[KEY_LEFT]:
                 self.dirX = -1 if self.invert == False else +1
                 self.dirY = 0
-                if not blocIsWalkable(self, self.dirX, self.dirY):
+                if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
             if keyDown[KEY_RIGHT]:
                 self.dirX = 1 if self.invert == False else -1
                 self.dirY = 0
-                if not blocIsWalkable(self, self.dirX, self.dirY):
+                if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
             if keyDown[KEY_UP]:
                 self.dirX = 0
                 self.dirY = -1 if self.invert == False else +1
-                if not blocIsWalkable(self, self.dirX, self.dirY):
+                if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
             if keyDown[KEY_DOWN]:
                 self.dirX = 0
                 self.dirY = 1 if self.invert == False else -1
-                if not blocIsWalkable(self, self.dirX, self.dirY):
+                if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
         if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_SPACE]):
@@ -437,7 +446,7 @@ class Penguin():
 
         if (self.status == PenguinStatus.IDLE) and (self.dirX != 0 or self.dirY != 0) and (
                 penguinMove == True):
-            if blocIsWalkable(self, self.dirX, self.dirY):
+            if self.blocIsWalkable(self.dirX, self.dirY):
                 self.setStatus(PenguinStatus.WALK)
 
         if (self.status == PenguinStatus.WALK):
@@ -446,7 +455,7 @@ class Penguin():
             if isOnBlock(self.posX, self.posY):  # Stop walking at next block
                 if penguinMove == False:
                     self.setStatus(PenguinStatus.IDLE)
-                elif blocIsWalkable(self, self.dirX, self.dirY) == False:
+                elif self.blocIsWalkable(self.dirX, self.dirY) == False:
                     self.setStatus(PenguinStatus.IDLE)
 
         if (self.status == PenguinStatus.DIE) and (self.animPhase > 128):  # Re-birth
@@ -494,10 +503,13 @@ class Penguin():
         # Update crushed bloc
 
         if self.crushBlocWhat != NONE:
-
             self.crushBlocTimer -= 1
             if self.crushBlocTimer == 0:
                 self.crushBlocWhat = NONE
+
+            # Update occupyTable
+            blocIndex = self.crushBlocPosX // BLOC_SIZE + (self.crushBlocPosY // BLOC_SIZE) * SCHEME_WIDTH
+            occupyTable[blocIndex] = 0b10 if self.crushBlocTimer > 3 else 0  # Cell is forbidden until bloc is crushed
 
         # Update bomb anim
 
@@ -652,7 +664,7 @@ class Monster():
 
                     blocIndex = self.posX // BLOC_SIZE + dirX + (self.posY // BLOC_SIZE + dirY) * SCHEME_WIDTH
 
-                    if occupyTable[blocIndex] == True:      # Forbidden destination bloc
+                    if occupyTable[blocIndex] != 0:      # Forbidden destination bloc
                         continue
 
                     if scheme[blocIndex] >= 24: # Monster can move to empty block
@@ -662,6 +674,11 @@ class Monster():
                 if not found:
                     dirX = 0
                     dirY = 0
+                else:
+                    # Update Occupy Table
+                    currentBlocIndex = self.posX // BLOC_SIZE + (self.posY // BLOC_SIZE) * SCHEME_WIDTH
+                    occupyTable[currentBlocIndex] = 0
+                    occupyTable[blocIndex] = 1
 
                 self.dirX = dirX * MONS_WALK_STEP
                 self.dirY = dirY * MONS_WALK_STEP
@@ -706,7 +723,7 @@ class Monster():
                 y = baseY // BLOC_SIZE + 1 + random.randrange(0, 10)
             print(f"New monster at {x},{y}")
 
-            if (occupyTable[x + y * SCHEME_WIDTH] == True):      # Already occupied
+            if (occupyTable[x + y * SCHEME_WIDTH] != 0):      # Already occupied
                 continue
 
             if (abs(x - int(penguin1.posX / BLOC_SIZE)) < 3) or (abs(y - int(penguin1.posY / BLOC_SIZE)) < 3):
@@ -908,11 +925,13 @@ def loadChallenge():
 def initOccupyTable():
     global occupyTable
 
+    # Bit 0: for monsters only
+    # Bit 1: for penguin and monsters
     occupyTable = []
     for index in range (0, SCHEME_SIZE):
-        occ = False
+        occ = 0
         if lands[currLand][4*index] == BLOC_TELEPORT_0:    # Monsters cannot go over teleporters
-            occ = True
+            occ = 1
 
         occupyTable.append(occ)
 
@@ -931,9 +950,6 @@ def getBloc(indexX, indexY):
         blocOfScheme = BLOC_BASIC
 
     return blocOfScheme
-
-def blocIsWalkable(penguin, dirX, dirY):
-    return penguin.getBloc(dirX, dirY) >= 24
 
 def isOnBlock(posX, posY):
     return ((posX % BLOC_SIZE) == 0) and ((posY % BLOC_SIZE) == 0)
