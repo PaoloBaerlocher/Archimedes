@@ -1,6 +1,14 @@
 # Texts
 
-MAIN_MENU = [ "PLAY (Single Player)", "HIGH SCORES", "TUTORIAL", "OPTIONS", "CREDITS" ]
+MAIN_MENU = [
+    "PLAY (Single Player)",
+    "CONTINUE",
+    "HIGH SCORES",
+    "TUTORIAL",
+    "OPTIONS",
+    "CREDITS"
+]
+
 OPTIONS = [ "SOUND FX", "MUSIC" ]
 VALUES = [ "ON", "OFF"]
 

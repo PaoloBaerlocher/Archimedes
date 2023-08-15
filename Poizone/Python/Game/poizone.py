@@ -87,7 +87,7 @@ LAND_COMPUTER = 4
 #                   24 - 59 . background
 
 # Codes for SCHEME data ; 00 - 23 . blocs  ( 23 = ELECTRIC )
-#                         24 - 59 . EMPTY (place au decor)
+#                         24 - 59 . EMPTY (background)
 
 # Codes for Land data   ; 24 - 59 . background
 #                         60 - 61 . Teleporters
@@ -113,10 +113,10 @@ BLOC_BASIC_2     = 17       # For Land No 2 (space)
 BLOC_BASIC_1     = 18       # For Land No 1 (station)
 BLOC_BASIC_3     = 19       # For Land No 3 (jungle)
 BLOC_BASIC_4     = 20       # For Land No 4 (computer)
-BLOC_ELECTRO_0   = 21       # Anim
+BLOC_ELECTRO_0   = 21       # Electric border Anim
 BLOC_ELECTRO_1   = 22
 BLOC_ELECTRO     = 23
-BLOC_TELEPORT_0  = 60       # Anim
+BLOC_TELEPORT_0  = 60       # Teleporter Anim
 BLOC_TELEPORT_1  = 61
 BLOC_CHALLENGE   = 62
 
@@ -1834,7 +1834,7 @@ while running:
 
                     if menuCursor == MENU_CONTINUE:
                         level = maxLevelReached
-                        
+
                     startLevelPhase()
                 else:
                     subMenu = menuCursor
