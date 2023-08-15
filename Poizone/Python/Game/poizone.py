@@ -145,6 +145,11 @@ isRevenge           = False         # Revenge mode ?
 windowFade          = 0             # 0..255
 menuCounter         = 0
 
+absTime             = 0
+tutoCounter         = 0
+currTutoPage        = 0
+maxLevelReached     = 1     # For CONTINUE option
+
 # Utility functions
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
@@ -1285,7 +1290,7 @@ def displayCredits():
 def displayMainMenu():
     TEXT_COLOR = (155, 155,  55)
     HIGH_COLOR = (255, 255, 155)
-    DEACT_COLOR  = (40,   40,  30)
+    DEACT_COLOR= (40,   40,  30)
     
     CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
@@ -1637,11 +1642,7 @@ legendSprites = []
 for index in range(0, 2):
     legendSprites.append(ss_legend.get_indexed_image(index, 20, 20))
 
-# Variables
-absTime = 0
-tutoCounter = 0
-currTutoPage = 0
-maxLevelReached = 1     # For CONTINUE option
+# Init input
 
 #             Up     Down   Left   Right  Space  Backsp Return Escape Pause
 keyDown    = [False, False, False, False, False, False, False, False, False]
