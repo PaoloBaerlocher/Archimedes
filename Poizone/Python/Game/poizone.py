@@ -38,6 +38,7 @@ ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
 OPTIONS_ID = ["SFX", "MUSIC"]
 TUTO_PAGES = 15
+DEBUG_FEATURES = True
 
 # PHASE_
 PHASE_NONE              = 0
@@ -1768,26 +1769,26 @@ while running:
                 keyDown[KEY_PAUSE] = down
 
             if not down:
+                if DEBUG_FEATURES == True:
+                    if event.key == pygame.K_F5:    # Prev level
+                        if (level > 1):
+                            level -= 1
+                            loadLevel()
 
-                if event.key == pygame.K_F5:    # Prev level
-                    if (level > 1):
-                        level -= 1
-                        loadLevel()
+                    if event.key == pygame.K_F6:    # Next level
+                        if (level < 50):
+                            level += 1
+                            loadLevel()
 
-                if event.key == pygame.K_F6:    # Next level
-                    if (level < 50):
-                        level += 1
-                        loadLevel()
+                    if event.key == pygame.K_F7:  # Prev revenge map
+                        if (level > 5):
+                            level -= 5
+                            startRevengeIntroPhase()
 
-                if event.key == pygame.K_F7:  # Prev revenge map
-                    if (level > 5):
-                        level -= 5
-                        startRevengeIntroPhase()
-
-                if event.key == pygame.K_F8:  # Next revenge map
-                    if (level < 45):
-                        level += 5
-                        startRevengeIntroPhase()
+                    if event.key == pygame.K_F8:  # Next revenge map
+                        if (level < 45):
+                            level += 5
+                            startRevengeIntroPhase()
 
     for i in range(0, len(keyDown)):
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
