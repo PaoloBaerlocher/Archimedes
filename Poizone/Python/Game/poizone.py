@@ -46,7 +46,7 @@ PHASE_MENU              = 2
 PHASE_LEVEL             = 3
 PHASE_RESULT            = 4
 PHASE_END_LEVEL         = 5
-PHASE_CHALLENGE_INTRO   = 6
+PHASE_REVENGE_INTRO     = 6
 PHASE_GAME_WON          = 7
 PHASE_ENTER_NAME        = 8
 
@@ -118,7 +118,7 @@ BLOC_ELECTRO_1   = 22
 BLOC_ELECTRO     = 23
 BLOC_TELEPORT_0  = 60       # Teleporter Anim
 BLOC_TELEPORT_1  = 61
-BLOC_CHALLENGE   = 62
+BLOC_REVENGE     = 62
 
 # Enums
 
@@ -141,7 +141,7 @@ toxicBlocsLeft      = 0
 cyclonesPace        = 0             # For cyclones
 cyclonesList        = []
 
-itsChallenge        = False         # Challenge ?
+isRevenge           = False         # Revenge mode ?
 windowFade          = 0             # 0..255
 menuCounter         = 0
 
@@ -475,7 +475,7 @@ class Penguin():
 
         # Move camera to follow penguin, and clamp its position
 
-        if not itsChallenge:
+        if not isRevenge:
             offsetX = penguin1.posX + 8 - baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
             if (offsetX < 0):
                 baseX -= PENG_WALK_STEP
@@ -598,7 +598,7 @@ class Monster():
 
     def killAndRebirth(self):
 
-        global itsChallenge
+        global isRevenge
 
         self.dirX = 0
         self.dirY = 0
@@ -609,8 +609,8 @@ class Monster():
         self.setRandomPosition()
 
     def getBirthRange(self):
-        global itsChallenge
-        return 300 if itsChallenge == True else 2200
+        global isRevenge
+        return 300 if isRevenge == True else 2200
 
     def isAlive(self):
         return self.counter >= 0
@@ -718,11 +718,11 @@ class Monster():
         return index + (int(self.counter / 8) % 4)
 
     def setRandomPosition(self):
-        global penguin1, scheme, itsChallenge, occupyTable
+        global penguin1, scheme, isRevenge, occupyTable
 
         while True:
 
-            if itsChallenge == False:
+            if isRevenge == False:
                 x = 3 + random.randrange(0, 48-2*3)
                 y = 3 + random.randrange(0, 48-2*3)
             else:
@@ -785,7 +785,7 @@ def resetGame():
     penguin1.score = 0
 
 def resetLevel():
-    global baseX, baseY, penguin1, itsChallenge, gameTimer
+    global baseX, baseY, penguin1, isRevenge, gameTimer
 
     baseX = 18 * BLOC_SIZE + 8
     baseY = 18 * BLOC_SIZE + 8
@@ -802,29 +802,29 @@ def resetLevel():
 
     gameTimer += 0.99       # To see the first full second, initially
 
-    itsChallenge = False  # Challenge ?
-
+    isRevenge = False
+    
     playMusic(musicPlay[currLand], -1)
     playSFX(soundReady)
 
-def resetChallenge(challenge):
-    global baseX, baseY, penguin1, itsChallenge, gameTimer
+def resetRevenge(revenge):
+    global baseX, baseY, penguin1, isRevenge, gameTimer
 
-    itsChallenge = True
+    isRevenge = True
 
-    px = challenge % 4
-    py = challenge // 4
+    px = revenge % 4
+    py = revenge // 4
 
     baseX = (12 * px) * BLOC_SIZE
     baseY = (1 + 12 * py) * BLOC_SIZE
     penguin1.reset()
 
-    # Overrides for challenge
-    penguin1.posX = baseX + 6 * BLOC_SIZE  # Center of challenge map
+    # Overrides for Revenge mode
+    penguin1.posX = baseX + 6 * BLOC_SIZE  # Center of revenge map
     penguin1.posY = baseY + 6 * BLOC_SIZE
-
-    penguin1.ghost = 10000  # Permanent ghost in Challenge mode
-
+    
+    penguin1.ghost = 10000  # Permanent ghost in Revenge mode
+    
     gameTimer = 30.99
 
     setElectrifyBorder(False)
@@ -850,8 +850,8 @@ def loadSprites():
         for index in range(24, 26):
             s.append(ss_shared [0].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
-        # 62: specific bloc for Challenge
-        s.append(ss_challenge.get_indexed_image(0, BLOC_SIZE, BLOC_SIZE))
+        # 62: specific bloc for Revenge
+        s.append(ss_revenge.get_indexed_image(0, BLOC_SIZE, BLOC_SIZE))
 
     # Monsters
     monstersSprites = []
@@ -905,9 +905,9 @@ def loadLevel():
         m.setRandomPosition()
         monsters.append(m)
 
-def loadChallenge():
+def loadRevenge():
     global level, currLand, scheme, blocsCount, monsters, cyclonesList
-    print("Load challenge for level " + str(level))
+    print("Load revenge for level " + str(level))
     currLand = (level - 1) // 10
     loadSprites()
 
@@ -917,7 +917,7 @@ def loadChallenge():
 
     cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
 
-    resetChallenge((level-1) // 5)
+    resetRevenge((level-1) // 5)
 
     initOccupyTable()
 
@@ -991,8 +991,8 @@ def getAliasBlocIndex(index):
     if index == BLOC_TELEPORT_0 or index == BLOC_TELEPORT_1:
         return BLOC_TELEPORT_0 + (int(absTime / 256) % 2)
 
-    if index == 24 and itsChallenge == True:
-        return BLOC_CHALLENGE
+    if index == 24 and isRevenge == True:
+        return BLOC_REVENGE
 
     return index
 
@@ -1070,20 +1070,20 @@ def startEndLevelPhase():
         rocketOriginY = 60 if currLand == LAND_ESA else 35
         part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
 
-def startChallengeIntroPhase():
+def startRevengeIntroPhase():
     global gamePhase, windowFade, introTimer
 
-    print('PHASE_CHALLENGE_INTRO')
-    gamePhase = PHASE_CHALLENGE_INTRO
+    print('PHASE_REVENGE_INTRO')
+    gamePhase = PHASE_REVENGE_INTRO
     windowFade = 0
-    loadChallenge()
+    loadRevenge()
     introTimer = 0
 
-def startChallengeLevelPhase():
+def startRevengeLevelPhase():
     global gamePhase, windowFade
 
     windowFade = 0
-    playMusic(musicChall)
+    playMusic(musicRevenge)
     gamePhase = PHASE_LEVEL
 
 def startGameWonPhase():
@@ -1306,14 +1306,14 @@ def displayGameHud():
     y = 110
 
     # Level
-    if not itsChallenge:
+    if not isRevenge:
         displayText(font, "ZONE", LEVEL_COLOR, HUD_CENTER, y)
         y += 12
         displayText(font, f"{level:02d}", LEVEL_COLOR, HUD_CENTER, y)
         y += 30
 
     # Completion
-    if not itsChallenge:
+    if not isRevenge:
         percent = int(100 * (totalToxicBlocs - toxicBlocsLeft) / totalToxicBlocs)
         col = COMPLETION_COLOR if percent < SUCCESS_GOAL else SUCCESS_COLOR
         displayText(font, "GOAL", col, HUD_CENTER, y)
@@ -1420,7 +1420,7 @@ def displayDancingPenguins():
         p.posY = py
         p.display(screen, 0, 0)
 
-def displayChallengeIntroMode():
+def displayRevengeIntroMode():
     TITLE_COLOR = (105, 255, 255)
     TEXT_COLOR = (50, 255, 140)
 
@@ -1519,7 +1519,7 @@ font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
 # Load musics recorded from SoundTracker
 musicIntro  = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
-musicChall  = pygame.mixer.Sound('Data/musics/challenge.wav')    # Patterns 16-20
+musicRevenge= pygame.mixer.Sound('Data/musics/revenge.wav')      # Patterns 16-20
 musicWin    = pygame.mixer.Sound('Data/musics/win.wav')          # Patterns 21-26
 musicWinGame= pygame.mixer.Sound('Data/musics/winGame.wav')      # Patterns 27-29
 musicEnd    = pygame.mixer.Sound('Data/musics/endLand.wav')      # Pattern 29
@@ -1592,7 +1592,7 @@ ss_border   = spritesheet.SpriteSheet('Data/border.png')
 ss_rocket   = spritesheet.SpriteSheet('Data/rocket.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
-ss_challenge= spritesheet.SpriteSheet('Data/challengeTile.png')
+ss_revenge  = spritesheet.SpriteSheet('Data/revengeTile.png')
 ss_panels   = spritesheet.SpriteSheet('Data/panels.png')
 ss_arrows   = spritesheet.SpriteSheet('Data/arrows.png')    # 4 red and 4 green arrows
 ss_legend   = spritesheet.SpriteSheet('Data/legend.png')
@@ -1778,15 +1778,15 @@ while running:
                         level += 1
                         loadLevel()
 
-                if event.key == pygame.K_F7:  # Prev challenge
+                if event.key == pygame.K_F7:  # Prev revenge map
                     if (level > 5):
                         level -= 5
-                        startChallengeIntroPhase()
+                        startRevengeIntroPhase()
 
-                if event.key == pygame.K_F8:  # Next challenge
+                if event.key == pygame.K_F8:  # Next revenge map
                     if (level < 45):
                         level += 5
-                        startChallengeIntroPhase()
+                        startRevengeIntroPhase()
 
     for i in range(0, len(keyDown)):
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
@@ -1921,9 +1921,9 @@ while running:
             m.update()
 
         # Check end of game
-        if (gameTimer <= 0.0) or ((toxicBlocsLeft == 0) and not itsChallenge):
+        if (gameTimer <= 0.0) or ((toxicBlocsLeft == 0) and not isRevenge):
             
-            if itsChallenge == True:
+            if isRevenge == True:
                 if level >= 50:             # End of game reached!
                     startGameWonPhase()
                 else:
@@ -1958,7 +1958,7 @@ while running:
             else:
                 startEndLevelPhase()
 
-    elif gamePhase == PHASE_CHALLENGE_INTRO:
+    elif gamePhase == PHASE_REVENGE_INTRO:
 
         if windowFade < 128:
             windowFade += 16
@@ -1966,7 +1966,7 @@ while running:
         introTimer += 1
 
         if keyPressed[KEY_SPACE] or (introTimer > 60*4):
-            startChallengeLevelPhase()
+            startRevengeLevelPhase()
 
     elif gamePhase == PHASE_GAME_WON:
         resultTimer += 1
@@ -2109,11 +2109,11 @@ while running:
 
         else:
             if level % 5 == 0:
-                startChallengeIntroPhase()
+                startRevengeIntroPhase()
             else:
                 level += 1
                 startLevelPhase()
-    else: # PHASE_LEVEL or PHASE_RESULT or PHASE_CHALLENGE_INTRO
+    else: # PHASE_LEVEL or PHASE_RESULT or PHASE_REVENGE_INTRO
         # Draw BG
 
         anim = absTime // 4
@@ -2122,8 +2122,8 @@ while running:
 
                 blocOffset = (baseY // BLOC_SIZE + y) * SCHEME_WIDTH + (baseX // BLOC_SIZE + x)
 
-                if itsChallenge == True:
-                    index = 24      # Empty land in challenge mode
+                if isRevenge == True:
+                    index = 24      # Empty land in Revenge mode
                 else:
                     index = int(lands[currLand][4 * blocOffset + (anim % 4)])
 
@@ -2155,8 +2155,8 @@ while running:
         if gamePhase == PHASE_RESULT:
             # Display result over game
             displayResult()
-        elif gamePhase == PHASE_CHALLENGE_INTRO:
-            displayChallengeIntroMode()
+        elif gamePhase == PHASE_REVENGE_INTRO:
+            displayRevengeIntroMode()
         elif gamePhase == PHASE_GAME_WON:
             displayGameWon()
         elif gamePhase == PHASE_ENTER_NAME:
