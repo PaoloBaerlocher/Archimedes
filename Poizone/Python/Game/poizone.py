@@ -1240,8 +1240,8 @@ def displayTutoMap(tutoIndex, offsetX, offsetY):
         d = 4 + ((tutoCounter % 32) / 8)        # Animate arrow
         for arrow in tuto.arrows[tutoIndex][arrowType]:
             dir = arrow [2]
-            deltaX = offsetX + d * (1 if dir == 0 else -1 if dir == 1 else 0)
-            deltaY = offsetY + d * (1 if dir == 3 else -1 if dir == 2 else 0)
+            deltaX = offsetX + d * (1 if dir == tuto.DIR_RIGHT else -1 if dir == tuto.DIR_LEFT else 0)
+            deltaY = offsetY + d * (1 if dir == tuto.DIR_DOWN  else -1 if dir == tuto.DIR_UP   else 0)
             screen.blit(arrowsSprites[dir+4*arrowType], (deltaX + arrow [0] * BLOC_SIZE, deltaY + arrow [1] * BLOC_SIZE))
 
 def displayOptions():

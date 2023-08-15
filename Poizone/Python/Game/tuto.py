@@ -97,87 +97,92 @@ maps = [
 
 # x,y (0..3) & direction (0..3) (RIGHT,LEFT,UP,DOWN)
 
+DIR_RIGHT = 0
+DIR_LEFT  = 1
+DIR_UP    = 2
+DIR_DOWN  = 3
+
 arrows = [
 [ # Bloc 0 (CFC)
     [ # Red
-        [ 2, 2, 1 ],
-        [ 3, 3, 2 ]
+        [ 2, 2, DIR_LEFT ],
+        [ 3, 3, DIR_UP ]
     ],
     [ # Green
-        [ 1, 1, 3 ]
+        [ 1, 1, DIR_DOWN ]
     ]
 ],
 
 [ # Bloc 1 (GREEN)
     [ # Red
-        [ 2, 0, 3 ]
+        [ 2, 0, DIR_DOWN ]
     ],
     [ # Green
-        [ 2, 1, 0 ],
-        [ 2, 1, 1 ]
+        [ 2, 1, DIR_RIGHT ],
+        [ 2, 1, DIR_LEFT ]
     ]
 ],
 
 [  # Bloc 2
     [  # Red
-        [ 1, 1, 0 ],
-        [ 1, 1, 1 ]
+        [ 1, 1, DIR_RIGHT ],
+        [ 1, 1, DIR_LEFT ]
     ],
     [  # Green
-        [ 1, 0, 3 ],
-        [ 2, 1, 3 ],
-        [ 3, 2, 1 ]
+        [ 1, 0, DIR_DOWN ],
+        [ 2, 1, DIR_DOWN ],
+        [ 3, 2, DIR_LEFT ]
     ]
 ],
 
 [ # Bloc 3
     [ # Red
-        [ 2, 1, 1 ],
-        [ 1, 3, 2 ]
+        [ 2, 1, DIR_LEFT ],
+        [ 1, 3, DIR_UP ]
     ],
     [ # Green
-        [ 3, 2, 2 ]
+        [ 3, 2, DIR_UP ]
     ]
 ],
 
 [  # Bloc 4
     [  # Red
-        [ 2, 2, 2 ],
-        [ 1, 1, 0 ]
+        [ 2, 2, DIR_UP ],
+        [ 1, 1, DIR_RIGHT ]
     ],
     [  # Green
-        [ 0, 1, 3 ],
-        [ 2, 2, 1 ]
+        [ 0, 1, DIR_DOWN ],
+        [ 2, 2, DIR_LEFT ]
     ]
 ],
 
 [  # Bloc 5
     [  # Red
-        [ 1, 1, 0 ],
-        [ 3, 2, 1 ]
+        [ 1, 1, DIR_RIGHT ],
+        [ 3, 2, DIR_LEFT ]
     ],
     [  # Green
-        [ 2, 0, 3 ],
-        [ 2, 3, 2 ]
+        [ 2, 0, DIR_DOWN ],
+        [ 2, 3, DIR_UP ]
     ]
 ],
 
 [  # Bloc 6
     [  # Red
-        [ 3, 0, 1 ],
-        [ 2, 3, 2 ]
+        [ 3, 0, DIR_LEFT ],
+        [ 2, 3, DIR_UP ]
     ],
     [  # Green
-        [ 2, 2, 1]
+        [ 2, 2, DIR_LEFT ]
     ]
 ],
 
 [  # Bloc 7
     [  # Red
-        [ 0, 1, 3]
+        [ 0, 1, DIR_DOWN ]
     ],
     [  # Green
-        [ 3, 1, 1 ]
+        [ 3, 1, DIR_LEFT ]
     ]
 ],
 
