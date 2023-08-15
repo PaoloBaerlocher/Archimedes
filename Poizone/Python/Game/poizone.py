@@ -28,8 +28,8 @@ BORDER_SIZE = 3 * BLOC_SIZE
 MONSTERS_NB = 8
 SCHEME_WIDTH = 64       # In bloc units
 SCHEME_SIZE = 3072      # SCHEME_WIDTH*48
-PENG_WALK_STEP = 4      # In pixels
-MONS_WALK_STEP = 2
+PENG_WALK_STEP = 2      # In pixels
+MONS_WALK_STEP = 1
 MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
 JOY_LIMIT = 0.8
@@ -483,14 +483,22 @@ class Penguin():
 
         if not isRevenge:
             offsetX = penguin1.posX + 8 - baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
-            if (offsetX < 0):
+            if offsetX < -PENG_WALK_STEP:
+                baseX -= PENG_WALK_STEP * 2
+            elif offsetX < 0:
                 baseX -= PENG_WALK_STEP
+            elif offsetX > PENG_WALK_STEP:
+                baseX += PENG_WALK_STEP * 2
             elif offsetX > 0:
                 baseX += PENG_WALK_STEP
 
             offsetY = penguin1.posY + 8 - baseY - (BLOCS_RANGE * BLOC_SIZE) // 2
-            if (offsetY < 0):
+            if offsetY < -PENG_WALK_STEP:
+                baseY -= PENG_WALK_STEP * 2
+            elif (offsetY < 0):
                 baseY -= PENG_WALK_STEP
+            elif offsetY > PENG_WALK_STEP:
+                baseY += PENG_WALK_STEP * 2
             elif offsetY > 0:
                 baseY += PENG_WALK_STEP
 
@@ -2120,7 +2128,7 @@ while running:
 
         anim = absTime // 4
         for y in range(0, BLOCS_RANGE + 1):
-            for x in range(0, BLOCS_RANGE + 1):
+            for x in range(0, BLOCS_RANGE + 2):
 
                 blocOffset = (baseY // BLOC_SIZE + y) * SCHEME_WIDTH + (baseX // BLOC_SIZE + x)
 
