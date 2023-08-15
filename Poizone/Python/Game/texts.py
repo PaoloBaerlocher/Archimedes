@@ -87,13 +87,14 @@ TUTO_BLOC = [
     ],
 
     [  # ALCOOL
-        "Crushing this substance makes you clumsy.",
+        "Crushing this substance makes you clumsy:",
+        "Left becomes Right, and Up becomes Down...",
         "Avoid that, if possible."
     ],
-
+    
     [  # TELEPORT
-        "Teleporter gates are available on",
-        "some maps. Toxic creatures are not allowed."
+        "Three teleporter gates are available.",
+        "Toxic creatures are not allowed to use them."
     ],
 
     [  # Others
