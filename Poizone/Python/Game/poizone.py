@@ -466,6 +466,9 @@ class Penguin():
             self.setStatus(PenguinStatus.IDLE)
             self.animPhase = 0
             self.ghost = 60
+            # Snap to grid
+            self.posX = ((self.posX + BLOC_SIZE // 2) // BLOC_SIZE) * BLOC_SIZE
+            self.posY = ((self.posY + BLOC_SIZE // 2) // BLOC_SIZE) * BLOC_SIZE
 
         self.anim = self.getPenguinAnimOffset()
         self.animPhase += 1
@@ -1364,7 +1367,7 @@ def displayResult():
     DECONTAMINATED_COLOR = (50, 255, 140)
     TIME_LEFT_COLOR = (200, 200, 240)
     BONUS_COLOR = (40, 200, 240)
-    GAMEOVER_COLOR = (255, 60, 60)
+    GAMEOVER_COLOR = (255, 200, 230)
     GOOD_COLOR = (0, 255, 0)
     BAD_COLOR = (255, 0, 0)
 
