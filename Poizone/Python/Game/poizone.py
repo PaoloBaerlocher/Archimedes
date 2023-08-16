@@ -437,30 +437,34 @@ class Penguin():
         if keyDown[KEY_GAME_PUSH] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
             self.pushBloc()
 
-        if isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
-            if keyDown[KEY_GAME_LEFT]:
-                self.dirX = -1 if self.invert == False else +1
-                self.dirY = 0
-                if not self.blocIsWalkable(self.dirX, self.dirY):
-                    self.setStatus(PenguinStatus.IDLE)
+        if self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
+            onBlock = isOnBlock(self.posX, self.posY)
 
-            if keyDown[KEY_GAME_RIGHT]:
-                self.dirX = 1 if self.invert == False else -1
-                self.dirY = 0
-                if not self.blocIsWalkable(self.dirX, self.dirY):
-                    self.setStatus(PenguinStatus.IDLE)
+            if (self.posY % BLOC_SIZE) == 0:    # Cannot change X direction if not aligned on bloc vertically
+                if keyDown[KEY_GAME_LEFT]:
+                    self.dirX = -1 if self.invert == False else +1
+                    self.dirY = 0
+                    if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
+                        self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[KEY_GAME_UP]:
-                self.dirX = 0
-                self.dirY = -1 if self.invert == False else +1
-                if not self.blocIsWalkable(self.dirX, self.dirY):
-                    self.setStatus(PenguinStatus.IDLE)
+                if keyDown[KEY_GAME_RIGHT]:
+                    self.dirX = 1 if self.invert == False else -1
+                    self.dirY = 0
+                    if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
+                        self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[KEY_GAME_DOWN]:
-                self.dirX = 0
-                self.dirY = 1 if self.invert == False else -1
-                if not self.blocIsWalkable(self.dirX, self.dirY):
-                    self.setStatus(PenguinStatus.IDLE)
+            if (self.posX % BLOC_SIZE) == 0:    # Cannot change Y direction if not aligned on bloc horizontally
+                if keyDown[KEY_GAME_UP]:
+                    self.dirX = 0
+                    self.dirY = -1 if self.invert == False else +1
+                    if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
+                        self.setStatus(PenguinStatus.IDLE)
+
+                if keyDown[KEY_GAME_DOWN]:
+                    self.dirX = 0
+                    self.dirY = 1 if self.invert == False else -1
+                    if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
+                        self.setStatus(PenguinStatus.IDLE)
 
         if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_GAME_PUSH]):
             self.setStatus(PenguinStatus.IDLE)
@@ -1734,7 +1738,7 @@ while running:
 
         if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
             keyDown[KEY_RIGHT] = keyDown[KEY_GAME_RIGHT] = False
-            
+
         if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
             keyDown[KEY_LEFT] =  keyDown[KEY_GAME_LEFT] = False
 
@@ -1942,11 +1946,11 @@ while running:
         elif subMenu == MENU_CONTROLS:
             if lastKeyDown != NONE and lastKeyDown != pygame.K_ESCAPE:
                 opt.setValue(CTRL_ID[ctrlCursor], lastKeyDown)
+                opt.save()
                 lastKeyDown = NONE
                 ctrlCursor += 1
                 playSFX(soundValid)
                 if ctrlCursor == len(CTRL_ID):
-                    opt.save()
                     subMenu = MENU_MAIN  # Back to main menu
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
