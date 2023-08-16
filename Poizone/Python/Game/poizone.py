@@ -232,8 +232,7 @@ class Penguin():
                         playSFX(soundLaunch)
 
                         if bloc == BLOC_RED:        # Do NOT launch red chemical block!
-                            playSFX(soundOhNo)
-                            self.die()
+                            self.die(True)
                 else:
                     self.crushBloc(bloc)
 
@@ -274,29 +273,29 @@ class Penguin():
 
         if bloc == BLOC_POISON:  # Must be in contact with at least one ALU bloc
             if not (blocUp == BLOC_ALU or blocDown == BLOC_ALU or blocLeft == BLOC_ALU or blocRight == BLOC_ALU):
-                self.die()
+                self.die(True)
 
         if bloc == BLOC_ALU:  # Cannot crush ALU blob
-            self.die()
+            self.die(True)
 
         if bloc == BLOC_BATTERY:
             if self.dirY == 0:  # Crushed from up or down ?
-                self.die()
+                self.die(True)
 
         if bloc == BLOC_DDT:
             if not (blocUp == BLOC_DDT or blocDown == BLOC_DDT or blocLeft == BLOC_DDT or blocRight == BLOC_DDT):
-                self.die()
+                self.die(True)
 
         if bloc == BLOC_CFC:
             if self.dirY != 1:  # Crushed from up ?
-                self.die()
+                self.die(True)
 
         if bloc == BLOC_URANIUM:  # Are other BLOC_URANIUM blocs nearby ?
             if (blocUp == BLOC_URANIUM or blocDown == BLOC_URANIUM or blocLeft == BLOC_URANIUM or blocRight == BLOC_URANIUM):
-                self.die()
+                self.die(True)
 
         if bloc == BLOC_GREEN_CHEM:
-            self.die()
+            self.die(True)
 
         blocX = self.posX // BLOC_SIZE + self.dirX
         blocY = self.posY // BLOC_SIZE + self.dirY
@@ -311,11 +310,14 @@ class Penguin():
 
         playSFX(soundCrash)
 
-    def die(self):
+    def die(self, playOhNo = False):
 
         self.animPhase = 0
         self.setStatus(PenguinStatus.DIE)
-        playSFX(soundColl)
+
+        if playOhNo:
+            playSFX(soundOhNo)
+
         setElectrifyBorder(False)
 
     def checkSquareDiamond(self, bx, by):
@@ -495,7 +497,7 @@ class Penguin():
             offsetY = penguin1.posY + 8 - baseY - (BLOCS_RANGE * BLOC_SIZE) // 2
             if offsetY < -PENG_WALK_STEP:
                 baseY -= PENG_WALK_STEP * 2
-            elif (offsetY < 0):
+            elif offsetY < 0:
                 baseY -= PENG_WALK_STEP
             elif offsetY > PENG_WALK_STEP:
                 baseY += PENG_WALK_STEP * 2

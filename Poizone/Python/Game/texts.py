@@ -91,7 +91,7 @@ TUTO_BLOC = [
         "Left becomes Right, and Up becomes Down...",
         "Avoid that, if possible."
     ],
-    
+
     [  # TELEPORT
         "Three teleporter gates are available.",
         "Toxic creatures are not allowed to use them."
@@ -120,4 +120,10 @@ GAME_WON = [
 CREDITS = [ "CODE by Paolo Baerlocher",
             "GRAPHICS by Marc Andreoli",
             "MUSIC by Fabrice Hautecloque",
+            "",
+            "Game originally developed for the",
+            "Acorn Archimedes in 1991 and published",
+            "by ETERNA.",
+            "",
+            "Ported to PC using pygame engine in 2023."
 ]
