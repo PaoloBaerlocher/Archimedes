@@ -32,6 +32,12 @@ class Options(object):
         self.setValue("VERSION", 1)
         self.setValue("SFX", True)
         self.setValue("MUSIC", True)
+        #
+        self.setValue("CTRL_LEFT",  pygame.K_LEFT)
+        self.setValue("CTRL_RIGHT", pygame.K_RIGHT)
+        self.setValue("CTRL_UP",    pygame.K_UP)
+        self.setValue("CTRL_DOWN",  pygame.K_DOWN)
+        self.setValue("CTRL_PUSH",  pygame.K_SPACE)
 
     def setValue(self, id, value):
         self.entries [id] = value

@@ -4,6 +4,7 @@ MAIN_MENU = [
     "PLAY (Single Player)",
     "CONTINUE",
     "HIGH SCORES",
+    "CONTROLS",
     "TUTORIAL",
     "OPTIONS",
     "CREDITS"
@@ -115,6 +116,14 @@ GAME_WON = [
     "YOU HAVE FINISHED",
     "THE GAME!!! HAVE",
     "YOU CHEATED ?",
+]
+
+CTRL = [
+    "LEFT",
+    "RIGHT",
+    "UP",
+    "DOWN",
+    "PUSH"
 ]
 
 CREDITS = [ "CODE by Paolo Baerlocher",

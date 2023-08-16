@@ -37,6 +37,7 @@ SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
 ALPHABET_COLUMNS = 7
 OPTIONS_ID = ["SFX", "MUSIC"]
+CTRL_ID = [ "CTRL_LEFT", "CTRL_RIGHT", "CTRL_UP", "CTRL_DOWN", "CTRL_PUSH" ]
 TUTO_PAGES = 15
 DEBUG_FEATURES = True
 
@@ -56,9 +57,10 @@ MENU_MAIN       = -1
 MENU_PLAY       = 0
 MENU_CONTINUE   = 1
 MENU_HIGHSCORES = 2     # Submenus
-MENU_TUTORIAL   = 3
-MENU_OPTIONS    = 4
-MENU_CREDITS    = 5
+MENU_CONTROLS   = 3
+MENU_TUTORIAL   = 4
+MENU_OPTIONS    = 5
+MENU_CREDITS    = 6
 
 # LEGEND_
 LEGEND_RIGHT    = 0
@@ -74,6 +76,12 @@ KEY_BACKSPACE   = 5
 KEY_RETURN      = 6
 KEY_ESCAPE      = 7
 KEY_PAUSE       = 8
+KEY_GAME_LEFT   = 9
+KEY_GAME_RIGHT  = 10
+KEY_GAME_UP     = 11
+KEY_GAME_DOWN   = 12
+KEY_GAME_PUSH   = 13
+KEY_NB          = 14
 
 # LANDS_
 LAND_ICE      = 0
@@ -150,6 +158,8 @@ absTime             = 0
 tutoCounter         = 0
 currTutoPage        = 0
 maxLevelReached     = 1     # For CONTINUE option
+
+lastKeyDown         = NONE
 
 # Utility functions
 
@@ -1260,6 +1270,24 @@ def displayTutoMap(tutoIndex, offsetX, offsetY):
             deltaY = offsetY + d * (1 if dir == tuto.DIR_DOWN  else -1 if dir == tuto.DIR_UP   else 0)
             screen.blit(arrowsSprites[dir+4*arrowType], (deltaX + arrow [0] * BLOC_SIZE, deltaY + arrow [1] * BLOC_SIZE))
 
+def displayControls():
+
+    TITLE_COLOR = (255, 255, 155)
+    OPT_COLOR = (180, 255, 255)
+    VALUE_COLOR = (180, 255, 255)
+    HIGHLIGHT_COLOR = (230, 255, 255)
+
+    # Title
+    displayText(font_big, "CONTROLS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+
+    i = 0
+    for i in range(0, len(CTRL_ID)):
+        y = 120 + 15 * i
+        highlight = (ctrlCursor == i)
+        col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
+        displayTextRight(font, texts.CTRL[i], col, ORIGIN_X + 100, y)
+        displayTextLeft(font, pygame.key.name(opt.getValue(CTRL_ID[i])), col, ORIGIN_X + 150, y)
+
 def displayOptions():
     global optCursor
 
@@ -1296,7 +1324,7 @@ def displayCredits():
     y = 120
     for line in texts.CREDITS:
         displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
-        y += 15
+        y += 12
 
 def displayMainMenu():
     TEXT_COLOR = (155, 155,  55)
@@ -1654,10 +1682,8 @@ for index in range(0, 2):
     legendSprites.append(ss_legend.get_indexed_image(index, 20, 20))
 
 # Init input
-
-#             Up     Down   Left   Right  Space  Backsp Return Escape Pause
-keyDown    = [False, False, False, False, False, False, False, False, False]
-keyPressed = [False, False, False, False, False, False, False, False, False]
+keyDown    = [False] * KEY_NB
+keyPressed = [False] * KEY_NB
 
 old_x_axis = 0.0
 old_y_axis = 0.0
@@ -1740,6 +1766,7 @@ while running:
             # Map joy buttons to virtual keys
             if event.button == 0:
                 keyDown[KEY_SPACE] = buttonIsDown
+                keyDown[KEY_GAME_PUSH] = buttonIsDown
             if event.button == 1:
                 keyDown[KEY_ESCAPE] = buttonIsDown
             elif event.button == 6:
@@ -1750,6 +1777,10 @@ while running:
                 print('Unhandled JOY button ' + str(event.button))
 
         if event.type == pygame.KEYUP or event.type == pygame.KEYDOWN:
+
+            if event.type == pygame.KEYDOWN:
+                lastKeyDown = event.key
+
             down = (event.type == pygame.KEYDOWN)
             if event.key == pygame.K_LEFT:
                 keyDown[KEY_LEFT] = down
@@ -1777,6 +1808,23 @@ while running:
 
             if event.key == pygame.K_F12:
                 keyDown[KEY_PAUSE] = down
+
+            # GAME KEYS
+
+            if event.key == opt.getValue("CTRL_LEFT"):
+                keyDown[KEY_GAME_LEFT] = down
+
+            if event.key == opt.getValue("CTRL_RIGHT"):
+                keyDown[KEY_GAME_RIGHT] = down
+
+            if event.key == opt.getValue("CTRL_UP"):
+                keyDown[KEY_GAME_UP] = down
+
+            if event.key == opt.getValue("CTRL_DOWN"):
+                keyDown[KEY_GAME_DOWN] = down
+
+            if event.key == opt.getValue("CTRL_PUSH"):
+                keyDown[KEY_GAME_PUSH] = down
 
             if not down:
                 if DEBUG_FEATURES == True:
@@ -1831,7 +1879,7 @@ while running:
 
         # Main Menu navigation
         if subMenu == MENU_MAIN:
-            if keyPressed[KEY_DOWN] and menuCursor < 5:
+            if keyPressed[KEY_DOWN] and menuCursor < 6:
                 menuCursor += 1
                 while isMenuDeactivated(menuCursor):
                     menuCursor += 1
@@ -1856,6 +1904,9 @@ while running:
 
                     if subMenu == MENU_OPTIONS:
                         optCursor = 0
+                    if subMenu == MENU_CONTROLS:
+                        ctrlCursor = 0
+                        lastKeyDown = NONE      # To avoid using unwanted SPACE key event
                     if subMenu == MENU_TUTORIAL:
                         tutoCounter = 0
                         currTutoPage = 0
@@ -1887,6 +1938,16 @@ while running:
                 opt.save()
                 applyChannelVolumes()
                 playSFX(soundValid)
+
+        elif subMenu == MENU_CONTROLS:
+            if lastKeyDown != NONE and lastKeyDown != pygame.K_ESCAPE:
+                opt.setValue(CTRL_ID[ctrlCursor], lastKeyDown)
+                lastKeyDown = NONE
+                ctrlCursor += 1
+                playSFX(soundValid)
+                if ctrlCursor == len(CTRL_ID):
+                    opt.save()
+                    subMenu = MENU_MAIN  # Back to main menu
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
@@ -2045,6 +2106,8 @@ while running:
             displayLeaderboard()
         elif subMenu == MENU_TUTORIAL:
             displayTuto()
+        elif subMenu == MENU_CONTROLS:
+            displayControls()
         elif subMenu == MENU_OPTIONS:
             displayOptions()
         elif subMenu == MENU_CREDITS:

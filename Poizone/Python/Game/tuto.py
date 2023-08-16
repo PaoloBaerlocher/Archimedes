@@ -95,7 +95,7 @@ maps = [
 
 ]
 
-# x,y (0..3) & direction (0..3) (RIGHT,LEFT,UP,DOWN)
+# Arrow x,y position (0..3) & direction (RIGHT,LEFT,UP,DOWN)
 
 DIR_RIGHT = 0
 DIR_LEFT  = 1
