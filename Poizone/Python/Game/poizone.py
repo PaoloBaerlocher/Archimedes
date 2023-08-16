@@ -76,10 +76,10 @@ KEY_BACKSPACE   = 5
 KEY_RETURN      = 6
 KEY_ESCAPE      = 7
 KEY_PAUSE       = 8
-KEY_GAME_LEFT   = 9
-KEY_GAME_RIGHT  = 10
-KEY_GAME_UP     = 11
-KEY_GAME_DOWN   = 12
+KEY_GAME_UP     = 9
+KEY_GAME_DOWN   = 10
+KEY_GAME_LEFT   = 11
+KEY_GAME_RIGHT  = 12
 KEY_GAME_PUSH   = 13
 KEY_NB          = 14
 
@@ -429,40 +429,40 @@ class Penguin():
     def update(self, keyDown):
         global monsters, teleporters, scheme, baseX, baseY
 
-        penguinMove = keyDown[KEY_LEFT] or keyDown[KEY_RIGHT] or keyDown[KEY_UP] or keyDown[KEY_DOWN]
+        penguinMove = keyDown[KEY_GAME_LEFT] or keyDown[KEY_GAME_RIGHT] or keyDown[KEY_GAME_UP] or keyDown[KEY_GAME_DOWN]
 
         if penguinMove:
             self.canTeleport = True
 
-        if keyDown[KEY_SPACE] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
+        if keyDown[KEY_GAME_PUSH] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
             self.pushBloc()
 
         if isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
-            if keyDown[KEY_LEFT]:
+            if keyDown[KEY_GAME_LEFT]:
                 self.dirX = -1 if self.invert == False else +1
                 self.dirY = 0
                 if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[KEY_RIGHT]:
+            if keyDown[KEY_GAME_RIGHT]:
                 self.dirX = 1 if self.invert == False else -1
                 self.dirY = 0
                 if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[KEY_UP]:
+            if keyDown[KEY_GAME_UP]:
                 self.dirX = 0
                 self.dirY = -1 if self.invert == False else +1
                 if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[KEY_DOWN]:
+            if keyDown[KEY_GAME_DOWN]:
                 self.dirX = 0
                 self.dirY = 1 if self.invert == False else -1
                 if not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_SPACE]):
+        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_GAME_PUSH]):
             self.setStatus(PenguinStatus.IDLE)
             setElectrifyBorder(False)
 
@@ -1459,7 +1459,7 @@ def displayDancingPenguins():
         p = dancingPenguins [i]
         p.dirX = dir
         p.dirY = 1 if dir == 0 else 0
-        p.update([False, dir == 0, dir == -1, dir == 1, False])
+        p.update([False, False, False, False, False, False, False, False, False, False, dir == 0, dir == -1, dir == 1, False])
         p.posX = px + 20 * i - 10
         p.posY = py
         p.display(screen, 0, 0)
@@ -1727,30 +1727,30 @@ while running:
         # X
 
         if x_axis > JOY_LIMIT:
-            keyDown[KEY_RIGHT] = True
+            keyDown[KEY_RIGHT] = keyDown[KEY_GAME_RIGHT] = True
 
         if x_axis < -JOY_LIMIT:
-            keyDown[KEY_LEFT] = True
+            keyDown[KEY_LEFT] = keyDown[KEY_GAME_LEFT] = True
 
         if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
-            keyDown[KEY_RIGHT] = False
-
+            keyDown[KEY_RIGHT] = keyDown[KEY_GAME_RIGHT] = False
+            
         if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
-            keyDown[KEY_LEFT] = False
+            keyDown[KEY_LEFT] =  keyDown[KEY_GAME_LEFT] = False
 
         # Y
 
         if y_axis > JOY_LIMIT:
-            keyDown[KEY_DOWN] = True
+            keyDown[KEY_DOWN] = keyDown[KEY_GAME_DOWN] = True
 
         if y_axis < -JOY_LIMIT:
-            keyDown[KEY_UP] = True
+            keyDown[KEY_UP] = keyDown [KEY_GAME_UP] = True
 
         if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
-            keyDown[KEY_DOWN] = False
+            keyDown[KEY_DOWN] = keyDown[KEY_GAME_DOWN] =  False
 
         if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
-            keyDown[KEY_UP] = False
+            keyDown[KEY_UP] = keyDown[KEY_GAME_UP] = False
 
         old_x_axis = x_axis
         old_y_axis = y_axis
@@ -2038,7 +2038,7 @@ while running:
 
         introTimer += 1
 
-        if keyPressed[KEY_SPACE] or (introTimer > 60*4):
+        if keyPressed[KEY_GAME_SPACE] or (introTimer > 60*4):
             startRevengeLevelPhase()
 
     elif gamePhase == PHASE_GAME_WON:
@@ -2157,7 +2157,7 @@ while running:
 
                 penguin1.dirX = dir
                 penguin1.dirY = 0
-                penguin1.update([False, False, dir == -1, dir == 1, False])
+                penguin1.update([False, False, False, False, False, False, False, False, False, False, False, dir == -1, dir == 1, False])
                 penguin1.display(screen, 0, 0)
 
             # Show monsters
