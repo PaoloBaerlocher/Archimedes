@@ -161,10 +161,6 @@ maxLevelReached     = 1     # For CONTINUE option
 
 lastKeyDown         = NONE
 
-# Utility functions
-
-def clamp(n, smallest, largest): return max(smallest, min(n, largest))
-
 # Classes
 
 class Penguin():
@@ -423,7 +419,7 @@ class Penguin():
             self.movBonusTimer -= 1
             if self.movMonsters > 0:  # At least one monster has been killed
                 c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
-                index = clamp(self.movMonsters - 1, 0, 3)  # Display corresponding bonus (20, 50, 100 or 200)
+                index = pygame.math.clamp(self.movMonsters - 1, 0, 3)  # Display corresponding bonus (20, 50, 100 or 200)
                 screen.blit(penguinSprites[72 + index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
 
     def update(self, keyDown):
@@ -521,8 +517,8 @@ class Penguin():
         MAX_X = (48 - BLOCS_RANGE) * BLOC_SIZE - 4  # In pixels
         MAX_Y = (48 - BLOCS_RANGE) * BLOC_SIZE - 4
 
-        baseX = clamp(baseX, 0, MAX_X)
-        baseY = clamp(baseY, 0, MAX_Y)
+        baseX = pygame.math.clamp(baseX, 0, MAX_X)
+        baseY = pygame.math.clamp(baseY, 0, MAX_Y)
 
         # Check teleporters
 
@@ -598,7 +594,7 @@ class Penguin():
                     self.movBonusTimer = 60 if self.movMonsters > 0 else 0
 
                     bonusKill = [0, 20, 50, 100, 200]       # Bonus for killing monsters with one bloc
-                    self.score += bonusKill [clamp(self.movMonsters, 0, 4)]
+                    self.score += bonusKill [pygame.math.clamp(self.movMonsters, 0, 4)]
 
             self.movBlocPosX += self.movBlocDirX * MOVBLOC_STEP
             self.movBlocPosY += self.movBlocDirY * MOVBLOC_STEP
@@ -1080,7 +1076,7 @@ def startResultPhase():
 
     # Compute bonus
     percent = ((totalToxicBlocs - toxicBlocsLeft) * 100) // totalToxicBlocs
-    bonus = 25 * clamp(percent - SUCCESS_GOAL, 0, 100)
+    bonus = 25 * pygame.math.clamp(percent - SUCCESS_GOAL, 0, 100)
 
     if percent == 100:                              # Perfect
         bonus += 500 + 5 * int(gameTimer)           # 1 second = 5 points
@@ -1430,7 +1426,7 @@ def displayResult():
         displayText(font_big, "DECONTAMINATION:", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
         percent = (100 * (totalToxicBlocs - toxicBlocsLeft)) // totalToxicBlocs
-        percentDisplay = clamp(percent, 0, resultTimer // 2)
+        percentDisplay = pygame.math.clamp(percent, 0, resultTimer // 2)
         displayText(font_big, f"{percentDisplay} %", BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130)
 
         if percent < SUCCESS_GOAL and resultTimer >= 200:
@@ -2042,7 +2038,7 @@ while running:
 
         introTimer += 1
 
-        if keyPressed[KEY_GAME_SPACE] or (introTimer > 60*4):
+        if keyPressed[KEY_GAME_PUSH] or (introTimer > 60*4):
             startRevengeLevelPhase()
 
     elif gamePhase == PHASE_GAME_WON:
@@ -2136,7 +2132,7 @@ while running:
             limitMaxX = limitMaxXByLand [currLand]
             baseX = 0
             baseY = 0
-            mx = clamp(x, limitMinX, limitMaxX)
+            mx = pygame.math.clamp(x, limitMinX, limitMaxX)
 
             # Show Penguin
             if (currLand == LAND_ICE or currLand == LAND_JUNGLE or currLand == LAND_COMPUTER):
@@ -2147,7 +2143,7 @@ while running:
 
                     if px >= 90:       # Jump parabola
                         dy = math.pow(px-90, 2) / 15
-                        py += clamp(dy, 0, 50)
+                        py += pygame.math.clamp(dy, 0, 50)
                 else:
                     px = x - 40         # Penguin on the left side of monsters
                     py = y
