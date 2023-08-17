@@ -477,8 +477,7 @@ class Penguin():
                     self.movBlocDirY = 0
                     self.movBonusTimer = 60 if self.movMonsters > 0 else 0
 
-                    bonusKill = [0, 20, 50, 100, 200]       # Bonus for killing monsters with one bloc
-                    self.score += bonusKill [pygame.math.clamp(self.movMonsters, 0, 4)]
+                    self.score += BONUS_KILL [pygame.math.clamp(self.movMonsters, 0, len(BONUS_KILL)-1)]
 
             self.movBlocPosX += self.movBlocDirX * MOVBLOC_STEP
             self.movBlocPosY += self.movBlocDirY * MOVBLOC_STEP
@@ -597,8 +596,8 @@ class Monster():
                     occupyTable[currentBlocIndex] = 0
                     occupyTable[blocIndex] = 1
 
-                self.dirX = dirX * MONS_WALK_STEP
-                self.dirY = dirY * MONS_WALK_STEP
+                self.dirX = dirX * MONSTER_WALK_STEP
+                self.dirY = dirY * MONSTER_WALK_STEP
 
     def getSpriteIndex(self):
         if self.isBirth():
@@ -885,7 +884,7 @@ def setElectrifyBorder(newStatus):
 # Game phases
 
 def startIntroPhase():
-    global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, introTimer
+    global gamePhase, windowFade, introTimer
 
     print('PHASE_INTRO')
     gamePhase = PHASE_INTRO
