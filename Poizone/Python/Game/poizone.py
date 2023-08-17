@@ -1187,6 +1187,20 @@ def displayMainMenu():
         col = DEACT_COLOR if deactivated else (HIGH_COLOR if (menuCursor == i) else TEXT_COLOR)
         displayText(font, texts.MAIN_MENU[i], col, CENTER_X, 120 + 15*i)
 
+def displayMenu():
+    if subMenu == MENU_MAIN:
+        displayMainMenu()
+    elif subMenu == MENU_LEADERBOARD:
+        displayLeaderboard()
+    elif subMenu == MENU_TUTORIAL:
+        displayTuto()
+    elif subMenu == MENU_CONTROLS:
+        displayControls()
+    elif subMenu == MENU_OPTIONS:
+        displayOptions()
+    elif subMenu == MENU_CREDITS:
+        displayCredits()
+
 def displayGameHud():
     WHITE = (255, 255, 255)
     LEVEL_COLOR = (180, 255, 255)
@@ -1233,7 +1247,7 @@ def displayLeaderboard():
     BLACK = (10, 10, 10)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_HIGHSCORES], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     # Legend
     displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 114)
@@ -1948,19 +1962,7 @@ while running:
         
         # Fade
         applyFade()
-
-        if subMenu == MENU_MAIN:
-            displayMainMenu()
-        elif subMenu == MENU_HIGHSCORES:
-            displayLeaderboard()
-        elif subMenu == MENU_TUTORIAL:
-            displayTuto()
-        elif subMenu == MENU_CONTROLS:
-            displayControls()
-        elif subMenu == MENU_OPTIONS:
-            displayOptions()
-        elif subMenu == MENU_CREDITS:
-            displayCredits()
+        displayMenu()
 
     elif gamePhase == PHASE_END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
@@ -2011,12 +2013,13 @@ while running:
 
             # Show monsters
             for index in range(0, monstersNb):
-                monsters[index].posX = mx + 25 * index
-                monsters[index].posY = y
-                monsters[index].dirX = dir
-                monsters[index].dirY = 0
-                monsters[index].counter = 1000-endOfLevelTimer + 16 * index
-                monsters[index].display(screen, 0, 0)
+                m = monsters[index]
+                m.posX = mx + 25 * index
+                m.posY = y
+                m.dirX = dir
+                m.dirY = 0
+                m.counter = 1000-endOfLevelTimer + 16 * index
+                m.display(screen, 0, 0)
 
             # Show Rocket
             if currLand == LAND_ESA or currLand == LAND_SPACE:
