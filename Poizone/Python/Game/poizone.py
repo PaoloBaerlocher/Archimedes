@@ -1321,9 +1321,11 @@ def displayDancingPenguins():
     dir = 0 if (d > 100 and d < 120) or (d > 140 and d < 160) else (-1 if (d > 120 and d < 140) else +1)
     for i in range(0, len(dancingPenguins)):
         p = dancingPenguins [i]
+        p.status = PenguinStatus.WALK
         p.dirX = dir
         p.dirY = 1 if dir == 0 else 0
-        p.update([False, False, False, False, False, False, False, False, False, False, dir == 0, dir == -1, dir == 1, False])
+        p.anim = p.getPenguinAnimOffset()
+        p.animPhase += 1
         p.posX = px + 20 * i - 10
         p.posY = py
         p.display(screen, 0, 0)
@@ -1825,7 +1827,7 @@ while running:
                         controlsCounter = 60        # Wait a bit before quitting page
                 else:
                     print('Invalid choice - key already used.')
-                    
+
                 lastKeyDown = NONE
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
@@ -2019,12 +2021,13 @@ while running:
                     if px >= 120 and px <= 150:     # Jump parabola
                         py -= (15*15 - math.pow(px-135, 2)) / 15
 
+                penguin1.status = PenguinStatus.WALK
                 penguin1.posX = px
                 penguin1.posY = py
-
                 penguin1.dirX = dir
                 penguin1.dirY = 0
-                penguin1.update([False, False, False, False, False, False, False, False, False, False, False, dir == -1, dir == 1, False])
+                penguin1.anim = penguin1.getPenguinAnimOffset()
+                penguin1.animPhase += 1
                 penguin1.display(screen, 0, 0)
 
             # Show monsters
