@@ -129,6 +129,10 @@ BLOC_TELEPORT_0  = 60       # Teleporter Anim
 BLOC_TELEPORT_1  = 61
 BLOC_REVENGE     = 62
 
+# PANEL_
+PANEL_DEMO  = 0
+PANEL_PAUSE = 1
+
 # Enums
 
 class PenguinStatus(Enum):
@@ -2218,7 +2222,6 @@ while running:
                 posY = y * BLOC_SIZE - (baseY % BLOC_SIZE)
 
                 c = CropSprite(posX, posY)
-
                 index = getAliasBlocIndex(index)
                 blitGameSprite(sprites[0][index], c)
 
@@ -2253,13 +2256,13 @@ while running:
 
     # Display panel (PAUSE or DEMO)
 
-    panelIdx = -1
+    panelIdx = NONE
 
     if pauseGame == True:
-        panelIdx = 1
+        panelIdx = PANEL_PAUSE
 
-    if panelIdx != -1:
-        screen.blit(panelSprites[panelIdx], (8 + 244/2 - 60/2, 40))
+    if panelIdx != NONE:
+        screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH//2 - 60/2, 30))
 
     # flip() the display to put your work on screen
     pygame.display.flip()
