@@ -1206,7 +1206,7 @@ def displayTuto():
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
     # Title
-    displayText(font_big, "TUTORIAL", TITLE_COLOR, CENTER_X, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_TUTORIAL], TITLE_COLOR, CENTER_X, 80)
 
     if currTutoPage == 0:
         y = 105
@@ -1278,7 +1278,7 @@ def displayControls():
     HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font_big, "CONTROLS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     i = 0
     for i in range(0, len(CTRL_ID)):
@@ -1297,7 +1297,7 @@ def displayOptions():
     HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font_big, "OPTIONS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     for i in range(0, len(OPTIONS_ID)):
         y = 120 + 15 * i
@@ -1319,7 +1319,7 @@ def displayCredits():
     TEXT_COLOR = (180, 255, 255)
 
     # Title
-    displayText(font_big, "CREDITS", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     y = 120
     for line in texts.CREDITS:
@@ -1384,7 +1384,7 @@ def displayLeaderboard():
     BLACK = (10, 10, 10)
 
     # Title
-    displayText(font_big, "HIGH SCORES", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_HIGHSCORES], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
     # Legend
     displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 114)
