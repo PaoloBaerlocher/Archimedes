@@ -1,7 +1,8 @@
 from enum import Enum
 
-# Poizone Constants
+DEBUG_FEATURES = True
 
+# Poizone Constants
 SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 256
 WINDOW_WIDTH = 12*20+4
@@ -28,7 +29,6 @@ ALPHABET_COLUMNS = 7
 OPTIONS_ID = ["SFX", "MUSIC"]
 CTRL_ID = [ "CTRL_LEFT", "CTRL_RIGHT", "CTRL_UP", "CTRL_DOWN", "CTRL_PUSH" ]
 TUTO_PAGES = 15
-DEBUG_FEATURES = True
 
 # PHASE_
 PHASE_NONE              = 0
@@ -129,4 +129,3 @@ class PenguinStatus(Enum):
     WALK = 1
     DIE  = 2
     PUSH = 3
-    

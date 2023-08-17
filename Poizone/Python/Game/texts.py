@@ -134,5 +134,8 @@ CREDITS = [ "CODE by Paolo Baerlocher",
             "Acorn Archimedes in 1991 and published",
             "by ETERNA.",
             "",
-            "Ported to PC using pygame engine in 2023."
+            "Ported to PC using pygame engine in 2023.",
+            "",
+            "Thanks to Robin Francois for extracting the",
+            "sources from the old 3''1/2 floppy disks."
 ]

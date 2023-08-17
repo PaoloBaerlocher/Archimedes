@@ -1169,7 +1169,7 @@ def displayCredits():
     # Title
     displayText(font_big, texts.MAIN_MENU [MENU_CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
 
-    y = 120
+    y = 110
     for line in texts.CREDITS:
         displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
         y += 12
@@ -1649,49 +1649,37 @@ while running:
                 lastKeyDown = event.key
 
             down = (event.type == pygame.KEYDOWN)
-            if event.key == pygame.K_LEFT:
-                keyDown[KEY_LEFT] = down
 
-            if event.key == pygame.K_RIGHT:
-                keyDown[KEY_RIGHT] = down
+            # MENU KEYS processing
+            MENU_KEYS = [
+                [KEY_LEFT,      pygame.K_LEFT ],
+                [KEY_RIGHT,     pygame.K_RIGHT ],
+                [KEY_UP,        pygame.K_UP ],
+                [KEY_DOWN,      pygame.K_DOWN ],
+                [KEY_SPACE,     pygame.K_SPACE ],
 
-            if event.key == pygame.K_UP:
-                keyDown[KEY_UP] = down
+                [KEY_BACKSPACE, pygame.K_BACKSPACE ],
+                [KEY_RETURN,    pygame.K_RETURN ],
+                [KEY_ESCAPE,    pygame.K_ESCAPE ],
+                [KEY_PAUSE,     pygame.K_F12 ]
+            ]
 
-            if event.key == pygame.K_DOWN:
-                keyDown[KEY_DOWN] = down
+            for keyPair in MENU_KEYS:
+                if event.key == keyPair [1]:
+                    keyDown[keyPair [0]] = down
 
-            if event.key == pygame.K_SPACE:
-                keyDown[KEY_SPACE] = down
+            # GAME KEYS processing
+            GAME_KEYS = [
+                [KEY_GAME_LEFT,  "CTRL_LEFT" ],
+                [KEY_GAME_RIGHT, "CTRL_RIGHT" ],
+                [KEY_GAME_UP,    "CTRL_UP" ],
+                [KEY_GAME_DOWN,  "CTRL_DOWN" ],
+                [KEY_GAME_PUSH,  "CTRL_PUSH" ]
+            ]
 
-            if event.key == pygame.K_BACKSPACE:
-                keyDown[KEY_BACKSPACE] = down
-
-            if event.key == pygame.K_RETURN:
-                keyDown[KEY_RETURN] = down
-
-            if event.key == pygame.K_ESCAPE:
-                keyDown[KEY_ESCAPE] = down
-
-            if event.key == pygame.K_F12:
-                keyDown[KEY_PAUSE] = down
-
-            # GAME KEYS
-
-            if event.key == opt.getValue("CTRL_LEFT"):
-                keyDown[KEY_GAME_LEFT] = down
-
-            if event.key == opt.getValue("CTRL_RIGHT"):
-                keyDown[KEY_GAME_RIGHT] = down
-
-            if event.key == opt.getValue("CTRL_UP"):
-                keyDown[KEY_GAME_UP] = down
-
-            if event.key == opt.getValue("CTRL_DOWN"):
-                keyDown[KEY_GAME_DOWN] = down
-
-            if event.key == opt.getValue("CTRL_PUSH"):
-                keyDown[KEY_GAME_PUSH] = down
+            for keyPair in GAME_KEYS:
+                if event.key == opt.getValue(keyPair [1]):
+                    keyDown[keyPair [0]] = down
 
             if not down:
                 if DEBUG_FEATURES == True:
