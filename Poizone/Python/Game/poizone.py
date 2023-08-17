@@ -1133,8 +1133,10 @@ def displayControls():
         y = 120 + 15 * i
         highlight = (ctrlCursor == i)
         col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
+
         displayTextRight(font, texts.CTRL[i], col, ORIGIN_X + 100, y)
-        displayTextLeft(font, pygame.key.name(opt.getValue(CTRL_ID[i])), col, ORIGIN_X + 150, y)
+        if not highlight or ((absTime // 200) % 4 != 0):
+            displayTextLeft(font, pygame.key.name(tmpKeys[i]), col, ORIGIN_X + 150, y)
 
 def displayOptions():
     global optCursor
@@ -1760,8 +1762,12 @@ while running:
                     if subMenu == MENU_OPTIONS:
                         optCursor = 0
                     if subMenu == MENU_CONTROLS:
+                        controlsCounter = 0
                         ctrlCursor = 0
                         lastKeyDown = NONE      # To avoid using unwanted SPACE key event
+                        tmpKeys = []
+                        for i in range(0, len(CTRL_ID)):
+                            tmpKeys.append(opt.getValue((CTRL_ID[i])))
                     if subMenu == MENU_TUTORIAL:
                         tutoCounter = 0
                         currTutoPage = 0
@@ -1795,14 +1801,32 @@ while running:
                 playSFX(soundValid)
 
         elif subMenu == MENU_CONTROLS:
-            if lastKeyDown != NONE and lastKeyDown != pygame.K_ESCAPE:
-                opt.setValue(CTRL_ID[ctrlCursor], lastKeyDown)
-                opt.save()
-                lastKeyDown = NONE
-                ctrlCursor += 1
-                playSFX(soundValid)
-                if ctrlCursor == len(CTRL_ID):
+            if controlsCounter > 0:
+                controlsCounter -= 1
+                if controlsCounter == 0:
                     subMenu = MENU_MAIN  # Back to main menu
+            elif lastKeyDown != NONE and lastKeyDown != pygame.K_ESCAPE:
+                # Check if new key is already in use
+                inUse = False
+                for i in range(0, ctrlCursor):
+                    if tmpKeys[i] == lastKeyDown:
+                        inUse = True
+                        break
+
+                if not inUse:
+                    tmpKeys [ctrlCursor] = lastKeyDown
+                    ctrlCursor += 1
+                    playSFX(soundValid)
+                    if ctrlCursor == len(CTRL_ID):
+                        # Setup all keys at once
+                        for i in range(0, ctrlCursor):
+                            opt.setValue(CTRL_ID[i], tmpKeys[i])
+                        opt.save()
+                        controlsCounter = 60        # Wait a bit before quitting page
+                else:
+                    print('Invalid choice - key already used.')
+                    
+                lastKeyDown = NONE
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
         # Animate electric border
