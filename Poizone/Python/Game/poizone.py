@@ -140,6 +140,7 @@ class PenguinStatus(Enum):
 # Global variables
 
 gamePhase           = PHASE_NONE
+absTime             = 0
 gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
 level               = 1             # From 1 to 50
 currLand            = 0             # 0..4 (LAND_...)
@@ -147,6 +148,7 @@ electrifyBorder     = False
 electrifyBorderAnim = 0
 blocsCount          = []
 toxicBlocsLeft      = 0
+
 cyclonesPace        = 0             # For cyclones
 cyclonesList        = []
 
@@ -154,12 +156,17 @@ isRevenge           = False         # Revenge mode ?
 windowFade          = 0             # 0..255
 menuCounter         = 0
 
-absTime             = 0
 tutoCounter         = 0
 currTutoPage        = 0
+
 maxLevelReached     = 1     # For CONTINUE option
 
 lastKeyDown         = NONE
+
+# Utility functions
+
+def blitGameSprite(sprite, cropSprite):
+    screen.blit(sprite, (ORIGIN_X + cropSprite.posX, ORIGIN_Y + cropSprite.posY), cropSprite.getCroppedRegion())
 
 # Classes
 
@@ -394,25 +401,25 @@ class Penguin():
     def display(self, screen, baseX, baseY):
         if (self.ghost / 4) % 4 <= 2:
             c = CropSprite(self.posX - baseX, self.posY - baseY)
-            screen.blit(penguinSprites[self.anim], (ORIGIN_X+c.posX, ORIGIN_Y+c.posY), c.getCroppedRegion())
+            blitGameSprite(penguinSprites[self.anim], c)
 
     def displayBloc(self, screen, baseX, baseY):
 
         if self.bombTimer > 0:
             c = CropSprite(self.bombPosX - baseX, self.bombPosY - baseY)
             index = 76 + int((32 - self.bombTimer) / 4)
-            screen.blit(penguinSprites[index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+            blitGameSprite(penguinSprites[index], c)
 
         if self.crushBlocWhat != NONE:
             c = CropSprite(self.crushBlocPosX - baseX, self.crushBlocPosY - baseY)
             index = getAliasBlocIndex(self.crushBlocWhat)
             maskIndex = 3-int(self.crushBlocTimer / 4)
-            screen.blit(sprites[maskIndex][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+            blitGameSprite(sprites[maskIndex][index], c)
 
         if self.movBlocWhat != NONE:
             c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
             index = getAliasBlocIndex(self.movBlocWhat)
-            screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+            blitGameSprite(sprites[0][index], c)
 
         # Display killed monsters bonus, if any
         if self.movBonusTimer > 0:
@@ -420,7 +427,7 @@ class Penguin():
             if self.movMonsters > 0:  # At least one monster has been killed
                 c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
                 index = pygame.math.clamp(self.movMonsters - 1, 0, 3)  # Display corresponding bonus (20, 50, 100 or 200)
-                screen.blit(penguinSprites[72 + index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                blitGameSprite(penguinSprites[72 + index], c)
 
     def update(self, keyDown):
         global monsters, teleporters, scheme, baseX, baseY
@@ -650,7 +657,7 @@ class Monster():
     def display(self, screen, baseX, baseY):
         if self.isBirth() or self.isAlive():
             c = CropSprite(self.posX - baseX, self.posY - baseY)
-            screen.blit(monstersSprites[self.getSpriteIndex()], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+            blitGameSprite(monstersSprites[self.getSpriteIndex()], c)
 
     def update(self):
         global scheme, electrifyBorder
@@ -2173,7 +2180,7 @@ while running:
             if currLand == LAND_ESA or currLand == LAND_SPACE:
                 propelY = pow(250-endOfLevelTimer, 2) / 250
                 c = CropSprite(rocketOriginX, rocketOriginY - propelY, rocket.get_width(), rocket.get_height())
-                screen.blit(rocket, (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                blitGameSprite(rocket, c)
                 part.originY = ORIGIN_Y + c.posY + c.heightRegion
                 part.update(1./60.)     # TODO: should be dt
                 part.display(screen, ORIGIN_X, ORIGIN_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -2213,7 +2220,7 @@ while running:
                 c = CropSprite(posX, posY)
 
                 index = getAliasBlocIndex(index)
-                screen.blit(sprites[0][index], (ORIGIN_X + c.posX, ORIGIN_Y + c.posY), c.getCroppedRegion())
+                blitGameSprite(sprites[0][index], c)
 
         # Display Penguin
         penguin1.display(screen, baseX, baseY)
