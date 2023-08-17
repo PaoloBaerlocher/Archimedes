@@ -1586,6 +1586,11 @@ while running:
         x_axis = joy.get_axis(0)
         y_axis = joy.get_axis(1)
 
+        # D-pad
+        hat = joy.get_hat(0)
+        x_axis += hat [0]
+        y_axis -= hat [1]
+        
         # X
 
         if x_axis > JOY_LIMIT:
