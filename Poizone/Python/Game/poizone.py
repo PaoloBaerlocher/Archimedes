@@ -885,13 +885,14 @@ def setElectrifyBorder(newStatus):
 # Game phases
 
 def startIntroPhase():
-    global gamePhase, windowFade, introTimer
+    global gamePhase, windowFade, introTimer, pauseGame
 
     print('PHASE_INTRO')
     gamePhase = PHASE_INTRO
     playMusic(musicIntro, -1)
     windowFade = 0
     introTimer = 0
+    pauseGame = False
 
 def startMenuPhase():
     global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, currLand
@@ -1001,17 +1002,37 @@ def applyChannelVolumes():
 
 # HUD
 
-def displayText(font, str, col, text_x, text_y):            # Centered
+def displayText(font, str, col, text_x, text_y, fx = False):            # Centered
     # Shadow
     text = font.render(str, True, (0, 0, 0))
     textRect = text.get_rect()
     textRect.center = (text_x + 1, text_y + 1)
     screen.blit(text, textRect)
 
-    text = font.render(str, True, col)
-    textRect = text.get_rect()
-    textRect.center = (text_x, text_y)
-    screen.blit(text, textRect)
+    if fx == False:
+        text = font.render(str, True, col)
+        textRect = text.get_rect()
+        textRect.center = (text_x, text_y)
+        screen.blit(text, textRect)
+    else:
+        # Display text with vertical color gradient FX
+        for line in range(0, textRect.height):
+            t = 1 - 1.5 * abs(line - textRect.height / 2) / (textRect.height / 2)
+            t = pygame.math.clamp(t, 0, 1) * 0.9
+            finalCol = (
+                pygame.math.lerp(col[0], 255, t),
+                pygame.math.lerp(col[1], 255, t),
+                pygame.math.lerp(col[2], 255, t)
+            )
+
+            text = font.render(str, True, finalCol)
+            textRect = text.get_rect()
+
+            # Select source line
+            area = [ 0, line, textRect.width, 1]
+
+            textRect.center = (text_x, text_y + line)
+            screen.blit(text, textRect, area)
 
 def displayTextLeft(font, str, col, text_x, text_y):        # Left-Aligned
     # Shadow
@@ -1048,14 +1069,14 @@ def displayLegend(legendIdx):
 def displayTuto():
     global tutoCounter, currTutoPage, electrifyBorderAnim
 
-    TEXT_COLOR = (235, 235, 255)
     TITLE_COLOR = (255, 255, 155)
+    TEXT_COLOR = (225, 225, 255)
     BORDER_COLOR = (0, 0, 0)
 
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_TUTORIAL], TITLE_COLOR, CENTER_X, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_TUTORIAL], TITLE_COLOR, CENTER_X, 80, True)
 
     if currTutoPage == 0:
         y = 105
@@ -1127,7 +1148,7 @@ def displayControls():
     HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     i = 0
     for i in range(0, len(CTRL_ID)):
@@ -1148,7 +1169,7 @@ def displayOptions():
     HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     for i in range(0, len(OPTIONS_ID)):
         y = 120 + 15 * i
@@ -1170,7 +1191,7 @@ def displayCredits():
     TEXT_COLOR = (180, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     y = 110
     for line in texts.CREDITS:
@@ -1249,7 +1270,7 @@ def displayLeaderboard():
     BLACK = (10, 10, 10)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+    displayText(font_big, texts.MAIN_MENU [MENU_LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     # Legend
     displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 114)
@@ -1281,29 +1302,29 @@ def displayResult():
     BAD_COLOR = (255, 0, 0)
 
     # Title
-    displayText(font_big, f"END OF ZONE {level}",  TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40)
+    displayText(font_big, f"END OF ZONE {level}",  TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
 
     if toxicBlocsLeft == 0:
         if ((resultTimer // 8) % 4 != 0):      # Flash FX
-            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
-            displayText(font_big, "DECONTAMINATION!", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130)
+            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+            displayText(font_big, "DECONTAMINATION!", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
     else:
-        displayText(font_big, "DECONTAMINATION:", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80)
+        displayText(font_big, "DECONTAMINATION:", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
         percent = (100 * (totalToxicBlocs - toxicBlocsLeft)) // totalToxicBlocs
         percentDisplay = pygame.math.clamp(percent, 0, resultTimer // 2)
-        displayText(font_big, f"{percentDisplay} %", BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130)
+        displayText(font_big, f"{percentDisplay} %", BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
 
         if percent < SUCCESS_GOAL and resultTimer >= 200:
-            displayText(font_big, "GAME OVER", GAMEOVER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
+            displayText(font_big, "GAME OVER", GAMEOVER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220, True)
 
     # Time left
     timeLeft = int(gameTimer)
     if timeLeft > 0:
-        displayText(font_big, f"TIME LEFT: {timeLeft} s", TIME_LEFT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 200)
+        displayText(font_big, f"TIME LEFT: {timeLeft} s", TIME_LEFT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 200, True)
 
     # Bonus
-    displayText(font_big, f"BONUS: {bonus} POINTS", BONUS_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 180)
+    displayText(font_big, f"BONUS: {bonus} POINTS", BONUS_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 180, True)
 
     if toxicBlocsLeft == 0:
         displayDancingPenguins()
@@ -1335,7 +1356,7 @@ def displayRevengeIntroMode():
     TITLE_COLOR = (105, 255, 255)
     TEXT_COLOR = (50, 255, 140)
 
-    displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60)
+    displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60, True)
 
     if (int(absTime) // 4) % 4 != 0:        # Flash
         y = 110
@@ -1351,8 +1372,8 @@ def displayEnterYourName():
     HIGHLIGHT_LETTER_COLOR = (255, 255, 0)
     NAME_COLOR = (255, 255, 66)
 
-    displayText(font_big, "CONGRATULATIONS!", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40)
-    displayText(font_big, "ENTER YOUR NAME:", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60)
+    displayText(font_big, "CONGRATULATIONS!", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
+    displayText(font_big, "ENTER YOUR NAME:", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60, True)
 
     for ty in range (0, ALPHABET_ROWS):
         for tx in range(0, ALPHABET_COLUMNS):
@@ -1394,7 +1415,7 @@ def displayGameWon():
 
     y = 80
     for line in texts.GAME_WON:
-        displayText(font_big, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
+        displayText(font_big, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y, True)
         y += 20
         
 def applyFade():
