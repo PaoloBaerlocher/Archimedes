@@ -1146,6 +1146,7 @@ def displayControls():
     OPT_COLOR = (180, 255, 255)
     VALUE_COLOR = (180, 255, 255)
     HIGHLIGHT_COLOR = (230, 255, 255)
+    DONE_COLOR = (50, 250, 130)
 
     # Title
     displayText(font_big, texts.MAIN_MENU [MENU_CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
@@ -1159,6 +1160,11 @@ def displayControls():
         displayTextRight(font, texts.CTRL[i], col, ORIGIN_X + 100, y)
         if not highlight or ((absTime // 200) % 4 != 0):
             displayTextLeft(font, pygame.key.name(tmpKeys[i]), col, ORIGIN_X + 150, y)
+
+    if ctrlCursor == 0:
+        displayText(font, texts.CTRL_START, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
+    elif ctrlCursor == len(CTRL_ID):
+        displayText(font, texts.CTRL_DONE, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
 
 def displayOptions():
     global optCursor
@@ -1846,7 +1852,7 @@ while running:
                         for i in range(0, ctrlCursor):
                             opt.setValue(CTRL_ID[i], tmpKeys[i])
                         opt.save()
-                        controlsCounter = 60        # Wait a bit before quitting page
+                        controlsCounter = 90        # Wait a bit before quitting page
                 else:
                     print('Invalid choice - key already used.')
 

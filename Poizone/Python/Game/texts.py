@@ -4,7 +4,7 @@ MAIN_MENU = [
     "PLAY (Single Player)",
     "CONTINUE",
     "HIGH SCORES",
-    "CONTROLS",
+    "KEYBOARD CONTROLS",
     "TUTORIAL",
     "OPTIONS",
     "CREDITS"
@@ -125,6 +125,9 @@ CTRL = [
     "DOWN",
     "PUSH"
 ]
+
+CTRL_START = "Press the new keys in the above order."
+CTRL_DONE = "Controls have now been reconfigured."
 
 CREDITS = [ "CODE by Paolo Baerlocher",
             "GRAPHICS by Marc Andreoli",
