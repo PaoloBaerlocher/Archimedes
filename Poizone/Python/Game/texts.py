@@ -127,7 +127,7 @@ CTRL = [
 ]
 
 CTRL_START = "Press the new keys in the above order."
-CTRL_DONE = "Controls have now been reconfigured."
+CTRL_DONE = "Controls have been reconfigured."
 
 CREDITS = [ "CODE by Paolo Baerlocher",
             "GRAPHICS by Marc Andreoli",
