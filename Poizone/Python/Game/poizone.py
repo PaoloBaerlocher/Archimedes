@@ -204,6 +204,7 @@ class Penguin():
 
         self.animPhase = 0
         self.setStatus(PenguinStatus.DIE)
+        self.invert = False         # Reset malus
 
         if playOhNo:
             playSFX(soundOhNo)
