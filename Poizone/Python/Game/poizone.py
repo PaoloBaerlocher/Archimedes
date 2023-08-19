@@ -51,7 +51,7 @@ class Penguin():
     def __init__(self):
         self.reset()
         self.score = 0
-        self.points = 0
+        self.points = 0             # Will be gradually added to score
 
     def reset(self):
         self.posX = 24 * BLOC_SIZE   # Center of map
@@ -238,7 +238,7 @@ class Penguin():
     def blocIsWalkable(self, dirX, dirY):
 
         # Check occupy table
-        blocIndex =(self.posX // BLOC_SIZE + dirX) + (self.posY // BLOC_SIZE + dirY) * SCHEME_WIDTH
+        blocIndex = (self.posX // BLOC_SIZE + dirX) + (self.posY // BLOC_SIZE + dirY) * SCHEME_WIDTH
         if (occupyTable[blocIndex] & 0b10) != 0:
             return False
 
@@ -514,8 +514,8 @@ class Monster():
         self.dirX = 0
         self.dirY = 0
         self.kind = kind                # 0 or 1 (graphic monster type (skin))
-        self.isBaddie = isBaddie        # Baddies are targeting the Penguin, the others move randomly
-
+        self.isBaddie = isBaddie        # Baddies are monsters targeting the Penguin, the others move randomly
+        
         # COUNTER = -32767.. - 1    : not yet born ( -32 .. -1 : birth )
         #         = 0..9              alive (animation phases)
 
@@ -854,7 +854,7 @@ def displayScore(score, posX, posY):
         base //= 10
 
 def getBloc(indexX, indexY):
-    blocOffset = indexY * SCHEME_WIDTH + indexX
+    blocOffset = indexX + indexY * SCHEME_WIDTH
     if blocOffset >= 0 and blocOffset < SCHEME_SIZE:
         blocOfScheme = scheme[blocOffset]
     else:
@@ -877,7 +877,7 @@ def destroyBloc(bloc):
 
 def writeBloc(indexX, indexY, blocIndex):
     global scheme
-    index = indexY * SCHEME_WIDTH + indexX
+    index = indexX + indexY * SCHEME_WIDTH
     newBloc = [ blocIndex ]
     scheme = scheme[:index] + bytes(newBloc) + scheme[(index+1):]
 
@@ -2112,7 +2112,7 @@ while running:
         for y in range(0, BLOCS_RANGE + 1):
             for x in range(0, BLOCS_RANGE + 2):
 
-                blocOffset = (baseY // BLOC_SIZE + y) * SCHEME_WIDTH + (baseX // BLOC_SIZE + x)
+                blocOffset = (baseX // BLOC_SIZE + x) + (baseY // BLOC_SIZE + y) * SCHEME_WIDTH
 
                 if isRevenge == True:
                     index = 24      # Empty land in Revenge mode
