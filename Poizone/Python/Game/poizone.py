@@ -51,6 +51,7 @@ class Penguin():
     def __init__(self):
         self.reset()
         self.score = 0
+        self.points = 0
 
     def reset(self):
         self.posX = 24 * BLOC_SIZE   # Center of map
@@ -312,6 +313,11 @@ class Penguin():
     def update(self, keyDown):
         global monsters, teleporters, scheme, baseX, baseY
 
+        # Update score by increments of 10 points
+        toAdd = pygame.math.clamp(self.points, 0, 10)
+        self.points -= toAdd
+        self.score += toAdd
+
         penguinMove = keyDown[KEY_GAME_LEFT] or keyDown[KEY_GAME_RIGHT] or keyDown[KEY_GAME_UP] or keyDown[KEY_GAME_DOWN]
 
         if penguinMove:
@@ -467,7 +473,7 @@ class Penguin():
                             if self.checkSquareDiamond(bx, by) == True:
                                 print('Square Diamond assembled')
                                 playSFX(soundDiam)
-                                self.score += 500
+                                self.addScore(500)
                     else:
                         destroyBloc(self.movBlocWhat)
                         playSFX(soundSplatch)
@@ -480,7 +486,7 @@ class Penguin():
                     self.movBlocDirY = 0
                     self.movBonusTimer = 60 if self.movMonsters > 0 else 0
 
-                    self.score += BONUS_KILL [pygame.math.clamp(self.movMonsters, 0, len(BONUS_KILL)-1)]
+                    self.addScore(BONUS_KILL [pygame.math.clamp(self.movMonsters, 0, len(BONUS_KILL)-1)])
 
             self.movBlocPosX += self.movBlocDirX * MOVBLOC_STEP
             self.movBlocPosY += self.movBlocDirY * MOVBLOC_STEP
@@ -493,6 +499,9 @@ class Penguin():
                 if m.isAlive() and (abs(m.posX - self.posX) <= 8) and (abs(m.posY - self.posY) <= 8):
                     self.die()
                     break
+
+    def addScore(self, points):
+        self.points += points
 
 class Monster():
     def __init__(self, kind, isBaddie):
@@ -860,7 +869,7 @@ def destroyBloc(bloc):
         if (bloc >= BLOC_POISON):
             toxicBlocsLeft -= 1
             print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
-            penguin1.score += 5
+            penguin1.addScore(5)
 
 def writeBloc(indexX, indexY, blocIndex):
     global scheme
