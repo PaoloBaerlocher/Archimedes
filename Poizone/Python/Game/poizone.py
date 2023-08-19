@@ -909,12 +909,11 @@ def startMenuPhase():
     loadSprites()
 
 def startLevelPhase():
-    global gamePhase, windowFade
+    global gamePhase
 
     print('PHASE_LEVEL')
     gamePhase = PHASE_LEVEL
     loadLevel()
-    windowFade = 0
 
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
@@ -1164,7 +1163,10 @@ def displayControls():
         displayTextLeft(font, pygame.key.name(tmpKeys[i]), col, ORIGIN_X + 140, y)
 
     if ctrlCursor == 0:
-        displayText(font, texts.CTRL_START, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
+        y = 220
+        for line in texts.CTRL_START:
+            displayText(font, line, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
+            y += 12
     elif ctrlCursor == len(CTRL_ID):
         displayText(font, texts.CTRL_DONE, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
 
@@ -1861,6 +1863,12 @@ while running:
                 lastKeyDown = NONE
 
     elif gamePhase == PHASE_LEVEL and not pauseGame:
+
+        # Fade out
+        if windowFade > 0:
+            windowFade -= 16
+            windowFade = pygame.math.clamp(windowFade, 0, 255)
+            
         # Animate electric border
         if electrifyBorder == True:
             electrifyBorderAnim += 1

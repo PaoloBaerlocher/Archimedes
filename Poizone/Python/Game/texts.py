@@ -126,7 +126,11 @@ CTRL = [
     "PUSH"
 ]
 
-CTRL_START = "Press the new keys in the above order."
+CTRL_START = [
+    "To redefine keyboard controls,",
+    "press the new keys in the above order."
+    ]
+
 CTRL_DONE = "Controls have been reconfigured."
 
 CREDITS = [ "CODE by Paolo Baerlocher",
