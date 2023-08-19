@@ -208,6 +208,8 @@ class Penguin():
 
         if playOhNo:
             playSFX(soundOhNo)
+        else:
+            playSFX(soundColl)
 
         setElectrifyBorder(False)
 
@@ -1330,7 +1332,7 @@ def displayResult():
 
     if toxicBlocsLeft == 0:
         if ((resultTimer // 8) % 4 != 0):      # Flash FX
-            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 85, True)
             displayText(font_big, "DECONTAMINATION!", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
     else:
         displayText(font_big, "DECONTAMINATION:", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
@@ -1351,9 +1353,9 @@ def displayResult():
     displayText(font_big, f"BONUS: {bonus} POINTS", BONUS_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 180, True)
 
     if toxicBlocsLeft == 0:
-        displayDancingPenguins()
+        displayDancingPenguins(resultTimer - 50)
 
-def displayDancingPenguins():
+def displayDancingPenguins(d):
     # According to d value:
     # 0..100: move right
     # 100..120: still, upfront
@@ -1361,7 +1363,6 @@ def displayDancingPenguins():
     # 140..160: still, upfront
     # 160..   : move right
 
-    d = resultTimer - 50
     px = d if d < 100 else (100 if d < 160 else d-60)
     py = 95
     dir = 0 if (d > 100 and d < 120) or (d > 140 and d < 160) else (-1 if (d > 120 and d < 140) else +1)
@@ -1495,7 +1496,7 @@ soundBoom   = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (s
 soundElec   = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R) - border
 soundMagic  = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')             # 28 (sample S)
 soundDiam   = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T) - when 4 diamonds assembled
-# soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - laugh (not used)
+#soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - (not used in 1-player mode)
 soundOhNo   = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V) - wrong move / death
 soundAlcool = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
 soundColl   = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
@@ -1503,7 +1504,7 @@ soundSplatch= pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (s
 soundWow    = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
 soundTick   = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
 soundValid  = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')          # New sample for menus
-soundTele   = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')          # New sample (same as S but with lower ptich)
+soundTele   = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')          # New sample (same as S but with lower pitch)
 
 # Set volumes
 
@@ -1528,12 +1529,12 @@ for index in range(0, LANDS_NB):
         land = f.read()
     lands.append(land)
     teleporters.append([])
-    print('Teleporters in land #' + str(index) + ':')
+    #print('Teleporters in land #' + str(index) + ':')
     for i in range(0, len(land), 4):
         if land[i] >= BLOC_TELEPORT_0:
-            j=i // 4
+            j = i // 4
             teleporters[index].append(j)
-            print('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
+            #print('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
 
 # SpriteSheets
 
@@ -1549,9 +1550,9 @@ ss_rocket   = spritesheet.SpriteSheet('Data/rocket.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
 ss_revenge  = spritesheet.SpriteSheet('Data/revengeTile.png')
-ss_panels   = spritesheet.SpriteSheet('Data/panels.png')
+ss_panels   = spritesheet.SpriteSheet('Data/panels.png')    # DEMO and PAUSE
 ss_arrows   = spritesheet.SpriteSheet('Data/arrows.png')    # 4 red and 4 green arrows
-ss_legend   = spritesheet.SpriteSheet('Data/legend.png')
+ss_legend   = spritesheet.SpriteSheet('Data/legend.png')    # 2 blue arrows
 
 ss_levels = []
 ss_endScreens = []
@@ -1767,10 +1768,10 @@ while running:
             running = False
         elif gamePhase == PHASE_MENU:
             if subMenu == MENU_MAIN:
-                running = False  # Quit game
+                startIntroPhase()
             else:
                 subMenu = MENU_MAIN        # Return to Main Menu
-                playSFX(soundValid)
+            playSFX(soundValid)
 
     if gamePhase == PHASE_INTRO:
         introTimer += 1
