@@ -106,7 +106,7 @@ class Penguin():
         if self.dirX != 0 or self.dirY != 0:
             bloc = self.getBlocOnDir(self.dirX, self.dirY)
             self.setStatus(PenguinStatus.PUSH)
-            if bloc == BLOC_ELECTRO:
+            if bloc == Bloc.ELECTRO:
                 setElectrifyBorder(True)
             elif bloc < 24:
                 nextBloc = self.getBlocOnDir(self.dirX * 2, self.dirY * 2)
@@ -116,14 +116,14 @@ class Penguin():
                         blocX = self.posX // BLOC_SIZE + self.dirX
                         blocY = self.posY // BLOC_SIZE + self.dirY
                         writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
-                        if bloc == BLOC_CYCLONE:
+                        if bloc == Bloc.CYCLONE:
                             idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
                             print('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
                             cyclonesList[idx] = 0
 
                         playSFX(soundLaunch)
 
-                        if bloc == BLOC_RED:        # Do NOT launch red chemical block!
+                        if bloc == Bloc.RED:        # Do NOT launch red chemical block!
                             self.die(True)
                 else:
                     self.crushBloc(bloc)
@@ -143,7 +143,7 @@ class Penguin():
 
     def crushBloc(self, bloc):
 
-        if bloc >= BLOC_ROCK:  # Cannot crush that bloc
+        if bloc >= Bloc.ROCK:  # Cannot crush that bloc
             return
 
         blocUp    = self.getBlocOnDir(self.dirX, self.dirY - 1)
@@ -151,48 +151,50 @@ class Penguin():
         blocLeft  = self.getBlocOnDir(self.dirX - 1, self.dirY)
         blocRight = self.getBlocOnDir(self.dirX + 1, self.dirY)
 
-        if bloc == BLOC_ALCOOL:
-            self.invert = not self.invert
-            playSFX(soundAlcool)
+        match bloc:
+            case Bloc.ALCOOL:
+                self.invert = not self.invert
+                playSFX(soundAlcool)
 
-        if bloc == BLOC_BOMB:
-            self.die()
-            playSFX(soundBoom)
+            case Bloc.BOMB:
+                self.die()
+                playSFX(soundBoom)
 
-        if bloc == BLOC_MAGIC:  # Temporary invincibility
-            self.ghost = 60 * 15
-            playSFX(soundMagic)
+            case Bloc.MAGIC:  # Temporary invincibility
+                self.ghost = 60 * 15
+                playSFX(soundMagic)
 
-        if bloc == BLOC_POISON:  # Must be in contact with at least one ALU bloc
-            if not (blocUp == BLOC_ALU or blocDown == BLOC_ALU or blocLeft == BLOC_ALU or blocRight == BLOC_ALU):
+            case Bloc.POISON:  # Must be in contact with at least one ALU bloc
+                if not (blocUp == Bloc.ALU or blocDown == Bloc.ALU or blocLeft == Bloc.ALU or blocRight == Bloc.ALU):
+                    self.die(True)
+
+            case Bloc.ALU:  # Cannot crush ALU bloc
                 self.die(True)
 
-        if bloc == BLOC_ALU:  # Cannot crush ALU blob
-            self.die(True)
+            case Bloc.BATTERY:
+                if self.dirY == 0:  # Crushed from up or down ?
+                    self.die(True)
 
-        if bloc == BLOC_BATTERY:
-            if self.dirY == 0:  # Crushed from up or down ?
+            case Bloc.DDT:
+                if not (blocUp == Bloc.DDT or blocDown == Bloc.DDT or blocLeft == Bloc.DDT or blocRight == Bloc.DDT):
+                    self.die(True)
+
+            case Bloc.CFC:
+                if self.dirY != 1:  # Crushed from up ?
+                    self.die(True)
+
+            case Bloc.URANIUM:  # Are other Bloc.URANIUM blocs nearby ?
+                if (blocUp == Bloc.URANIUM or blocDown == Bloc.URANIUM or
+                    blocLeft == Bloc.URANIUM or blocRight == Bloc.URANIUM):
+                    self.die(True)
+
+            case Bloc.GREEN_CHEM:
                 self.die(True)
-
-        if bloc == BLOC_DDT:
-            if not (blocUp == BLOC_DDT or blocDown == BLOC_DDT or blocLeft == BLOC_DDT or blocRight == BLOC_DDT):
-                self.die(True)
-
-        if bloc == BLOC_CFC:
-            if self.dirY != 1:  # Crushed from up ?
-                self.die(True)
-
-        if bloc == BLOC_URANIUM:  # Are other BLOC_URANIUM blocs nearby ?
-            if (blocUp == BLOC_URANIUM or blocDown == BLOC_URANIUM or blocLeft == BLOC_URANIUM or blocRight == BLOC_URANIUM):
-                self.die(True)
-
-        if bloc == BLOC_GREEN_CHEM:
-            self.die(True)
 
         blocX = self.posX // BLOC_SIZE + self.dirX
         blocY = self.posY // BLOC_SIZE + self.dirY
 
-        if bloc == BLOC_BOMB:
+        if bloc == Bloc.BOMB:
             self.startBombAnim(self.posX + self.dirX * BLOC_SIZE, self.posY + self.dirY * BLOC_SIZE)
         else:
             self.startCrushAnim(bloc, self.posX + self.dirX * BLOC_SIZE, self.posY + self.dirY * BLOC_SIZE)
@@ -216,16 +218,16 @@ class Penguin():
         setElectrifyBorder(False)
 
     def checkSquareDiamond(self, bx, by):
-        if (getBloc(bx, by - 1) == BLOC_DIAMOND):
-            if (getBloc(bx - 1, by - 1) == BLOC_DIAMOND) and (getBloc(bx - 1, by) == BLOC_DIAMOND):
+        if (getBloc(bx, by - 1) == Bloc.DIAMOND):
+            if (getBloc(bx - 1, by - 1) == Bloc.DIAMOND) and (getBloc(bx - 1, by) == Bloc.DIAMOND):
                 return True
-            if (getBloc(bx + 1, by - 1) == BLOC_DIAMOND) and (getBloc(bx + 1, by) == BLOC_DIAMOND):
+            if (getBloc(bx + 1, by - 1) == Bloc.DIAMOND) and (getBloc(bx + 1, by) == Bloc.DIAMOND):
                 return True
 
-        if (getBloc(bx, by + 1) == BLOC_DIAMOND):
-            if (getBloc(bx - 1, by + 1) == BLOC_DIAMOND) and (getBloc(bx - 1, by) == BLOC_DIAMOND):
+        if (getBloc(bx, by + 1) == Bloc.DIAMOND):
+            if (getBloc(bx - 1, by + 1) == Bloc.DIAMOND) and (getBloc(bx - 1, by) == Bloc.DIAMOND):
                 return True
-            if (getBloc(bx + 1, by + 1) == BLOC_DIAMOND) and (getBloc(bx + 1, by) == BLOC_DIAMOND):
+            if (getBloc(bx + 1, by + 1) == Bloc.DIAMOND) and (getBloc(bx + 1, by) == Bloc.DIAMOND):
                 return True
 
         return False
@@ -242,7 +244,7 @@ class Penguin():
 
         return self.getBlocOnDir(dirX, dirY) >= 24
 
-    def getNextTeleportIndex(self):     # Or -1 if none
+    def getNextTeleportIndex(self):     # Or NONE
         penguinIndex = self.posX // BLOC_SIZE + (self.posY // BLOC_SIZE) * SCHEME_WIDTH
         nb = len(teleporters[currLand])
         for i in range(0, nb):
@@ -257,7 +259,7 @@ class Penguin():
                     nextIndex = teleporters[currLand][(i + 2) % nb]
                     if scheme[nextIndex] >= 24:
                         return nextIndex
-        return -1
+        return NONE
 
     def getPenguinAnimOffset(self):
         dir = 3  # Down
@@ -418,7 +420,7 @@ class Penguin():
 
         if self.isOnBlock() and self.canTeleport:
             found = self.getNextTeleportIndex()
-            if found != -1:
+            if found != NONE:
                 print('Teleporter found : ' + str(found))
                 newPosX = found % SCHEME_WIDTH
                 newPosY = found // SCHEME_WIDTH
@@ -454,23 +456,23 @@ class Penguin():
                 if nextBloc < 24:
                     print('End of bloc travel. Killed ' + str(self.movMonsters) + ' monsters.')
 
-                    killBloc = (self.movBlocWhat == BLOC_GREEN_CHEM)
-                    if self.movBlocWhat == BLOC_ALU:
-                        if (getBloc(bx+1, by) == BLOC_ELECTRO) or (getBloc(bx-1, by) == BLOC_ELECTRO) or \
-                           (getBloc(bx, by-1) == BLOC_ELECTRO) or (getBloc(bx, by+1) == BLOC_ELECTRO):
+                    killBloc = (self.movBlocWhat == Bloc.GREEN_CHEM)
+                    if self.movBlocWhat == Bloc.ALU:
+                        if (getBloc(bx+1, by) == Bloc.ELECTRO) or (getBloc(bx-1, by) == Bloc.ELECTRO) or \
+                           (getBloc(bx, by-1) == Bloc.ELECTRO) or (getBloc(bx, by+1) == Bloc.ELECTRO):
                             killBloc = True     # Kill ALU when launched against electro border
 
                     if not killBloc:
                         writeBloc(bx, by, self.movBlocWhat)
 
-                        if self.movBlocWhat == BLOC_CYCLONE:
+                        if self.movBlocWhat == Bloc.CYCLONE:
                             # Insert it back in the cyclonesList
                             for index in range(0, len(cyclonesList)):
                                 if cyclonesList[index] == 0:
                                     cyclonesList[index] = bx + by * SCHEME_WIDTH
                                     break
 
-                        if (self.movBlocWhat == BLOC_DIAMOND):
+                        if (self.movBlocWhat == Bloc.DIAMOND):
                             if not self.diamondsAssembled and self.checkSquareDiamond(bx, by) == True:
                                 print('Square Diamond assembled')
                                 playSFX(soundDiam)
@@ -677,10 +679,10 @@ class Monster():
             self.posY = y * BLOC_SIZE
             return
 
-# Functions
+# Global Functions
 
 def resetGame():
-    global level
+    global level, penguin1
 
     level = 1
     penguin1.score = 0
@@ -713,11 +715,11 @@ def resetRevenge(revenge):
 
     isRevenge = True
 
-    px = revenge % 4
-    py = revenge // 4
+    mapX = revenge % 4
+    mapY = revenge // 4
 
-    baseX = (12 * px) * BLOC_SIZE
-    baseY = (1 + 12 * py) * BLOC_SIZE
+    baseX = (12 * mapX) * BLOC_SIZE
+    baseY = (1 + 12 * mapY) * BLOC_SIZE
     penguin1.reset()
 
     # Overrides for Revenge mode
@@ -779,18 +781,18 @@ def loadLevel():
 
     for i in range(0, len(scheme)):
         blocIndex = scheme[i]
-        if blocIndex <= BLOC_GREEN_CHEM:
+        if blocIndex <= Bloc.GREEN_CHEM:
             blocsCount[blocIndex] += 1
 
-        if blocIndex == BLOC_CYCLONE:
+        if blocIndex == Bloc.CYCLONE:
             cyclonesList [cyclonesNb] = i
             print('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
             cyclonesNb += 1
             
-    toxicBlocsLeft  = blocsCount[BLOC_POISON]  + blocsCount[BLOC_RED]
-    toxicBlocsLeft += blocsCount[BLOC_ALU]     + blocsCount[BLOC_BATTERY]
-    toxicBlocsLeft += blocsCount[BLOC_DDT]     + blocsCount[BLOC_CFC]
-    toxicBlocsLeft += blocsCount[BLOC_URANIUM] + blocsCount[BLOC_GREEN_CHEM]
+    toxicBlocsLeft  = blocsCount[Bloc.POISON]  + blocsCount[Bloc.RED]
+    toxicBlocsLeft += blocsCount[Bloc.ALU]     + blocsCount[Bloc.BATTERY]
+    toxicBlocsLeft += blocsCount[Bloc.DDT]     + blocsCount[Bloc.CFC]
+    toxicBlocsLeft += blocsCount[Bloc.URANIUM] + blocsCount[Bloc.GREEN_CHEM]
 
     print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
     totalToxicBlocs = toxicBlocsLeft
@@ -839,7 +841,7 @@ def initOccupyTable():
     occupyTable = []
     for index in range (0, SCHEME_SIZE):
         occ = 0
-        if lands[currLand][4*index] == BLOC_TELEPORT_0:    # Monsters cannot go over teleporters
+        if lands[currLand][4*index] == Bloc.TELEPORT_0:    # Monsters cannot go over teleporters
             occ = 1
 
         occupyTable.append(occ)
@@ -856,7 +858,7 @@ def getBloc(indexX, indexY):
     if blocOffset >= 0 and blocOffset < SCHEME_SIZE:
         blocOfScheme = scheme[blocOffset]
     else:
-        blocOfScheme = BLOC_BASIC
+        blocOfScheme = Bloc.BASIC
 
     return blocOfScheme
 
@@ -866,9 +868,9 @@ def isOnBlock(posX, posY):
 def destroyBloc(bloc):
     global blocsCount, toxicBlocsLeft
     print('Destroy bloc of type ' + str(bloc))
-    if (bloc <= BLOC_GREEN_CHEM):
+    if (bloc <= Bloc.GREEN_CHEM):
         blocsCount[bloc] -= 1
-        if (bloc >= BLOC_POISON):
+        if (bloc >= Bloc.POISON):
             toxicBlocsLeft -= 1
             print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
             penguin1.addScore(5)
@@ -880,21 +882,21 @@ def writeBloc(indexX, indexY, blocIndex):
     scheme = scheme[:index] + bytes(newBloc) + scheme[(index+1):]
 
 def getAliasBlocIndex(index):
-    if index == BLOC_ELECTRO:  # Electric border (animation)
-        return BLOC_ELECTRO_0 + (int(electrifyBorderAnim / 8) % 2)
+    if index == Bloc.ELECTRO:  # Electric border (animation)
+        return Bloc.ELECTRO_0 + (int(electrifyBorderAnim / 8) % 2)
 
-    if index == BLOC_BASIC:
-        if currLand == 0: return BLOC_BASIC_0
-        if currLand == 1: return BLOC_BASIC_1
-        if currLand == 2: return BLOC_BASIC_2
-        if currLand == 3: return BLOC_BASIC_3
-        if currLand == 4: return BLOC_BASIC_4
+    if index == Bloc.BASIC:
+        if currLand == 0: return Bloc.BASIC_0
+        if currLand == 1: return Bloc.BASIC_1
+        if currLand == 2: return Bloc.BASIC_2
+        if currLand == 3: return Bloc.BASIC_3
+        if currLand == 4: return Bloc.BASIC_4
 
-    if index == BLOC_TELEPORT_0 or index == BLOC_TELEPORT_1:
-        return BLOC_TELEPORT_0 + (int(absTime / 256) % 2)
+    if index == Bloc.TELEPORT_0 or index == Bloc.TELEPORT_1:
+        return Bloc.TELEPORT_0 + (int(absTime / 256) % 2)
 
     if index == 24 and isRevenge == True:
-        return BLOC_REVENGE
+        return Bloc.REVENGE
 
     return index
 
@@ -1543,7 +1545,7 @@ for index in range(0, LANDS_NB):
     teleporters.append([])
     #print('Teleporters in land #' + str(index) + ':')
     for i in range(0, len(land), 4):
-        if land[i] >= BLOC_TELEPORT_0:
+        if land[i] >= Bloc.TELEPORT_0:
             j = i // 4
             teleporters[index].append(j)
             #print('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
@@ -1893,7 +1895,7 @@ while running:
                     finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
                     turningBloc = scheme[finalOffset]
 
-                    if turningBloc < 24 and turningBloc != BLOC_ELECTRO:
+                    if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
                         turningBlocs.append(turningBloc)
 
                 # Rotate turning blocs (clockwise)
@@ -1905,7 +1907,7 @@ while running:
                     finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
                     turningBloc = scheme[finalOffset]
 
-                    if turningBloc < 24 and turningBloc != BLOC_ELECTRO:
+                    if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
                         blocX = finalOffset % SCHEME_WIDTH
                         blocY = int (finalOffset / SCHEME_WIDTH)
                         writeBloc(blocX, blocY, turningBlocs [i])

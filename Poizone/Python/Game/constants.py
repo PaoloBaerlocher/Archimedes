@@ -91,33 +91,34 @@ LAND_COMPUTER = 4
 # Codes for Land data   ; 24 - 59 . background
 #                         60 - 61 . Teleporters
 
-BLOC_BASIC       = 0
-BLOC_ALCOOL      = 1
-BLOC_BOMB        = 2
-BLOC_POISON      = 3
-BLOC_RED         = 4
-BLOC_ALU         = 5
-BLOC_BATTERY     = 6
-BLOC_DDT         = 7
-BLOC_CFC         = 8
-BLOC_URANIUM     = 9
-BLOC_GREEN_CHEM  = 10
-BLOC_MAGIC       = 11
-BLOC_ROCK        = 12
-BLOC_GOLD        = 13
-BLOC_CYCLONE     = 14
-BLOC_DIAMOND     = 15
-BLOC_BASIC_0     = 16       # For Land No 0 (Ice Land)
-BLOC_BASIC_2     = 17       # For Land No 2 (Moon)
-BLOC_BASIC_1     = 18       # For Land No 1 (Space station)
-BLOC_BASIC_3     = 19       # For Land No 3 (Jungle)
-BLOC_BASIC_4     = 20       # For Land No 4 (Computer)
-BLOC_ELECTRO_0   = 21       # Electric border Anim
-BLOC_ELECTRO_1   = 22
-BLOC_ELECTRO     = 23
-BLOC_TELEPORT_0  = 60       # Teleporter Anim
-BLOC_TELEPORT_1  = 61
-BLOC_REVENGE     = 62
+class Bloc:
+    BASIC       = 0
+    ALCOOL      = 1
+    BOMB        = 2
+    POISON      = 3
+    RED         = 4
+    ALU         = 5
+    BATTERY     = 6
+    DDT         = 7
+    CFC         = 8
+    URANIUM     = 9
+    GREEN_CHEM  = 10
+    MAGIC       = 11
+    ROCK        = 12
+    GOLD        = 13
+    CYCLONE     = 14
+    DIAMOND     = 15
+    BASIC_0     = 16       # For Land No 0 (Ice Land)
+    BASIC_2     = 17       # For Land No 2 (Moon)
+    BASIC_1     = 18       # For Land No 1 (Space station)
+    BASIC_3     = 19       # For Land No 3 (Jungle)
+    BASIC_4     = 20       # For Land No 4 (Computer)
+    ELECTRO_0   = 21       # Electric border Anim
+    ELECTRO_1   = 22
+    ELECTRO     = 23
+    TELEPORT_0  = 60       # Teleporter Anim
+    TELEPORT_1  = 61
+    REVENGE     = 62
 
 # PANEL_
 PANEL_DEMO  = 0
