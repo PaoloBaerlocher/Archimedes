@@ -669,7 +669,7 @@ class Monster():
             else:
                 x = baseX // BLOC_SIZE + 1 + random.randrange(0, 10)
                 y = baseY // BLOC_SIZE + 1 + random.randrange(0, 10)
-            print(f"New monster at {x},{y}")
+            # print(f"New monster at {x},{y}")
 
             if (occupyTable[x + y * SCHEME_WIDTH] != 0):      # Already occupied
                 continue
@@ -778,8 +778,8 @@ def loadLevel():
         scheme = f.read()
 
     # Counts blocs in scheme
-    blocsCount = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-    cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
+    blocsCount = [0] * 11
+    cyclonesList = [0] * 8
     cyclonesNb = 0
 
     for i in range(0, len(scheme)):
@@ -801,7 +801,6 @@ def loadLevel():
     totalToxicBlocs = toxicBlocsLeft
 
     resetLevel()
-
     initOccupyTable()
 
     monsters = []
@@ -1720,7 +1719,7 @@ while running:
             for keyPair in MENU_KEYS:
                 if event.key == keyPair [1]:
                     keyDown[keyPair [0]] = down
-                    
+
             # GAME KEYS processing
             for keyPair in GAME_KEYS:
                 if event.key == opt.getValue(keyPair [1]):
@@ -1942,10 +1941,12 @@ while running:
         if resultTimer > 60*8:
             percent = (100 * toxicBlocsLeft / totalToxicBlocs)
             gameOver = (percent >= (100-SUCCESS_GOAL))
-            penguin1.score += bonus         # Take bonus into account
+            penguin1.score += bonus             # Take bonus into account
+            penguin1.score += penguin1.points   # Apply unaccounted points (if any)
+            penguin1.points = 0
 
             print(f"percent: {percent} gameOver : {gameOver}")
-
+            
             if gameOver == True:
                 if lb.canEnter(penguin1.score):
                     startEnterNamePhase()
