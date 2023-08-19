@@ -1144,7 +1144,7 @@ def displayControls():
 
     TITLE_COLOR = (255, 255, 155)
     OPT_COLOR = (180, 255, 255)
-    VALUE_COLOR = (180, 255, 255)
+    VALUE_COLOR = (195, 195, 195)
     HIGHLIGHT_COLOR = (230, 255, 255)
     DONE_COLOR = (50, 250, 130)
 
@@ -1157,9 +1157,11 @@ def displayControls():
         highlight = (ctrlCursor == i)
         col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
 
-        displayTextRight(font, texts.CTRL[i], col, ORIGIN_X + 100, y)
-        if not highlight or ((absTime // 200) % 4 != 0):
-            displayTextLeft(font, pygame.key.name(tmpKeys[i]), col, ORIGIN_X + 150, y)
+        displayTextRight(font, texts.CTRL[i] + " :", col, ORIGIN_X + 100, y)
+        if ((absTime // 200) % 4 == 0):
+            highlight = False
+        col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
+        displayTextLeft(font, pygame.key.name(tmpKeys[i]), col, ORIGIN_X + 140, y)
 
     if ctrlCursor == 0:
         displayText(font, texts.CTRL_START, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
