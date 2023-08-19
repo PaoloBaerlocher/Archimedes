@@ -493,12 +493,13 @@ class Penguin():
                     break
 
 class Monster():
-    def __init__(self, kind):
+    def __init__(self, kind, isBaddie):
         self.posX = 0
         self.posY = 0
         self.dirX = 0
         self.dirY = 0
-        self.kind = kind  # 0 or 1 (monster type)
+        self.kind = kind                # 0 or 1 (graphic monster type (skin))
+        self.isBaddie = isBaddie        # Baddies are targeting the Penguin, the others move randomly
 
         # COUNTER = -32767.. - 1    : not yet born ( -32 .. -1 : birth )
         #         = 0..9              alive (animation phases)
@@ -572,7 +573,19 @@ class Monster():
                 found = False
                 for t in range(0, 10):      # Try 10 times
                     # Choose new direction
-                    if (random.randrange(2) == 0):
+
+                    if self.isBaddie and random.randrange(2) == 0:
+                        # Target Penguin
+                        dirX = penguin1.posX - self.posX
+                        dirY = penguin1.posY - self.posY
+                        if abs(dirX) > abs(dirY):
+                            dirX = 1 if dirX > 0 else -1
+                            dirY = 0
+                        else:
+                            dirX = 0
+                            dirY = 1 if dirY > 0 else -1
+
+                    elif (random.randrange(2) == 0):
                         dirX = -1 if (random.randrange(2) == 0) else +1
                         dirY = 0
                     else:
@@ -774,9 +787,10 @@ def loadLevel():
     initOccupyTable()
 
     monsters = []
+    baddiesNumber = level / 8
     for index in range(0, MONSTERS_NB):
         kind = index % 2
-        m = Monster(kind)
+        m = Monster(kind, index < baddiesNumber)
         m.setRandomPosition()
         monsters.append(m)
 
@@ -1868,7 +1882,7 @@ while running:
         if windowFade > 0:
             windowFade -= 16
             windowFade = pygame.math.clamp(windowFade, 0, 255)
-            
+
         # Animate electric border
         if electrifyBorder == True:
             electrifyBorderAnim += 1
