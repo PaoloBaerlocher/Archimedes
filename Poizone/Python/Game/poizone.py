@@ -1714,32 +1714,11 @@ while running:
             down = (event.type == pygame.KEYDOWN)
 
             # MENU KEYS processing
-            MENU_KEYS = [
-                [KEY_LEFT,      pygame.K_LEFT ],
-                [KEY_RIGHT,     pygame.K_RIGHT ],
-                [KEY_UP,        pygame.K_UP ],
-                [KEY_DOWN,      pygame.K_DOWN ],
-                [KEY_SPACE,     pygame.K_SPACE ],
-
-                [KEY_BACKSPACE, pygame.K_BACKSPACE ],
-                [KEY_RETURN,    pygame.K_RETURN ],
-                [KEY_ESCAPE,    pygame.K_ESCAPE ],
-                [KEY_PAUSE,     pygame.K_F12 ]
-            ]
-
             for keyPair in MENU_KEYS:
                 if event.key == keyPair [1]:
                     keyDown[keyPair [0]] = down
 
             # GAME KEYS processing
-            GAME_KEYS = [
-                [KEY_GAME_LEFT,  "CTRL_LEFT" ],
-                [KEY_GAME_RIGHT, "CTRL_RIGHT" ],
-                [KEY_GAME_UP,    "CTRL_UP" ],
-                [KEY_GAME_DOWN,  "CTRL_DOWN" ],
-                [KEY_GAME_PUSH,  "CTRL_PUSH" ]
-            ]
-
             for keyPair in GAME_KEYS:
                 if event.key == opt.getValue(keyPair [1]):
                     keyDown[keyPair [0]] = down
