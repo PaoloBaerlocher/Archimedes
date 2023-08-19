@@ -317,11 +317,11 @@ class Penguin():
         if penguinMove:
             self.canTeleport = True
 
-        if keyDown[KEY_GAME_PUSH] and penguinMove and isOnBlock(self.posX, self.posY) and self.status != PenguinStatus.DIE:
+        if keyDown[KEY_GAME_PUSH] and penguinMove and self.isOnBlock() and self.status != PenguinStatus.DIE:
             self.pushBloc()
 
         if self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
-            onBlock = isOnBlock(self.posX, self.posY)
+            onBlock = self.isOnBlock()
 
             if (self.posY % BLOC_SIZE) == 0:    # Cannot change X direction if not aligned on bloc vertically
                 if keyDown[KEY_GAME_LEFT]:
@@ -361,7 +361,7 @@ class Penguin():
         if (self.status == PenguinStatus.WALK):
             self.posX += self.dirX * PENG_WALK_STEP
             self.posY += self.dirY * PENG_WALK_STEP
-            if isOnBlock(self.posX, self.posY):  # Stop walking at next block
+            if self.isOnBlock():  # Stop walking at next block
                 if penguinMove == False:
                     self.setStatus(PenguinStatus.IDLE)
                 elif self.blocIsWalkable(self.dirX, self.dirY) == False:
@@ -853,7 +853,7 @@ def isOnBlock(posX, posY):
     return ((posX % BLOC_SIZE) == 0) and ((posY % BLOC_SIZE) == 0)
 
 def destroyBloc(bloc):
-    global blocsCount, toxicBlocsLeft, level, gamePhase
+    global blocsCount, toxicBlocsLeft
     print('Destroy bloc of type ' + str(bloc))
     if (bloc <= BLOC_GREEN_CHEM):
         blocsCount[bloc] -= 1
