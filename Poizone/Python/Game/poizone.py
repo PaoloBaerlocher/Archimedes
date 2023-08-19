@@ -279,7 +279,7 @@ class Penguin():
         return 0
 
     def display(self, screen, baseX, baseY):
-        if (self.ghost / 4) % 4 <= 2:
+        if (self.ghost / 2) % 8 <= 6:
             c = CropSprite(self.posX - baseX, self.posY - baseY)
             blitGameSprite(penguinSprites[self.anim], c)
 
@@ -925,11 +925,12 @@ def startMenuPhase():
     loadSprites()
 
 def startLevelPhase():
-    global gamePhase
+    global gamePhase, windowFade
 
     print('PHASE_LEVEL')
     gamePhase = PHASE_LEVEL
     loadLevel()
+    windowFade = 128
 
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
@@ -1332,7 +1333,7 @@ def displayResult():
 
     if toxicBlocsLeft == 0:
         if ((resultTimer // 8) % 4 != 0):      # Flash FX
-            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 85, True)
+            displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 90, True)
             displayText(font_big, "DECONTAMINATION!", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
     else:
         displayText(font_big, "DECONTAMINATION:", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
