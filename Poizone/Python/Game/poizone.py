@@ -64,6 +64,7 @@ class Penguin():
         self.invert = False
         self.ghost = 0              # Invincible if > 0
         self.canTeleport = True
+        self.diamondsAssembled = False
 
         self.movBlocWhat = NONE   # Which bloc (NONE : no bloc)
         self.movBlocPosX = 0
@@ -470,10 +471,11 @@ class Penguin():
                                     break
 
                         if (self.movBlocWhat == BLOC_DIAMOND):
-                            if self.checkSquareDiamond(bx, by) == True:
+                            if not self.diamondsAssembled and self.checkSquareDiamond(bx, by) == True:
                                 print('Square Diamond assembled')
                                 playSFX(soundDiam)
                                 self.addScore(500)
+                                self.diamondsAssembled = True    # Can be obtained only once per level
                     else:
                         destroyBloc(self.movBlocWhat)
                         playSFX(soundSplatch)
