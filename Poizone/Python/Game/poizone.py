@@ -40,6 +40,9 @@ maxLevelReached     = 1     # For CONTINUE option
 
 lastKeyDown         = NONE
 
+running             = True
+pauseGame           = False
+
 # Utility functions
 
 def blitGameSprite(sprite, cropSprite):
@@ -515,7 +518,7 @@ class Monster():
         self.dirY = 0
         self.kind = kind                # 0 or 1 (graphic monster type (skin))
         self.isBaddie = isBaddie        # Baddies are monsters targeting the Penguin, the others move randomly
-        
+
         # COUNTER = -32767.. - 1    : not yet born ( -32 .. -1 : birth )
         #         = 0..9              alive (animation phases)
 
@@ -931,7 +934,7 @@ def startMenuPhase():
     menuCounter = 0
     pauseGame = False
     menuCursor = 0
-    subMenu = MENU_MAIN
+    subMenu = Menu.MAIN
 
     # Load sprites for tutos
     currLand = 0
@@ -1105,7 +1108,7 @@ def displayTuto():
     CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_TUTORIAL], TITLE_COLOR, CENTER_X, 80, True)
+    displayText(font_big, texts.MAIN_MENU [Menu.TUTORIAL], TITLE_COLOR, CENTER_X, 80, True)
 
     if currTutoPage == 0:
         y = 105
@@ -1178,7 +1181,7 @@ def displayControls():
     DONE_COLOR = (50, 250, 130)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU [Menu.CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     i = 0
     for i in range(0, len(CTRL_ID)):
@@ -1209,7 +1212,7 @@ def displayOptions():
     HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU [Menu.OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     for i in range(0, len(OPTIONS_ID)):
         y = 120 + 15 * i
@@ -1231,7 +1234,7 @@ def displayCredits():
     TEXT_COLOR = (180, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU [Menu.CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     y = 110
     for line in texts.CREDITS:
@@ -1251,18 +1254,19 @@ def displayMainMenu():
         displayText(font, texts.MAIN_MENU[i], col, CENTER_X, 120 + 15*i)
 
 def displayMenu():
-    if subMenu == MENU_MAIN:
-        displayMainMenu()
-    elif subMenu == MENU_LEADERBOARD:
-        displayLeaderboard()
-    elif subMenu == MENU_TUTORIAL:
-        displayTuto()
-    elif subMenu == MENU_CONTROLS:
-        displayControls()
-    elif subMenu == MENU_OPTIONS:
-        displayOptions()
-    elif subMenu == MENU_CREDITS:
-        displayCredits()
+    match subMenu:
+        case Menu.MAIN:
+            displayMainMenu()
+        case Menu.LEADERBOARD:
+            displayLeaderboard()
+        case Menu.TUTORIAL:
+            displayTuto()
+        case Menu.CONTROLS:
+            displayControls()
+        case Menu.OPTIONS:
+            displayOptions()
+        case Menu.CREDITS:
+            displayCredits()
 
 def displayGameHud():
     WHITE = (255, 255, 255)
@@ -1307,10 +1311,9 @@ def displayLeaderboard():
     NAME_COLOR  = (255, 255, 255)
     LEVEL_COLOR = (55, 155, 155)
     LEGEND_COLOR = (50, 240, 200)
-    BLACK = (10, 10, 10)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [MENU_LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU [Menu.LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     # Legend
     displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 114)
@@ -1463,7 +1466,7 @@ def applyFade():
         screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
 
 def isMenuDeactivated(index):
-    return index == MENU_CONTINUE and maxLevelReached == 1
+    return index == Menu.CONTINUE and maxLevelReached == 1
 
 # pygame setup
 pygame.init()
@@ -1471,8 +1474,6 @@ pygame.display.set_caption('Poizone')
 pygame.mixer.init()  # Initialize the mixer module.
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
 clock = pygame.time.Clock()
-running = True
-pauseGame = False
 
 lb = leaderboard.Leaderboard()
 lb.load()
@@ -1719,7 +1720,7 @@ while running:
             for keyPair in MENU_KEYS:
                 if event.key == keyPair [1]:
                     keyDown[keyPair [0]] = down
-
+                    
             # GAME KEYS processing
             for keyPair in GAME_KEYS:
                 if event.key == opt.getValue(keyPair [1]):
@@ -1760,10 +1761,10 @@ while running:
         elif gamePhase == PHASE_INTRO:
             running = False
         elif gamePhase == PHASE_MENU:
-            if subMenu == MENU_MAIN:
+            if subMenu == Menu.MAIN:
                 startIntroPhase()
             else:
-                subMenu = MENU_MAIN        # Return to Main Menu
+                subMenu = Menu.MAIN        # Return to Main Menu
             playSFX(soundValid)
 
     if gamePhase == PHASE_INTRO:
@@ -1777,7 +1778,7 @@ while running:
             windowFade += 16
 
         # Main Menu navigation
-        if subMenu == MENU_MAIN:
+        if subMenu == Menu.MAIN:
             if keyPressed[KEY_DOWN] and menuCursor < 6:
                 menuCursor += 1
                 while isMenuDeactivated(menuCursor):
@@ -1791,32 +1792,32 @@ while running:
                 playSFX(soundValid)
 
             if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
-                if menuCursor == MENU_PLAY or menuCursor == MENU_CONTINUE:
+                if menuCursor == Menu.PLAY or menuCursor == Menu.CONTINUE:
                     resetGame()
 
-                    if menuCursor == MENU_CONTINUE:
+                    if menuCursor == Menu.CONTINUE:
                         level = maxLevelReached
 
                     startLevelPhase()
                 else:
                     subMenu = menuCursor
 
-                    if subMenu == MENU_OPTIONS:
+                    if subMenu == Menu.OPTIONS:
                         optCursor = 0
-                    if subMenu == MENU_CONTROLS:
+                    if subMenu == Menu.CONTROLS:
                         controlsCounter = 0
                         ctrlCursor = 0
                         lastKeyDown = NONE      # To avoid using unwanted SPACE key event
                         tmpKeys = []
                         for i in range(0, len(CTRL_ID)):
                             tmpKeys.append(opt.getValue((CTRL_ID[i])))
-                    if subMenu == MENU_TUTORIAL:
+                    if subMenu == Menu.TUTORIAL:
                         tutoCounter = 0
                         currTutoPage = 0
 
                     playSFX(soundValid)
 
-        elif subMenu == MENU_TUTORIAL:
+        elif subMenu == Menu.TUTORIAL:
             if keyPressed[KEY_LEFT]:
                 currTutoPage = (currTutoPage + TUTO_PAGES - 1) % TUTO_PAGES
                 tutoCounter = 0
@@ -1827,7 +1828,7 @@ while running:
                 tutoCounter = 0
                 playSFX(soundValid)
 
-        elif subMenu == MENU_OPTIONS:
+        elif subMenu == Menu.OPTIONS:
             if keyPressed[KEY_DOWN] and optCursor < 1:
                 optCursor += 1
                 playSFX(soundValid)
@@ -1842,11 +1843,11 @@ while running:
                 applyChannelVolumes()
                 playSFX(soundValid)
 
-        elif subMenu == MENU_CONTROLS:
+        elif subMenu == Menu.CONTROLS:
             if controlsCounter > 0:
                 controlsCounter -= 1
                 if controlsCounter == 0:
-                    subMenu = MENU_MAIN  # Back to main menu
+                    subMenu = Menu.MAIN  # Back to main menu
             elif lastKeyDown != NONE and lastKeyDown != pygame.K_ESCAPE:
                 # Check if new key is already in use
                 inUse = False

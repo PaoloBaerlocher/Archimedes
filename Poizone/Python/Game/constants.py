@@ -42,15 +42,15 @@ PHASE_REVENGE_INTRO     = 6
 PHASE_GAME_WON          = 7
 PHASE_ENTER_NAME        = 8
 
-# MENU_
-MENU_MAIN       = -1
-MENU_PLAY       = 0
-MENU_CONTINUE   = 1
-MENU_LEADERBOARD= 2     # Submenus
-MENU_CONTROLS   = 3
-MENU_TUTORIAL   = 4
-MENU_OPTIONS    = 5
-MENU_CREDITS    = 6
+class Menu:
+    MAIN       = -1
+    PLAY       = 0
+    CONTINUE   = 1
+    LEADERBOARD= 2     # Submenus
+    CONTROLS   = 3
+    TUTORIAL   = 4
+    OPTIONS    = 5
+    CREDITS    = 6
 
 # LEGEND_
 LEGEND_RIGHT    = 0
