@@ -48,6 +48,10 @@ pauseGame           = False
 def blitGameSprite(sprite, cropSprite):
     screen.blit(sprite, (ORIGIN_X + cropSprite.posX, ORIGIN_Y + cropSprite.posY), cropSprite.getCroppedRegion())
 
+def debugPrint(text):
+    if DEBUG_FEATURES == True:
+        print(text)
+
 # Classes
 
 class Penguin():
@@ -88,14 +92,14 @@ class Penguin():
 
     def setStatus(self, status):
         if status != self.status:
-            print('New Penguin status: ' + str(status))
+            debugPrint('New Penguin status: ' + str(status))
             self.status = status
 
     def getBlocOnDir(self, dirX, dirY):
         return getBloc(self.posX // BLOC_SIZE + dirX, self.posY // BLOC_SIZE + dirY)
 
     def launchBloc(self, bloc, posX, posY, dirX, dirY):
-        print('LaunchBloc')
+        debugPrint('LaunchBloc')
         self.movBlocWhat = bloc
         self.movBlocPosX = posX + dirX * BLOC_SIZE
         self.movBlocPosY = posY + dirY * BLOC_SIZE
@@ -121,7 +125,7 @@ class Penguin():
                         writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
                         if bloc == Bloc.CYCLONE:
                             idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
-                            print('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
+                            debugPrint('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
                             cyclonesList[idx] = 0
 
                         playSFX(soundLaunch)
@@ -424,7 +428,7 @@ class Penguin():
         if self.isOnBlock() and self.canTeleport:
             found = self.getNextTeleportIndex()
             if found != NONE:
-                print('Teleporter found : ' + str(found))
+                debugPrint('Teleporter found : ' + str(found))
                 newPosX = found % SCHEME_WIDTH
                 newPosY = found // SCHEME_WIDTH
                 self.posX = newPosX * BLOC_SIZE
@@ -457,7 +461,7 @@ class Penguin():
                 by = self.movBlocPosY // BLOC_SIZE
                 nextBloc = getBloc(bx + self.movBlocDirX, by + self.movBlocDirY)
                 if nextBloc < 24:
-                    print('End of bloc travel. Killed ' + str(self.movMonsters) + ' monsters.')
+                    debugPrint('End of bloc travel. Killed ' + str(self.movMonsters) + ' monsters.')
 
                     killBloc = (self.movBlocWhat == Bloc.GREEN_CHEM)
                     if self.movBlocWhat == Bloc.ALU:
@@ -477,7 +481,7 @@ class Penguin():
 
                         if (self.movBlocWhat == Bloc.DIAMOND):
                             if not self.diamondsAssembled and self.checkSquareDiamond(bx, by) == True:
-                                print('Square Diamond assembled')
+                                debugPrint('Square Diamond assembled')
                                 playSFX(soundDiam)
                                 self.addScore(500)
                                 self.diamondsAssembled = True    # Can be obtained only once per level
@@ -573,18 +577,18 @@ class Monster():
             if electrifyBorder and self.isAlive() and not self.isDizzy() and onBlock:
                 if (self.posX == BORDER_SIZE) or (self.posY == BORDER_SIZE) or (self.posX == BLOC_SIZE*44) or (self.posY == BLOC_SIZE*44):
                     self.dizzyCounter = 4*60
-                    print('Electrify monster')
+                    debugPrint('Electrify monster')
                     
             if self.isAlive() and (penguin1.movBlocWhat != NONE):
                 deltaX = abs(penguin1.movBlocPosX - self.posX)
                 deltaY = abs(penguin1.movBlocPosY - self.posY)
                 if (deltaX <= 10) and (deltaY <= 10):
-                    print('Kill monster')
+                    debugPrint('Kill monster')
                     self.killAndRebirth()
                     playSFX(soundColl)
                     penguin1.movMonsters += 1
                 elif (deltaX <= 12) and (deltaY <= 12):
-                    print('Dizzy monster by bloc collision')
+                    debugPrint('Dizzy monster by bloc collision')
                     self.dizzyCounter = 4*60
 
             if (self.isAlive() and not self.isDizzy() and onBlock):
@@ -669,7 +673,7 @@ class Monster():
             else:
                 x = baseX // BLOC_SIZE + 1 + random.randrange(0, 10)
                 y = baseY // BLOC_SIZE + 1 + random.randrange(0, 10)
-            # print(f"New monster at {x},{y}")
+            # debugPrint(f"New monster at {x},{y}")
 
             if (occupyTable[x + y * SCHEME_WIDTH] != 0):      # Already occupied
                 continue
@@ -769,7 +773,7 @@ def loadSprites():
 
 def loadLevel():
     global level, currLand, scheme, blocsCount, toxicBlocsLeft, totalToxicBlocs, monsters, cyclonesList
-    print("Load level " + str(level))
+    debugPrint("Load level " + str(level))
     currLand = (level-1) % LANDS_NB
     loadSprites()
 
@@ -789,7 +793,7 @@ def loadLevel():
 
         if blocIndex == Bloc.CYCLONE:
             cyclonesList [cyclonesNb] = i
-            print('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
+            debugPrint('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
             cyclonesNb += 1
             
     toxicBlocsLeft  = blocsCount[Bloc.POISON]  + blocsCount[Bloc.RED]
@@ -797,7 +801,7 @@ def loadLevel():
     toxicBlocsLeft += blocsCount[Bloc.DDT]     + blocsCount[Bloc.CFC]
     toxicBlocsLeft += blocsCount[Bloc.URANIUM] + blocsCount[Bloc.GREEN_CHEM]
 
-    print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
+    debugPrint('toxicBlocsLeft: ' + str(toxicBlocsLeft))
     totalToxicBlocs = toxicBlocsLeft
 
     resetLevel()
@@ -813,7 +817,7 @@ def loadLevel():
 
 def loadRevenge():
     global level, currLand, scheme, blocsCount, monsters, cyclonesList
-    print("Load revenge for level " + str(level))
+    debugPrint("Load revenge for level " + str(level))
     currLand = (level - 1) // 10
     loadSprites()
 
@@ -869,12 +873,12 @@ def isOnBlock(posX, posY):
 
 def destroyBloc(bloc):
     global blocsCount, toxicBlocsLeft
-    print('Destroy bloc of type ' + str(bloc))
+    debugPrint('Destroy bloc of type ' + str(bloc))
     if (bloc <= Bloc.GREEN_CHEM):
         blocsCount[bloc] -= 1
         if (bloc >= Bloc.POISON):
             toxicBlocsLeft -= 1
-            print('toxicBlocsLeft: ' + str(toxicBlocsLeft))
+            debugPrint('toxicBlocsLeft: ' + str(toxicBlocsLeft))
             penguin1.addScore(5)
 
 def writeBloc(indexX, indexY, blocIndex):
@@ -918,7 +922,7 @@ def setElectrifyBorder(newStatus):
 def startIntroPhase():
     global gamePhase, windowFade, introTimer, pauseGame
 
-    print('Phase.INTRO')
+    debugPrint('Phase.INTRO')
     gamePhase = Phase.INTRO
     playMusic(musicIntro, -1)
     windowFade = 0
@@ -928,7 +932,7 @@ def startIntroPhase():
 def startMenuPhase():
     global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, currLand
 
-    print('Phase.MENU')
+    debugPrint('Phase.MENU')
     gamePhase = Phase.MENU
     menuCounter = 0
     pauseGame = False
@@ -942,7 +946,7 @@ def startMenuPhase():
 def startLevelPhase():
     global gamePhase, windowFade
 
-    print('Phase.LEVEL')
+    debugPrint('Phase.LEVEL')
     gamePhase = Phase.LEVEL
     loadLevel()
     windowFade = 128
@@ -950,7 +954,7 @@ def startLevelPhase():
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
 
-    print('Phase.RESULT')
+    debugPrint('Phase.RESULT')
     gamePhase = Phase.RESULT
     windowFade = 200
     resultTimer = 0
@@ -965,7 +969,7 @@ def startResultPhase():
 def startEndLevelPhase():
     global gamePhase, endOfLevelTimer, windowFade, part, rocketOriginX, rocketOriginY
 
-    print('Phase.END_LEVEL')
+    debugPrint('Phase.END_LEVEL')
     gamePhase = Phase.END_LEVEL
     endOfLevelTimer = 250
     playMusic(musicEnd)
@@ -980,7 +984,7 @@ def startEndLevelPhase():
 def startRevengeIntroPhase():
     global gamePhase, windowFade, introTimer
 
-    print('Phase.REVENGE_INTRO')
+    debugPrint('Phase.REVENGE_INTRO')
     gamePhase = Phase.REVENGE_INTRO
     windowFade = 0
     loadRevenge()
@@ -997,7 +1001,7 @@ def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
 
     resultTimer = 0
-    print('Phase.GAME_WON')
+    debugPrint('Phase.GAME_WON')
     gamePhase = Phase.GAME_WON
     windowFade = 128
     playMusic(musicWinGame)
@@ -1005,7 +1009,7 @@ def startGameWonPhase():
 def startEnterNamePhase():
     global gamePhase, yourName, cursorTx, cursorTy, cursorPx, cursorPy, resultTimer
 
-    print('Phase.ENTER_NAME')
+    debugPrint('Phase.ENTER_NAME')
     gamePhase = Phase.ENTER_NAME
     yourName = ""
     cursorTx = 0
@@ -1022,7 +1026,7 @@ def playSFX(sfx, loop=0):
         sfx.play(loop)
 
 def playMusic(m, loop=0):
-    print('playMusic loop=' + str(loop))
+    debugPrint('playMusic loop=' + str(loop))
     musicChannel = pygame.mixer.Channel(1)
     pygame.mixer.stop()
     musicChannel.play(m, loop)
@@ -1638,12 +1642,12 @@ for index in range(0, LANDS_NB):
         land = f.read()
     lands.append(land)
     teleporters.append([])
-    #print('Teleporters in land #' + str(index) + ':')
+    #debugPrint('Teleporters in land #' + str(index) + ':')
     for i in range(0, len(land), 4):
         if land[i] >= Bloc.TELEPORT_0:
             j = i // 4
             teleporters[index].append(j)
-            #print('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
+            #debugPrint('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
 
 # SpriteSheets
 
@@ -1712,11 +1716,11 @@ old_y_axis = 0.0
 try:
     joy = pygame.joystick.Joystick(0)
     joy.init()
-    print('Found JOY ' + joy.get_name())
+    debugPrint('Found JOY ' + joy.get_name())
     joyFound = 0
 except pygame.error:
-    print('JOY not found')
-    joyFound = -1
+    debugPrint('JOY not found')
+    joyFound = NONE
 
 startIntroPhase()
 
@@ -1741,7 +1745,7 @@ while running:
 
     oldKeyDown = keyDown.copy()
 
-    if joyFound != -1:
+    if joyFound != NONE:
         # Test joystick stick
         x_axis = joy.get_axis(0)
         y_axis = joy.get_axis(1)
@@ -1801,7 +1805,7 @@ while running:
             elif event.button == 7:
                 keyDown[KEY_PAUSE] = buttonIsDown
             else:
-                print('Unhandled JOY button ' + str(event.button))
+                debugPrint('Unhandled JOY button ' + str(event.button))
 
         if event.type == pygame.KEYUP or event.type == pygame.KEYDOWN:
 
@@ -1961,7 +1965,7 @@ while running:
                         opt.save()
                         controlsCounter = 90        # Wait a bit before quitting page
                 else:
-                    print('Invalid choice - key already used.')
+                    debugPrint('Invalid choice - key already used.')
 
                 lastKeyDown = NONE
 
@@ -1982,7 +1986,7 @@ while running:
         if cyclonesPace % 2 == 0:      # To slow down process, process once every two passes
             cycloneIndex = cyclonesList [cyclonesPace >> 1]
             if cycloneIndex != 0:
-                print('Process cyclone #' + str(cycloneIndex))
+                debugPrint('Process cyclone #' + str(cycloneIndex))
                 # Collect blocs around cyclone
                 turningBlocs = []
 
@@ -2040,7 +2044,7 @@ while running:
             penguin1.score += penguin1.points   # Apply unaccounted points (if any)
             penguin1.points = 0
 
-            print(f"percent: {percent} gameOver : {gameOver}")
+            debugPrint(f"percent: {percent} gameOver : {gameOver}")
             
             if gameOver == True:
                 if lb.canEnter(penguin1.score):
