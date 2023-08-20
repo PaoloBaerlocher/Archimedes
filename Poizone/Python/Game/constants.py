@@ -31,16 +31,16 @@ OPTIONS_ID = ["SFX", "MUSIC"]
 CTRL_ID = [ "CTRL_LEFT", "CTRL_RIGHT", "CTRL_UP", "CTRL_DOWN", "CTRL_PUSH" ]
 TUTO_PAGES = 15
 
-# PHASE_
-PHASE_NONE              = 0
-PHASE_INTRO             = 1
-PHASE_MENU              = 2
-PHASE_LEVEL             = 3
-PHASE_RESULT            = 4
-PHASE_END_LEVEL         = 5
-PHASE_REVENGE_INTRO     = 6
-PHASE_GAME_WON          = 7
-PHASE_ENTER_NAME        = 8
+class Phase:
+    NONE              = 0
+    INTRO             = 1
+    MENU              = 2
+    LEVEL             = 3
+    RESULT            = 4
+    END_LEVEL         = 5
+    REVENGE_INTRO     = 6
+    GAME_WON          = 7
+    ENTER_NAME        = 8
 
 class Menu:
     MAIN       = -1
@@ -73,12 +73,12 @@ KEY_GAME_RIGHT  = 12
 KEY_GAME_PUSH   = 13
 KEY_NB          = 14
 
-# LANDS_
-LAND_ICE      = 0
-LAND_ESA      = 1
-LAND_SPACE    = 2
-LAND_JUNGLE   = 3
-LAND_COMPUTER = 4
+class Land:
+    ICE      = 0
+    ESA      = 1
+    MOON     = 2
+    JUNGLE   = 3
+    COMPUTER = 4
 
 # BLOC
 

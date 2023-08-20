@@ -16,11 +16,11 @@ from cropsprite import CropSprite
 
 # Global variables
 
-gamePhase           = PHASE_NONE
+gamePhase           = Phase.NONE
 absTime             = 0
 gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
 level               = 1             # From 1 to 50
-currLand            = 0             # 0..4 (LAND_...)
+currLand            = 0             # 0..4 (Land.)
 electrifyBorder     = False
 electrifyBorderAnim = 0
 blocsCount          = []
@@ -918,8 +918,8 @@ def setElectrifyBorder(newStatus):
 def startIntroPhase():
     global gamePhase, windowFade, introTimer, pauseGame
 
-    print('PHASE_INTRO')
-    gamePhase = PHASE_INTRO
+    print('Phase.INTRO')
+    gamePhase = Phase.INTRO
     playMusic(musicIntro, -1)
     windowFade = 0
     introTimer = 0
@@ -928,8 +928,8 @@ def startIntroPhase():
 def startMenuPhase():
     global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, currLand
 
-    print('PHASE_MENU')
-    gamePhase = PHASE_MENU
+    print('Phase.MENU')
+    gamePhase = Phase.MENU
     menuCounter = 0
     pauseGame = False
     menuCursor = 0
@@ -942,16 +942,16 @@ def startMenuPhase():
 def startLevelPhase():
     global gamePhase, windowFade
 
-    print('PHASE_LEVEL')
-    gamePhase = PHASE_LEVEL
+    print('Phase.LEVEL')
+    gamePhase = Phase.LEVEL
     loadLevel()
     windowFade = 128
 
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
 
-    print('PHASE_RESULT')
-    gamePhase = PHASE_RESULT
+    print('Phase.RESULT')
+    gamePhase = Phase.RESULT
     windowFade = 200
     resultTimer = 0
 
@@ -965,23 +965,23 @@ def startResultPhase():
 def startEndLevelPhase():
     global gamePhase, endOfLevelTimer, windowFade, part, rocketOriginX, rocketOriginY
 
-    print('PHASE_END_LEVEL')
-    gamePhase = PHASE_END_LEVEL
+    print('Phase.END_LEVEL')
+    gamePhase = Phase.END_LEVEL
     endOfLevelTimer = 250
     playMusic(musicEnd)
     windowFade = 0
 
     # Create rocket particles, if needed in this land
-    if currLand == LAND_ESA or currLand == LAND_SPACE:
-        rocketOriginX = 70 if currLand == LAND_ESA else 105
-        rocketOriginY = 60 if currLand == LAND_ESA else 35
+    if currLand == Land.ESA or currLand == Land.MOON:
+        rocketOriginX = 70 if currLand == Land.ESA else 105
+        rocketOriginY = 60 if currLand == Land.ESA else 35
         part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
 
 def startRevengeIntroPhase():
     global gamePhase, windowFade, introTimer
 
-    print('PHASE_REVENGE_INTRO')
-    gamePhase = PHASE_REVENGE_INTRO
+    print('Phase.REVENGE_INTRO')
+    gamePhase = Phase.REVENGE_INTRO
     windowFade = 0
     loadRevenge()
     introTimer = 0
@@ -991,22 +991,22 @@ def startRevengeLevelPhase():
 
     windowFade = 0
     playMusic(musicRevenge)
-    gamePhase = PHASE_LEVEL
+    gamePhase = Phase.LEVEL
 
 def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
 
     resultTimer = 0
-    print('PHASE_GAME_WON')
-    gamePhase = PHASE_GAME_WON
+    print('Phase.GAME_WON')
+    gamePhase = Phase.GAME_WON
     windowFade = 128
     playMusic(musicWinGame)
 
 def startEnterNamePhase():
     global gamePhase, yourName, cursorTx, cursorTy, cursorPx, cursorPy, resultTimer
 
-    print('PHASE_ENTER_NAME')
-    gamePhase = PHASE_ENTER_NAME
+    print('Phase.ENTER_NAME')
+    gamePhase = Phase.ENTER_NAME
     yourName = ""
     cursorTx = 0
     cursorTy = 0
@@ -1458,7 +1458,32 @@ def displayGameWon():
     for line in texts.GAME_WON:
         displayText(font_big, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y, True)
         y += 20
-        
+
+def displayBGMap(baseX, baseY):
+
+    anim = (absTime // 4) % 4       # The land map has 4 animation frames
+    for y in range(0, BLOCS_RANGE + 1):
+        for x in range(0, BLOCS_RANGE + 2):
+
+            blocOffset = (baseX // BLOC_SIZE + x) + (baseY // BLOC_SIZE + y) * SCHEME_WIDTH
+
+            if isRevenge == True:
+                index = 24  # Empty land in Revenge mode
+            else:
+                index = int(lands[currLand][4 * blocOffset + anim])
+
+            if blocOffset < SCHEME_SIZE:
+                blocOfSchemes = scheme[blocOffset]
+                if blocOfSchemes < 24:
+                    index = blocOfSchemes
+
+            posX = x * BLOC_SIZE - (baseX % BLOC_SIZE)
+            posY = y * BLOC_SIZE - (baseY % BLOC_SIZE)
+
+            c = CropSprite(posX, posY)
+            index = getAliasBlocIndex(index)
+            blitGameSprite(sprites[0][index], c)
+
 def applyFade():
     if windowFade > 0:
         blackSurface.fill((0, 0, 0, windowFade))
@@ -1617,7 +1642,7 @@ old_y_axis = 0.0
 try:
     joy = pygame.joystick.Joystick(0)
     joy.init()
-    print('JOY ' + joy.get_name())
+    print('Found JOY ' + joy.get_name())
     joyFound = 0
 except pygame.error:
     print('JOY not found')
@@ -1631,7 +1656,7 @@ while running:
     dt = clock.get_time()
     absTime += dt
 
-    if gamePhase == PHASE_LEVEL and not pauseGame:
+    if gamePhase == Phase.LEVEL and not pauseGame:
         prevGameTimer = gameTimer
         gameTimer -= dt / 1000
         if gameTimer < 0.0:
@@ -1751,27 +1776,27 @@ while running:
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
 
     if keyPressed[KEY_PAUSE]:  # Pause game
-        if gamePhase == PHASE_LEVEL:
+        if gamePhase == Phase.LEVEL:
             pauseGame = not pauseGame
 
     if keyPressed[KEY_ESCAPE] == True:
-        if gamePhase == PHASE_LEVEL:
+        if gamePhase == Phase.LEVEL:
             startIntroPhase()
-        elif gamePhase == PHASE_INTRO:
+        elif gamePhase == Phase.INTRO:
             running = False
-        elif gamePhase == PHASE_MENU:
+        elif gamePhase == Phase.MENU:
             if subMenu == Menu.MAIN:
                 startIntroPhase()
             else:
                 subMenu = Menu.MAIN        # Return to Main Menu
             playSFX(soundValid)
 
-    if gamePhase == PHASE_INTRO:
+    if gamePhase == Phase.INTRO:
         introTimer += 1
         if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
             startMenuPhase()
             playSFX(soundValid)
-    elif gamePhase == PHASE_MENU:
+    elif gamePhase == Phase.MENU:
         menuCounter += 1
         if windowFade < 160:
             windowFade += 16
@@ -1870,7 +1895,7 @@ while running:
 
                 lastKeyDown = NONE
 
-    elif gamePhase == PHASE_LEVEL and not pauseGame:
+    elif gamePhase == Phase.LEVEL and not pauseGame:
 
         # Fade out
         if windowFade > 0:
@@ -1927,7 +1952,7 @@ while running:
                 if level >= 50:             # End of game reached!
                     startGameWonPhase()
                 else:
-                    gamePhase = PHASE_LEVEL  # Move to next level
+                    gamePhase = Phase.LEVEL  # Move to next level
                     level += 1  # End of level - display results
                     loadLevel()
             else:
@@ -1936,7 +1961,7 @@ while running:
 
                 startResultPhase()
 
-    elif gamePhase == PHASE_RESULT:
+    elif gamePhase == Phase.RESULT:
         resultTimer += 1
         if resultTimer > 60*8:
             percent = (100 * toxicBlocsLeft / totalToxicBlocs)
@@ -1960,7 +1985,7 @@ while running:
             else:
                 startEndLevelPhase()
 
-    elif gamePhase == PHASE_REVENGE_INTRO:
+    elif gamePhase == Phase.REVENGE_INTRO:
 
         if windowFade < 128:
             windowFade += 16
@@ -1970,13 +1995,13 @@ while running:
         if keyPressed[KEY_GAME_PUSH] or (introTimer > 60*4):
             startRevengeLevelPhase()
 
-    elif gamePhase == PHASE_GAME_WON:
+    elif gamePhase == Phase.GAME_WON:
         resultTimer += 1
         if resultTimer > 60*21:     # Match music duration
             startMenuPhase()
             playMusic(musicIntro, -1)
 
-    elif gamePhase == PHASE_ENTER_NAME:
+    elif gamePhase == Phase.ENTER_NAME:
         resultTimer += 1
         quitEnterName = False
 
@@ -2017,20 +2042,20 @@ while running:
     screen.fill("black")
     screen.blit(border, (0, 0))
 
-    if gamePhase == PHASE_INTRO:
+    if gamePhase == Phase.INTRO:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
 
         if ((introTimer // 16) % 4 != 0):
             displayText(font, "Press START", (215, 235, 125), ORIGIN_X + WINDOW_WIDTH // 2, 230)
 
-    elif gamePhase == PHASE_MENU:
+    elif gamePhase == Phase.MENU:
         screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
         
         # Fade
         applyFade()
         displayMenu()
 
-    elif gamePhase == PHASE_END_LEVEL:
+    elif gamePhase == Phase.END_LEVEL:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
         if endOfLevelTimer > 0:
             endOfLevelTimer -= 1
@@ -2040,9 +2065,9 @@ while running:
             dirByLand = [-1, -1, -1, -1, +1]
             limitMinXByLand = [145, 140, 160, 140, -20]
             limitMaxXByLand = [500, 500, 500, 500, 70]
-            monstersNb = 2 if currLand == LAND_COMPUTER else 3
+            monstersNb = 2 if currLand == Land.COMPUTER else 3
             
-            x = 20 + endOfLevelTimer if currLand != LAND_COMPUTER else 250 - endOfLevelTimer
+            x = 20 + endOfLevelTimer if currLand != Land.COMPUTER else 250 - endOfLevelTimer
             y = yByLand [currLand]
             dir = dirByLand [currLand]
             limitMinX = limitMinXByLand [currLand]
@@ -2052,9 +2077,9 @@ while running:
             mx = pygame.math.clamp(x, limitMinX, limitMaxX)
 
             # Show Penguin
-            if (currLand == LAND_ICE or currLand == LAND_JUNGLE or currLand == LAND_COMPUTER):
+            if (currLand == Land.ICE or currLand == Land.JUNGLE or currLand == Land.COMPUTER):
 
-                if currLand == LAND_COMPUTER:
+                if currLand == Land.COMPUTER:
                     px = x + 60         # Penguin on the right side of monsters
                     py = y
 
@@ -2065,7 +2090,7 @@ while running:
                     px = x - 40         # Penguin on the left side of monsters
                     py = y
 
-                if currLand == LAND_ICE:
+                if currLand == Land.ICE:
                     if px >= 120 and px <= 150:     # Jump parabola
                         py -= (15*15 - math.pow(px-135, 2)) / 15
 
@@ -2089,7 +2114,7 @@ while running:
                 m.display(screen, 0, 0)
 
             # Show Rocket
-            if currLand == LAND_ESA or currLand == LAND_SPACE:
+            if currLand == Land.ESA or currLand == Land.MOON:
                 propelY = pow(250-endOfLevelTimer, 2) / 250
                 c = CropSprite(rocketOriginX, rocketOriginY - propelY, rocket.get_width(), rocket.get_height())
                 blitGameSprite(rocket, c)
@@ -2098,7 +2123,7 @@ while running:
                 part.display(screen, ORIGIN_X, ORIGIN_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
 
             # For COMPUTER level: redraw a part of the disk drive, over monsters
-            if currLand == LAND_COMPUTER:
+            if currLand == Land.COMPUTER:
                 screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y+138), (0, 138, 17*4, 20))
 
         else:
@@ -2107,31 +2132,10 @@ while running:
             else:
                 level += 1
                 startLevelPhase()
-    else: # PHASE_LEVEL or PHASE_RESULT or PHASE_REVENGE_INTRO
-        # Draw BG
+    else: # Phase.LEVEL or Phase.RESULT or Phase.REVENGE_INTRO
 
-        anim = absTime // 4
-        for y in range(0, BLOCS_RANGE + 1):
-            for x in range(0, BLOCS_RANGE + 2):
-
-                blocOffset = (baseX // BLOC_SIZE + x) + (baseY // BLOC_SIZE + y) * SCHEME_WIDTH
-
-                if isRevenge == True:
-                    index = 24      # Empty land in Revenge mode
-                else:
-                    index = int(lands[currLand][4 * blocOffset + (anim % 4)])
-
-                if blocOffset < SCHEME_SIZE:
-                    blocOfSchemes = scheme[blocOffset]
-                    if blocOfSchemes < 24:
-                        index = blocOfSchemes
-
-                posX = x * BLOC_SIZE - (baseX % BLOC_SIZE)
-                posY = y * BLOC_SIZE - (baseY % BLOC_SIZE)
-
-                c = CropSprite(posX, posY)
-                index = getAliasBlocIndex(index)
-                blitGameSprite(sprites[0][index], c)
+        # Draw Background Map
+        displayBGMap(baseX, baseY)
 
         # Display Penguin
         penguin1.display(screen, baseX, baseY)
@@ -2145,14 +2149,14 @@ while running:
 
         applyFade()
         
-        if gamePhase == PHASE_RESULT:
+        if gamePhase == Phase.RESULT:
             # Display result over game
             displayResult()
-        elif gamePhase == PHASE_REVENGE_INTRO:
+        elif gamePhase == Phase.REVENGE_INTRO:
             displayRevengeIntroMode()
-        elif gamePhase == PHASE_GAME_WON:
+        elif gamePhase == Phase.GAME_WON:
             displayGameWon()
-        elif gamePhase == PHASE_ENTER_NAME:
+        elif gamePhase == Phase.ENTER_NAME:
             displayEnterYourName()
 
         # Display HUD
