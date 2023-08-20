@@ -830,7 +830,7 @@ def loadRevenge():
     monsters = []
     for index in range(0, MONSTERS_NB):
         kind = index % 2
-        m = Monster(kind)
+        m = Monster(kind, False)
         m.setRandomPosition()
         monsters.append(m)
 
