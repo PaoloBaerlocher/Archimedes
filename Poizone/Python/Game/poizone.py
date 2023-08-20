@@ -1484,6 +1484,76 @@ def displayBGMap(baseX, baseY):
             index = getAliasBlocIndex(index)
             blitGameSprite(sprites[0][index], c)
 
+def displayEndLevel():
+
+    screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
+
+    # Penguin and 3 Monsters animation
+    yByLand = [190, 210, 190, 135, 138]
+    dirByLand = [-1, -1, -1, -1, +1]
+    limitMinXByLand = [145, 140, 160, 140, -20]
+    limitMaxXByLand = [500, 500, 500, 500, 70]
+    monstersNb = 2 if currLand == Land.COMPUTER else 3
+
+    x = 20 + endOfLevelTimer if currLand != Land.COMPUTER else 250 - endOfLevelTimer
+    y = yByLand[currLand]
+    dir = dirByLand[currLand]
+    limitMinX = limitMinXByLand[currLand]
+    limitMaxX = limitMaxXByLand[currLand]
+    baseX = 0
+    baseY = 0
+    mx = pygame.math.clamp(x, limitMinX, limitMaxX)
+
+    # Show Penguin
+    if (currLand == Land.ICE or currLand == Land.JUNGLE or currLand == Land.COMPUTER):
+
+        if currLand == Land.COMPUTER:
+            px = x + 60  # Penguin on the right side of monsters
+            py = y
+
+            if px >= 90:  # Jump parabola
+                dy = math.pow(px - 90, 2) / 15
+                py += pygame.math.clamp(dy, 0, 50)
+        else:
+            px = x - 40  # Penguin on the left side of monsters
+            py = y
+
+        if currLand == Land.ICE:
+            if px >= 120 and px <= 150:  # Jump parabola
+                py -= (15 * 15 - math.pow(px - 135, 2)) / 15
+
+        penguin1.status = PenguinStatus.WALK
+        penguin1.posX = px
+        penguin1.posY = py
+        penguin1.dirX = dir
+        penguin1.dirY = 0
+        penguin1.anim = penguin1.getPenguinAnimOffset()
+        penguin1.animPhase += 1
+        penguin1.display(screen, 0, 0)
+
+    # Show monsters
+    for index in range(0, monstersNb):
+        m = monsters[index]
+        m.posX = mx + 25 * index
+        m.posY = y
+        m.dirX = dir
+        m.dirY = 0
+        m.counter = 1000 - endOfLevelTimer + 16 * index
+        m.display(screen, 0, 0)
+
+    # Show Rocket
+    if currLand == Land.ESA or currLand == Land.MOON:
+        propelY = pow(250 - endOfLevelTimer, 2) / 250
+        c = CropSprite(rocketOriginX, rocketOriginY - propelY, rocket.get_width(), rocket.get_height())
+        blitGameSprite(rocket, c)
+        part.originY = ORIGIN_Y + c.posY + c.heightRegion
+        part.update(1. / 60.)  # TODO: should be dt
+        part.display(screen, ORIGIN_X, ORIGIN_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
+
+    # For COMPUTER level: redraw a part of the disk drive, over monsters
+    if currLand == Land.COMPUTER:
+        screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y + 138), (0, 138, 17 * 4, 20))
+
 def applyFade():
     if windowFade > 0:
         blackSurface.fill((0, 0, 0, windowFade))
@@ -2042,132 +2112,67 @@ while running:
     screen.fill("black")
     screen.blit(border, (0, 0))
 
-    if gamePhase == Phase.INTRO:
-        screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
+    match gamePhase:
+        case Phase.INTRO:
+            screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
 
-        if ((introTimer // 16) % 4 != 0):
-            displayText(font, "Press START", (215, 235, 125), ORIGIN_X + WINDOW_WIDTH // 2, 230)
+            if ((introTimer // 16) % 4 != 0):
+                displayText(font, "Press START", (215, 235, 125), ORIGIN_X + WINDOW_WIDTH // 2, 230)
 
-    elif gamePhase == Phase.MENU:
-        screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
-        
-        # Fade
-        applyFade()
-        displayMenu()
+        case Phase.MENU:
+            screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
 
-    elif gamePhase == Phase.END_LEVEL:
-        screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
-        if endOfLevelTimer > 0:
-            endOfLevelTimer -= 1
+            applyFade()
+            displayMenu()
 
-            # Penguin and 3 Monsters animation
-            yByLand = [190, 210, 190, 135, 138]
-            dirByLand = [-1, -1, -1, -1, +1]
-            limitMinXByLand = [145, 140, 160, 140, -20]
-            limitMaxXByLand = [500, 500, 500, 500, 70]
-            monstersNb = 2 if currLand == Land.COMPUTER else 3
-            
-            x = 20 + endOfLevelTimer if currLand != Land.COMPUTER else 250 - endOfLevelTimer
-            y = yByLand [currLand]
-            dir = dirByLand [currLand]
-            limitMinX = limitMinXByLand [currLand]
-            limitMaxX = limitMaxXByLand [currLand]
-            baseX = 0
-            baseY = 0
-            mx = pygame.math.clamp(x, limitMinX, limitMaxX)
+        case Phase.END_LEVEL:
 
-            # Show Penguin
-            if (currLand == Land.ICE or currLand == Land.JUNGLE or currLand == Land.COMPUTER):
+            displayEndLevel()
 
-                if currLand == Land.COMPUTER:
-                    px = x + 60         # Penguin on the right side of monsters
-                    py = y
-
-                    if px >= 90:       # Jump parabola
-                        dy = math.pow(px-90, 2) / 15
-                        py += pygame.math.clamp(dy, 0, 50)
-                else:
-                    px = x - 40         # Penguin on the left side of monsters
-                    py = y
-
-                if currLand == Land.ICE:
-                    if px >= 120 and px <= 150:     # Jump parabola
-                        py -= (15*15 - math.pow(px-135, 2)) / 15
-
-                penguin1.status = PenguinStatus.WALK
-                penguin1.posX = px
-                penguin1.posY = py
-                penguin1.dirX = dir
-                penguin1.dirY = 0
-                penguin1.anim = penguin1.getPenguinAnimOffset()
-                penguin1.animPhase += 1
-                penguin1.display(screen, 0, 0)
-
-            # Show monsters
-            for index in range(0, monstersNb):
-                m = monsters[index]
-                m.posX = mx + 25 * index
-                m.posY = y
-                m.dirX = dir
-                m.dirY = 0
-                m.counter = 1000-endOfLevelTimer + 16 * index
-                m.display(screen, 0, 0)
-
-            # Show Rocket
-            if currLand == Land.ESA or currLand == Land.MOON:
-                propelY = pow(250-endOfLevelTimer, 2) / 250
-                c = CropSprite(rocketOriginX, rocketOriginY - propelY, rocket.get_width(), rocket.get_height())
-                blitGameSprite(rocket, c)
-                part.originY = ORIGIN_Y + c.posY + c.heightRegion
-                part.update(1./60.)     # TODO: should be dt
-                part.display(screen, ORIGIN_X, ORIGIN_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
-
-            # For COMPUTER level: redraw a part of the disk drive, over monsters
-            if currLand == Land.COMPUTER:
-                screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y+138), (0, 138, 17*4, 20))
-
-        else:
-            if level % 5 == 0:
-                startRevengeIntroPhase()
+            if endOfLevelTimer > 0:
+                endOfLevelTimer -= 1
             else:
-                level += 1
-                startLevelPhase()
-    else: # Phase.LEVEL or Phase.RESULT or Phase.REVENGE_INTRO
+                if level % 5 == 0:
+                    startRevengeIntroPhase()
+                else:
+                    level += 1
+                    startLevelPhase()
 
-        # Draw Background Map
-        displayBGMap(baseX, baseY)
+        case _: # other phases where game map is displayed (Phase.LEVEL, Phase.RESULT, Phase.REVENGE_INTRO, etc)
 
-        # Display Penguin
-        penguin1.display(screen, baseX, baseY)
+            # Draw Background Map
+            displayBGMap(baseX, baseY)
 
-        # Display Monsters
-        for m in monsters:
-            m.display(screen, baseX, baseY)
+            # Display Penguin
+            penguin1.display(screen, baseX, baseY)
 
-        # Display moving bloc and bonus, if any
-        penguin1.displayBloc(screen, baseX, baseY)
+            # Display Monsters
+            for m in monsters:
+                m.display(screen, baseX, baseY)
 
-        applyFade()
-        
-        if gamePhase == Phase.RESULT:
-            # Display result over game
-            displayResult()
-        elif gamePhase == Phase.REVENGE_INTRO:
-            displayRevengeIntroMode()
-        elif gamePhase == Phase.GAME_WON:
-            displayGameWon()
-        elif gamePhase == Phase.ENTER_NAME:
-            displayEnterYourName()
+            # Display moving bloc and bonus, if any
+            penguin1.displayBloc(screen, baseX, baseY)
 
-        # Display HUD
-        displayGameHud()
+            applyFade()
 
-    # Display Scores
+            # Display menus over game
+            match gamePhase:
+                case Phase.RESULT:
+                    displayResult()
+                case Phase.REVENGE_INTRO:
+                    displayRevengeIntroMode()
+                case Phase.GAME_WON:
+                    displayGameWon()
+                case Phase.ENTER_NAME:
+                    displayEnterYourName()
+
+            # Display HUD (in the panel on the right side)
+            displayGameHud()
+
+    # Display Player Score
     displayScore(penguin1.score, 256, 45)
-    # displayScore(0, 256, 188)   # No 2nd player supported, for now
 
     # Display panel (PAUSE or DEMO)
-
     panelIdx = NONE
 
     if pauseGame == True:
