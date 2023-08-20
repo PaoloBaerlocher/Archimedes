@@ -870,6 +870,15 @@ def displayScore(score, posX, posY):
         screen.blit(charsSprites_gr[index + 26], (posX+12*i, posY))
         base //= 10
 
+def displayPanel():
+    panelIdx = NONE
+
+    if pauseGame == True:
+        panelIdx = PANEL_PAUSE
+
+    if panelIdx != NONE:
+        screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH//2 - 60/2, 30))
+
 def getBloc(indexX, indexY):
     blocOffset = indexX + indexY * SCHEME_WIDTH
     if blocOffset >= 0 and blocOffset < SCHEME_SIZE:
@@ -1837,15 +1846,15 @@ while running:
 
             if not down:
                 if DEBUG_FEATURES == True:
-                    if event.key == pygame.K_F5:    # Prev level
-                        if (level > 1):
-                            level -= 1
-                            loadLevel()
+                if event.key == pygame.K_F5:    # Prev level
+                    if (level > 1):
+                        level -= 1
+                        loadLevel()
 
-                    if event.key == pygame.K_F6:    # Next level
-                        if (level < 50):
-                            level += 1
-                            loadLevel()
+                if event.key == pygame.K_F6:    # Next level
+                    if (level < 50):
+                        level += 1
+                        loadLevel()
 
                     if event.key == pygame.K_F7:  # Prev revenge map
                         if (level > 5):
@@ -2187,14 +2196,8 @@ while running:
     # Display Player Score
     displayScore(penguin1.score, 256, 45)
 
-    # Display panel (PAUSE or DEMO)
-    panelIdx = NONE
-
-    if pauseGame == True:
-        panelIdx = PANEL_PAUSE
-
-    if panelIdx != NONE:
-        screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH//2 - 60/2, 30))
+    # Display panel (PAUSE)
+    displayPanel()
 
     # flip() the display to put your work on screen
     pygame.display.flip()
