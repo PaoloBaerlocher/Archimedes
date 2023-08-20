@@ -68,6 +68,7 @@ class Penguin():
         self.anim = 0
         self.animPhase = 0
         self.status = PenguinStatus.IDLE
+        self.pushCounter = 0
         self.invert = False
         self.ghost = 0              # Invincible if > 0
         self.canTeleport = True
@@ -113,6 +114,7 @@ class Penguin():
         if self.dirX != 0 or self.dirY != 0:
             bloc = self.getBlocOnDir(self.dirX, self.dirY)
             self.setStatus(PenguinStatus.PUSH)
+            self.pushCounter = PUSH_DURATION
             if bloc == Bloc.ELECTRO:
                 setElectrifyBorder(True)
             elif bloc < 24:
@@ -317,7 +319,7 @@ class Penguin():
             self.movBonusTimer -= 1
             if self.movMonsters > 0:  # At least one monster has been killed
                 c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
-                index = pygame.math.clamp(self.movMonsters - 1, 0, 3)  # Display corresponding bonus (20, 50, 100 or 200)
+                index = pygame.math.clamp(self.movMonsters - 1, 0, 3) # Display corresponding bonus (20, 50, 100 or 200)
                 blitGameSprite(penguinSprites[72 + index], c)
 
     def update(self, keyDown):
@@ -328,15 +330,15 @@ class Penguin():
         self.points -= toAdd
         self.score += toAdd
 
+        if self.pushCounter > 0:
+            self.pushCounter -= 1
+
         penguinMove = keyDown[KEY_GAME_LEFT] or keyDown[KEY_GAME_RIGHT] or keyDown[KEY_GAME_UP] or keyDown[KEY_GAME_DOWN]
 
         if penguinMove:
             self.canTeleport = True
 
-        if keyDown[KEY_GAME_PUSH] and penguinMove and self.isOnBlock() and self.status != PenguinStatus.DIE:
-            self.pushBloc()
-
-        if self.status != PenguinStatus.PUSH and self.status != PenguinStatus.DIE:
+        if self.status != PenguinStatus.DIE:
             onBlock = self.isOnBlock()
 
             if (self.posY % BLOC_SIZE) == 0:    # Cannot change X direction if not aligned on bloc vertically
@@ -365,9 +367,18 @@ class Penguin():
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
+            if keyDown[KEY_GAME_PUSH] and penguinMove and onBlock:
+                # Check if there is a bloc to push
+                if (self.dirX != 0 or self.dirY != 0) and (self.getBlocOnDir(self.dirX, self.dirY) < 24):
+                    self.pushBloc()
+                elif self.pushCounter == 0:               # Stop pushing
+                    self.setStatus(PenguinStatus.IDLE)
+                    setElectrifyBorder(False)
+
         if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_GAME_PUSH]):
             self.setStatus(PenguinStatus.IDLE)
             setElectrifyBorder(False)
+            self.pushCounter = 0
 
         if (self.status == PenguinStatus.IDLE) and (self.dirX != 0 or self.dirY != 0) and (
                 penguinMove == True):
@@ -399,9 +410,9 @@ class Penguin():
         if not isRevenge:
             offsetX = penguin1.posX + 8 - baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
             if offsetX < -PENG_WALK_STEP:
-                baseX -= PENG_WALK_STEP * 2
+                baseX -= PENG_WALK_STEP * 2     # Fast move speed
             elif offsetX < 0:
-                baseX -= PENG_WALK_STEP
+                baseX -= PENG_WALK_STEP         # Normal move speed
             elif offsetX > PENG_WALK_STEP:
                 baseX += PENG_WALK_STEP * 2
             elif offsetX > 0:
@@ -1319,7 +1330,7 @@ def displayLeaderboard():
     displayText(font_big, texts.MAIN_MENU [Menu.LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     # Legend
-    displayTextLeft(font, "SCORE       NAME             ZONE", LEGEND_COLOR, 55, 114)
+    displayTextLeft(font, "SCORE       NAME               ZONE", LEGEND_COLOR, 50, 114)
 
     for index in range (0, leaderboard.LB_MAX_ENTRIES):
         entry = lb.entries [index]
@@ -1330,13 +1341,13 @@ def displayLeaderboard():
         level = entry [2]
 
         # Score
-        displayTextRight(font, str(score), SCORE_COLOR, 90, y)
+        displayTextRight(font, str(score), SCORE_COLOR, 85, y)
 
         # Name
-        displayTextLeft(font, name, NAME_COLOR, 110, y)
+        displayTextLeft(font, name, NAME_COLOR, 105, y)
 
         # Level
-        displayTextRight(font, str(level), LEVEL_COLOR, 206, y)
+        displayTextRight(font, str(level), LEVEL_COLOR, 208, y)
 
 def displayResult():
     TITLE_COLOR = (50, 240, 200)

@@ -1,7 +1,7 @@
 import pygame
 from enum import Enum
 
-DEBUG_FEATURES = True
+DEBUG_FEATURES = False
 
 # Poizone Constants
 SCREEN_WIDTH = 320
@@ -23,6 +23,7 @@ MONSTER_WALK_STEP = 1
 MOVBLOC_STEP = 10
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
 BONUS_KILL = [0, 20, 50, 100, 200]  # Bonus for killing monsters crushed with one bloc
+PUSH_DURATION = 16      # Frames
 JOY_LIMIT = 0.8
 SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
 ALPHABET_ROWS = 4       # For 'Enter your name'
