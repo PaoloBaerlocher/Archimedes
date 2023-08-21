@@ -1818,7 +1818,7 @@ while running:
             if event.button == 0:
                 keyDown[KEY_SPACE] = buttonIsDown
                 keyDown[KEY_GAME_PUSH] = buttonIsDown
-            if event.button == 1:
+            if event.button == 1 and gamePhase != Phase.LEVEL:      # B button only used in menus
                 keyDown[KEY_ESCAPE] = buttonIsDown
             elif event.button == 6:
                 keyDown[KEY_ESCAPE] = buttonIsDown
