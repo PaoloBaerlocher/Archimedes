@@ -1379,7 +1379,8 @@ def displayResult():
 
         percent = (100 * (totalToxicBlocs - toxicBlocsLeft)) // totalToxicBlocs
         percentDisplay = pygame.math.clamp(percent, 0, resultTimer // 2)
-        displayText(font_big, f"{percentDisplay} %", BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
+        col = BAD_COLOR if percentDisplay < SUCCESS_GOAL else GOOD_COLOR
+        displayText(font_big, f"{percentDisplay} %", col, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
 
         if percent < SUCCESS_GOAL and resultTimer >= 200:
             displayText(font_big, "GAME OVER", GAMEOVER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220, True)
