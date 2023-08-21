@@ -2022,8 +2022,8 @@ while running:
 
                 # Rotate turning blocs (clockwise)
                 if (len(turningBlocs) > 1):
-                    turningBlocs = turningBlocs[len(turningBlocs)-1:len(turningBlocs)] + turningBlocs[:len(turningBlocs)-1]
-
+                    turningBlocs = turningBlocs[len(turningBlocs)-1:] + turningBlocs[:len(turningBlocs)-1]
+                    
                 i = 0
                 for offset in CYCLONE_OFFSETS:
                     finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
