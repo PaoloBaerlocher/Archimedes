@@ -57,22 +57,22 @@ class Menu:
 LEGEND_RIGHT    = 0
 LEGEND_LEFT     = 1
 
-# KEY_
-KEY_UP          = 0
-KEY_DOWN        = 1
-KEY_LEFT        = 2
-KEY_RIGHT       = 3
-KEY_SPACE       = 4
-KEY_BACKSPACE   = 5
-KEY_RETURN      = 6
-KEY_ESCAPE      = 7
-KEY_PAUSE       = 8
-KEY_GAME_UP     = 9
-KEY_GAME_DOWN   = 10
-KEY_GAME_LEFT   = 11
-KEY_GAME_RIGHT  = 12
-KEY_GAME_PUSH   = 13
-KEY_NB          = 14
+class Key:
+    UP          = 0
+    DOWN        = 1
+    LEFT        = 2
+    RIGHT       = 3
+    SPACE       = 4
+    BACKSPACE   = 5
+    RETURN      = 6
+    ESCAPE      = 7
+    PAUSE       = 8
+    GAME_UP     = 9
+    GAME_DOWN   = 10
+    GAME_LEFT   = 11
+    GAME_RIGHT  = 12
+    GAME_PUSH   = 13
+    NB          = 14
 
 class Land:
     ICE      = 0
@@ -136,21 +136,21 @@ class PenguinStatus(Enum):
 # Controls
 
 MENU_KEYS = [
-    [KEY_LEFT,      pygame.K_LEFT],
-    [KEY_RIGHT,     pygame.K_RIGHT],
-    [KEY_UP,        pygame.K_UP],
-    [KEY_DOWN,      pygame.K_DOWN],
-    [KEY_SPACE,     pygame.K_SPACE],
-    [KEY_BACKSPACE, pygame.K_BACKSPACE],
-    [KEY_RETURN,    pygame.K_RETURN],
-    [KEY_ESCAPE,    pygame.K_ESCAPE],
-    [KEY_PAUSE,     pygame.K_F12]
+    [Key.LEFT,      pygame.K_LEFT],
+    [Key.RIGHT,     pygame.K_RIGHT],
+    [Key.UP,        pygame.K_UP],
+    [Key.DOWN,      pygame.K_DOWN],
+    [Key.SPACE,     pygame.K_SPACE],
+    [Key.BACKSPACE, pygame.K_BACKSPACE],
+    [Key.RETURN,    pygame.K_RETURN],
+    [Key.ESCAPE,    pygame.K_ESCAPE],
+    [Key.PAUSE,     pygame.K_F12]
 ]
 
 GAME_KEYS = [
-    [KEY_GAME_LEFT,     "CTRL_LEFT"],
-    [KEY_GAME_RIGHT,    "CTRL_RIGHT"],
-    [KEY_GAME_UP,       "CTRL_UP"],
-    [KEY_GAME_DOWN,     "CTRL_DOWN"],
-    [KEY_GAME_PUSH,     "CTRL_PUSH"]
+    [Key.GAME_LEFT,     "CTRL_LEFT"],
+    [Key.GAME_RIGHT,    "CTRL_RIGHT"],
+    [Key.GAME_UP,       "CTRL_UP"],
+    [Key.GAME_DOWN,     "CTRL_DOWN"],
+    [Key.GAME_PUSH,     "CTRL_PUSH"]
 ]

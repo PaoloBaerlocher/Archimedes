@@ -333,7 +333,7 @@ class Penguin():
         if self.pushCounter > 0:
             self.pushCounter -= 1
 
-        penguinMove = keyDown[KEY_GAME_LEFT] or keyDown[KEY_GAME_RIGHT] or keyDown[KEY_GAME_UP] or keyDown[KEY_GAME_DOWN]
+        penguinMove = keyDown[Key.GAME_LEFT] or keyDown[Key.GAME_RIGHT] or keyDown[Key.GAME_UP] or keyDown[Key.GAME_DOWN]
 
         if penguinMove:
             self.canTeleport = True
@@ -342,32 +342,32 @@ class Penguin():
             onBlock = self.isOnBlock()
 
             if (self.posY % BLOC_SIZE) == 0:    # Cannot change X direction if not aligned on bloc vertically
-                if keyDown[KEY_GAME_LEFT]:
+                if keyDown[Key.GAME_LEFT]:
                     self.dirX = -1 if self.invert == False else +1
                     self.dirY = 0
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
-                if keyDown[KEY_GAME_RIGHT]:
+                if keyDown[Key.GAME_RIGHT]:
                     self.dirX = 1 if self.invert == False else -1
                     self.dirY = 0
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
             if (self.posX % BLOC_SIZE) == 0:    # Cannot change Y direction if not aligned on bloc horizontally
-                if keyDown[KEY_GAME_UP]:
+                if keyDown[Key.GAME_UP]:
                     self.dirX = 0
                     self.dirY = -1 if self.invert == False else +1
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
-                if keyDown[KEY_GAME_DOWN]:
+                if keyDown[Key.GAME_DOWN]:
                     self.dirX = 0
                     self.dirY = 1 if self.invert == False else -1
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[KEY_GAME_PUSH] and penguinMove and onBlock:
+            if keyDown[Key.GAME_PUSH] and penguinMove and onBlock:
                 # Check if there is a bloc to push
                 if (self.dirX != 0 or self.dirY != 0) and (self.getBlocOnDir(self.dirX, self.dirY) < 24):
                     self.pushBloc()
@@ -375,7 +375,7 @@ class Penguin():
                     self.setStatus(PenguinStatus.IDLE)
                     setElectrifyBorder(False)
 
-        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[KEY_GAME_PUSH]):
+        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[Key.GAME_PUSH]):
             self.setStatus(PenguinStatus.IDLE)
             setElectrifyBorder(False)
             self.pushCounter = 0
@@ -1728,8 +1728,8 @@ for index in range(0, 2):
     legendSprites.append(ss_legend.get_indexed_image(index, 20, 20))
 
 # Init input
-keyDown    = [False] * KEY_NB
-keyPressed = [False] * KEY_NB
+keyDown    = [False] * Key.NB
+keyPressed = [False] * Key.NB
 
 old_x_axis = 0.0
 old_y_axis = 0.0
@@ -1778,30 +1778,30 @@ while running:
         # X
 
         if x_axis > JOY_LIMIT:
-            keyDown[KEY_RIGHT] = keyDown[KEY_GAME_RIGHT] = True
+            keyDown[Key.RIGHT] = keyDown[Key.GAME_RIGHT] = True
 
         if x_axis < -JOY_LIMIT:
-            keyDown[KEY_LEFT] = keyDown[KEY_GAME_LEFT] = True
+            keyDown[Key.LEFT] = keyDown[Key.GAME_LEFT] = True
 
         if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
-            keyDown[KEY_RIGHT] = keyDown[KEY_GAME_RIGHT] = False
+            keyDown[Key.RIGHT] = keyDown[Key.GAME_RIGHT] = False
 
         if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
-            keyDown[KEY_LEFT] =  keyDown[KEY_GAME_LEFT] = False
+            keyDown[Key.LEFT] =  keyDown[Key.GAME_LEFT] = False
 
         # Y
 
         if y_axis > JOY_LIMIT:
-            keyDown[KEY_DOWN] = keyDown[KEY_GAME_DOWN] = True
+            keyDown[Key.DOWN] = keyDown[Key.GAME_DOWN] = True
 
         if y_axis < -JOY_LIMIT:
-            keyDown[KEY_UP] = keyDown [KEY_GAME_UP] = True
+            keyDown[Key.UP] = keyDown [Key.GAME_UP] = True
 
         if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
-            keyDown[KEY_DOWN] = keyDown[KEY_GAME_DOWN] = False
+            keyDown[Key.DOWN] = keyDown[Key.GAME_DOWN] = False
 
         if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
-            keyDown[KEY_UP] = keyDown[KEY_GAME_UP] = False
+            keyDown[Key.UP] = keyDown[Key.GAME_UP] = False
 
         old_x_axis = x_axis
         old_y_axis = y_axis
@@ -1816,14 +1816,14 @@ while running:
             buttonIsDown = (event.type == pygame.JOYBUTTONDOWN)
             # Map joy buttons to virtual keys
             if event.button == 0:
-                keyDown[KEY_SPACE] = buttonIsDown
-                keyDown[KEY_GAME_PUSH] = buttonIsDown
+                keyDown[Key.SPACE] = buttonIsDown
+                keyDown[Key.GAME_PUSH] = buttonIsDown
             if event.button == 1 and gamePhase != Phase.LEVEL:      # B button only used in menus
-                keyDown[KEY_ESCAPE] = buttonIsDown
+                keyDown[Key.ESCAPE] = buttonIsDown
             elif event.button == 6:
-                keyDown[KEY_ESCAPE] = buttonIsDown
+                keyDown[Key.ESCAPE] = buttonIsDown
             elif event.button == 7:
-                keyDown[KEY_PAUSE] = buttonIsDown
+                keyDown[Key.PAUSE] = buttonIsDown
             else:
                 debugPrint('Unhandled JOY button ' + str(event.button))
 
@@ -1872,11 +1872,11 @@ while running:
     for i in range(0, len(keyDown)):
         keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
 
-    if keyPressed[KEY_PAUSE]:  # Pause game
+    if keyPressed[Key.PAUSE]:  # Pause game
         if gamePhase == Phase.LEVEL:
             pauseGame = not pauseGame
 
-    if keyPressed[KEY_ESCAPE] == True:
+    if keyPressed[Key.ESCAPE] == True:
         if gamePhase == Phase.LEVEL:
             startIntroPhase()
         elif gamePhase == Phase.INTRO:
@@ -1890,7 +1890,7 @@ while running:
 
     if gamePhase == Phase.INTRO:
         introTimer += 1
-        if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
+        if keyPressed[Key.SPACE] or keyPressed[Key.RETURN]:
             startMenuPhase()
             playSFX(soundValid)
     elif gamePhase == Phase.MENU:
@@ -1900,19 +1900,19 @@ while running:
 
         # Main Menu navigation
         if subMenu == Menu.MAIN:
-            if keyPressed[KEY_DOWN] and menuCursor < 6:
+            if keyPressed[Key.DOWN] and menuCursor < 6:
                 menuCursor += 1
                 while isMenuDeactivated(menuCursor):
                     menuCursor += 1
                 playSFX(soundValid)
 
-            if keyPressed[KEY_UP] and menuCursor > 0:
+            if keyPressed[Key.UP] and menuCursor > 0:
                 menuCursor -= 1
                 while isMenuDeactivated(menuCursor):
                     menuCursor -= 1
                 playSFX(soundValid)
 
-            if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN]:
+            if keyPressed[Key.SPACE] or keyPressed[Key.RETURN]:
                 if menuCursor == Menu.PLAY or menuCursor == Menu.CONTINUE:
                     resetGame()
 
@@ -1939,26 +1939,26 @@ while running:
                     playSFX(soundValid)
 
         elif subMenu == Menu.TUTORIAL:
-            if keyPressed[KEY_LEFT]:
+            if keyPressed[Key.LEFT]:
                 currTutoPage = (currTutoPage + TUTO_PAGES - 1) % TUTO_PAGES
                 tutoCounter = 0
                 playSFX(soundValid)
 
-            if keyPressed[KEY_RIGHT]:
+            if keyPressed[Key.RIGHT]:
                 currTutoPage = (currTutoPage + 1) % TUTO_PAGES
                 tutoCounter = 0
                 playSFX(soundValid)
 
         elif subMenu == Menu.OPTIONS:
-            if keyPressed[KEY_DOWN] and optCursor < 1:
+            if keyPressed[Key.DOWN] and optCursor < 1:
                 optCursor += 1
                 playSFX(soundValid)
 
-            if keyPressed[KEY_UP] and optCursor > 0:
+            if keyPressed[Key.UP] and optCursor > 0:
                 optCursor -= 1
                 playSFX(soundValid)
 
-            if keyPressed[KEY_SPACE] or keyPressed[KEY_RETURN] or keyPressed[KEY_LEFT] or keyPressed[KEY_RIGHT]:
+            if keyPressed[Key.SPACE] or keyPressed[Key.RETURN] or keyPressed[Key.LEFT] or keyPressed[Key.RIGHT]:
                 opt.setValue(OPTIONS_ID[optCursor], not opt.getValue(OPTIONS_ID[optCursor]))     # Invert value
                 opt.save()
                 applyChannelVolumes()
@@ -2023,7 +2023,7 @@ while running:
                 # Rotate turning blocs (clockwise)
                 if (len(turningBlocs) > 1):
                     turningBlocs = turningBlocs[len(turningBlocs)-1:] + turningBlocs[:len(turningBlocs)-1]
-                    
+
                 i = 0
                 for offset in CYCLONE_OFFSETS:
                     finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
@@ -2089,7 +2089,7 @@ while running:
 
         introTimer += 1
 
-        if keyPressed[KEY_GAME_PUSH] or (introTimer > 60*4):
+        if keyPressed[Key.GAME_PUSH] or (introTimer > 60*4):
             startRevengeLevelPhase()
 
     elif gamePhase == Phase.GAME_WON:
@@ -2102,15 +2102,15 @@ while running:
         resultTimer += 1
         quitEnterName = False
 
-        if keyPressed[KEY_LEFT]:
+        if keyPressed[Key.LEFT]:
             cursorTx = (cursorTx + ALPHABET_COLUMNS - 1) % ALPHABET_COLUMNS
-        if keyPressed[KEY_RIGHT]:
+        if keyPressed[Key.RIGHT]:
             cursorTx = (cursorTx + 1) % ALPHABET_COLUMNS
-        if keyPressed[KEY_UP]:
+        if keyPressed[Key.UP]:
             cursorTy = (cursorTy + ALPHABET_ROWS - 1) % ALPHABET_ROWS
-        if keyPressed[KEY_DOWN]:
+        if keyPressed[Key.DOWN]:
             cursorTy = (cursorTy + 1) % ALPHABET_ROWS
-        if keyPressed[KEY_SPACE]:
+        if keyPressed[Key.SPACE]:
             ch = chr(ord('A') + cursorTx + cursorTy * ALPHABET_COLUMNS)
             if ch == '\\' and len(yourName) > 0:
                 quitEnterName = True
@@ -2121,12 +2121,12 @@ while running:
                     yourName += ' '
                 playSFX(soundValid)
 
-        if keyPressed[KEY_BACKSPACE]:
+        if keyPressed[Key.BACKSPACE]:
             if len(yourName) > 0:
                 yourName = yourName[:-1]
                 playSFX(soundValid)
 
-        if keyPressed[KEY_RETURN] or quitEnterName == True:
+        if keyPressed[Key.RETURN] or quitEnterName == True:
             lb.add(penguin1.score, yourName, level)
             lb.save()  # Add new entry and save leaderboard
             startMenuPhase()
