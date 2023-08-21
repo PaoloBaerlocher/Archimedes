@@ -495,7 +495,7 @@ class Penguin():
                                 debugPrint('Square Diamond assembled')
                                 playSFX(soundDiam)
                                 self.addScore(500)
-                                self.diamondsAssembled = True    # Can be obtained only once per level
+                                self.diamondsAssembled = True    # This bonus can be obtained only once per level
                     else:
                         destroyBloc(self.movBlocWhat)
                         playSFX(soundSplatch)
@@ -836,7 +836,7 @@ def loadRevenge():
     with open(schemeName, 'rb') as f:
         scheme = f.read()
 
-    cyclonesList = [0, 0, 0, 0, 0, 0, 0, 0]
+    cyclonesList = [0] * 8
 
     resetRevenge((level-1) // 5)
 
@@ -937,7 +937,7 @@ def setElectrifyBorder(newStatus):
 
     electrifyBorder = newStatus
 
-# Game phases
+# Starting Game phases
 
 def startIntroPhase():
     global gamePhase, windowFade, introTimer, pauseGame
@@ -1015,6 +1015,7 @@ def startRevengeLevelPhase():
 
     windowFade = 0
     playMusic(musicRevenge)
+    debugPrint('Phase.LEVEL')
     gamePhase = Phase.LEVEL
 
 def startGameWonPhase():
@@ -1252,7 +1253,6 @@ def displayOptions():
     displayLegend(LEGEND_RIGHT)
 
 def displayCredits():
-
     TITLE_COLOR = (255, 255, 155)
     TEXT_COLOR = (180, 255, 255)
 
@@ -1798,7 +1798,7 @@ while running:
             keyDown[KEY_UP] = keyDown [KEY_GAME_UP] = True
 
         if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
-            keyDown[KEY_DOWN] = keyDown[KEY_GAME_DOWN] =  False
+            keyDown[KEY_DOWN] = keyDown[KEY_GAME_DOWN] = False
 
         if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
             keyDown[KEY_UP] = keyDown[KEY_GAME_UP] = False
@@ -1845,16 +1845,19 @@ while running:
                     keyDown[keyPair [0]] = down
 
             if not down:
-                if DEBUG_FEATURES == True:
-                if event.key == pygame.K_F5:    # Prev level
+
+                # Cheat
+                if event.key == pygame.K_F5:  # Prev level
                     if (level > 1):
                         level -= 1
                         loadLevel()
 
-                if event.key == pygame.K_F6:    # Next level
+                if event.key == pygame.K_F6:  # Next level
                     if (level < 50):
                         level += 1
                         loadLevel()
+
+                if DEBUG_FEATURES == True:
 
                     if event.key == pygame.K_F7:  # Prev revenge map
                         if (level > 5):

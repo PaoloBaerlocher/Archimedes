@@ -1,2 +1,2 @@
-butler push ./dist/poizone poizone/poizone:windows-beta
+butler push ./dist/poizone poizone/poizone:windows-release
 pause
