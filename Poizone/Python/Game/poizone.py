@@ -109,7 +109,6 @@ class Penguin():
         self.movMonsters = 0
 
     def pushBloc(self):
-        global electrifyBorder
 
         if self.dirX != 0 or self.dirY != 0:
             bloc = self.getBlocOnDir(self.dirX, self.dirY)
@@ -367,7 +366,10 @@ class Penguin():
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
-            if keyDown[Key.GAME_PUSH] and penguinMove and onBlock:
+            if not keyDown[Key.GAME_PUSH]:
+                setElectrifyBorder(False)
+                self.pushCounter = 0
+            elif penguinMove and onBlock:
                 # Check if there is a bloc to push
                 if (self.dirX != 0 or self.dirY != 0) and (self.getBlocOnDir(self.dirX, self.dirY) < 24):
                     self.pushBloc()
