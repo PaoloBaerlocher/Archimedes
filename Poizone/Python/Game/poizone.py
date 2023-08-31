@@ -877,6 +877,40 @@ def initOccupyTable():
 
         occupyTable.append(occ)
 
+def updateCyclones():
+    global cyclonesPace, cyclonesList
+
+    cyclonesPace = (cyclonesPace + 1) % 16
+
+    if cyclonesPace % 2 == 0:  # To slow down process, process once every two passes
+        cycloneIndex = cyclonesList[cyclonesPace >> 1]
+        if cycloneIndex != 0:
+            debugPrint('Process cyclone #' + str(cycloneIndex))
+            # Collect blocs around cyclone
+            turningBlocs = []
+
+            for offset in CYCLONE_OFFSETS:
+                finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
+                turningBloc = scheme[finalOffset]
+
+                if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
+                    turningBlocs.append(turningBloc)
+
+            # Rotate turning blocs (clockwise)
+            if len(turningBlocs) > 1:
+                turningBlocs = turningBlocs[len(turningBlocs) - 1:] + turningBlocs[:len(turningBlocs) - 1]
+
+            i = 0
+            for offset in CYCLONE_OFFSETS:
+                finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
+                turningBloc = scheme[finalOffset]
+
+                if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
+                    blocX = finalOffset % SCHEME_WIDTH
+                    blocY = int(finalOffset / SCHEME_WIDTH)
+                    writeBloc(blocX, blocY, turningBlocs[i])
+                    i += 1
+
 
 def displayScore(score, posX, posY):
     base = 10000
@@ -1640,6 +1674,8 @@ def isMenuDeactivated(index):
     return index == Menu.CONTINUE and maxLevelReached == 1
 
 
+# MAIN PROGRAM STARTS HERE
+
 # pygame setup
 pygame.init()
 pygame.display.set_caption('Poizone')
@@ -1657,7 +1693,7 @@ opt.load()
 blackSurface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
 blackSurface.fill((0, 0, 0, 128))
 
-# Fonts
+# Load Fonts
 font = pygame.font.Font('Data/font/small/8-bit-hud.ttf', 5)
 font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
@@ -1723,7 +1759,7 @@ for index in range(0, LANDS_NB):
             teleporters[index].append(j)
             # debugPrint('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
 
-# SpriteSheets
+# Load SpriteSheets
 
 ss_shared = []
 ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs0.png'))
@@ -1752,6 +1788,7 @@ startScreen = ss_start.get_indexed_image(0, 244, 240)
 border = ss_border.get_indexed_image(0, 320, 256)
 rocket = ss_rocket.get_indexed_image(0, 40, 174)
 
+# Player's penguin
 penguin1 = Penguin()
 
 # Three dancing penguins, for result screen
@@ -2054,41 +2091,12 @@ while running:
             windowFade -= 16
             windowFade = pygame.math.clamp(windowFade, 0, 255)
 
-        # Animate electric border
+        # Animate electric border, if pushed
         if electrifyBorder:
             electrifyBorderAnim += 1
 
-        # Animate cyclones
-        cyclonesPace = (cyclonesPace + 1) % 16
-
-        if cyclonesPace % 2 == 0:  # To slow down process, process once every two passes
-            cycloneIndex = cyclonesList[cyclonesPace >> 1]
-            if cycloneIndex != 0:
-                debugPrint('Process cyclone #' + str(cycloneIndex))
-                # Collect blocs around cyclone
-                turningBlocs = []
-
-                for offset in CYCLONE_OFFSETS:
-                    finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
-                    turningBloc = scheme[finalOffset]
-
-                    if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
-                        turningBlocs.append(turningBloc)
-
-                # Rotate turning blocs (clockwise)
-                if len(turningBlocs) > 1:
-                    turningBlocs = turningBlocs[len(turningBlocs) - 1:] + turningBlocs[:len(turningBlocs) - 1]
-
-                i = 0
-                for offset in CYCLONE_OFFSETS:
-                    finalOffset = cycloneIndex + offset[0] + offset[1] * SCHEME_WIDTH
-                    turningBloc = scheme[finalOffset]
-
-                    if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
-                        blocX = finalOffset % SCHEME_WIDTH
-                        blocY = int(finalOffset / SCHEME_WIDTH)
-                        writeBloc(blocX, blocY, turningBlocs[i])
-                        i += 1
+        # Update blocs around cyclones
+        updateCyclones()
 
         # Update Penguin
         penguin1.update(keyDown)
