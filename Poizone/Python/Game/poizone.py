@@ -19,7 +19,7 @@ from cropsprite import CropSprite
 gamePhase           = Phase.NONE
 absTime             = 0
 gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
-level               = 1             # From 1 to 50
+currLevel           = 1             # From 1 to 50
 currLand            = 0             # 0..4 (Land.)
 electrifyBorder     = False
 electrifyBorderAnim = 0
@@ -700,9 +700,9 @@ class Monster():
 # Global Functions
 
 def resetGame():
-    global level, penguin1
+    global currLevel, penguin1
 
-    level = 1
+    currLevel = 1
     penguin1.score = 0
 
 def resetLevel():
@@ -714,9 +714,9 @@ def resetLevel():
     setElectrifyBorder(False)
 
     # Time available for finishing this level
-    if level == 1 or level == 2:
+    if currLevel == 1 or currLevel == 2:
         gameTimer = 90      # 1m30
-    elif level == 3 or level == 4:
+    elif currLevel == 3 or currLevel == 4:
         gameTimer = 150     # 2m30
     else:
         gameTimer = 180     # 3m00
@@ -783,12 +783,12 @@ def loadSprites():
     endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, WINDOW_WIDTH, WINDOW_HEIGHT)
 
 def loadLevel():
-    global level, currLand, scheme, blocsCount, toxicBlocsLeft, totalToxicBlocs, monsters, cyclonesList
-    debugPrint("Load level " + str(level))
-    currLand = (level-1) % LANDS_NB
+    global currLevel, currLand, scheme, blocsCount, toxicBlocsLeft, totalToxicBlocs, monsters, cyclonesList
+    debugPrint("Load level " + str(currLevel))
+    currLand = (currLevel-1) % LANDS_NB
     loadSprites()
 
-    schemeName = "Data/Schemes/S" + str(level)
+    schemeName = "Data/Schemes/S" + str(currLevel)
     with open(schemeName, 'rb') as f:
         scheme = f.read()
 
@@ -819,7 +819,7 @@ def loadLevel():
     initOccupyTable()
 
     monsters = []
-    baddiesNumber = level / 8
+    baddiesNumber = currLevel / 8
     for index in range(0, MONSTERS_NB):
         kind = index % 2
         m = Monster(kind, index < baddiesNumber)
@@ -827,9 +827,9 @@ def loadLevel():
         monsters.append(m)
 
 def loadRevenge():
-    global level, currLand, scheme, blocsCount, monsters, cyclonesList
-    debugPrint("Load revenge for level " + str(level))
-    currLand = (level - 1) // 10
+    global currLevel, currLand, scheme, blocsCount, monsters, cyclonesList
+    debugPrint("Load revenge for level " + str(currLevel))
+    currLand = (currLevel - 1) // 10
     loadSprites()
 
     schemeName = "Data/Schemes/CHALLENGES"
@@ -838,7 +838,7 @@ def loadRevenge():
 
     cyclonesList = [0] * 8
 
-    resetRevenge((level-1) // 5)
+    resetRevenge((currLevel-1) // 5)
 
     initOccupyTable()
 
@@ -1306,7 +1306,7 @@ def displayGameHud():
     if not isRevenge:
         displayText(font, "ZONE", LEVEL_COLOR, HUD_CENTER, y)
         y += 12
-        displayText(font, f"{level:02d}", LEVEL_COLOR, HUD_CENTER, y)
+        displayText(font, f"{currLevel:02d}", LEVEL_COLOR, HUD_CENTER, y)
         y += 30
 
     # Completion
@@ -1368,7 +1368,7 @@ def displayResult():
     BAD_COLOR = (255, 0, 0)
 
     # Title
-    displayText(font_big, f"END OF ZONE {level}",  TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
+    displayText(font_big, f"END OF ZONE {currLevel}",  TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
 
     if toxicBlocsLeft == 0:
         if ((resultTimer // 8) % 4 != 0):      # Flash FX
@@ -1849,25 +1849,25 @@ while running:
 
                 # Cheat
                 if event.key == pygame.K_F5:  # Prev level
-                    if (level > 1):
-                        level -= 1
+                    if (currLevel > 1):
+                        currLevel -= 1
                         loadLevel()
 
                 if event.key == pygame.K_F6:  # Next level
-                    if (level < 50):
-                        level += 1
+                    if (currLevel < 50):
+                        currLevel += 1
                         loadLevel()
 
                 if DEBUG_FEATURES == True:
 
                     if event.key == pygame.K_F7:  # Prev revenge map
-                        if (level > 5):
-                            level -= 5
+                        if (currLevel > 5):
+                            currLevel -= 5
                             startRevengeIntroPhase()
 
                     if event.key == pygame.K_F8:  # Next revenge map
-                        if (level < 45):
-                            level += 5
+                        if (currLevel < 45):
+                            currLevel += 5
                             startRevengeIntroPhase()
 
     for i in range(0, len(keyDown)):
@@ -1918,7 +1918,7 @@ while running:
                     resetGame()
 
                     if menuCursor == Menu.CONTINUE:
-                        level = maxLevelReached
+                        currLevel = maxLevelReached
 
                     startLevelPhase()
                 else:
@@ -2047,11 +2047,11 @@ while running:
         if (gameTimer <= 0.0) or ((toxicBlocsLeft == 0) and not isRevenge):
             
             if isRevenge == True:
-                if level >= 50:             # End of game reached!
+                if currLevel >= 50:             # End of game reached!
                     startGameWonPhase()
                 else:
                     gamePhase = Phase.LEVEL  # Move to next level
-                    level += 1  # End of level - display results
+                    currLevel += 1  # End of level - display results
                     loadLevel()
             else:
                 if (toxicBlocsLeft == 0):
@@ -2078,7 +2078,7 @@ while running:
                     playMusic(musicIntro, -1)
 
                 # Store level for Continue
-                maxLevelReached = max(level, maxLevelReached)
+                maxLevelReached = max(currLevel, maxLevelReached)
 
             else:
                 startEndLevelPhase()
@@ -2128,7 +2128,7 @@ while running:
                 playSFX(soundValid)
 
         if keyPressed[Key.RETURN] or quitEnterName == True:
-            lb.add(penguin1.score, yourName, level)
+            lb.add(penguin1.score, yourName, currLevel)
             lb.save()  # Add new entry and save leaderboard
             startMenuPhase()
 
@@ -2160,10 +2160,10 @@ while running:
             if endOfLevelTimer > 0:
                 endOfLevelTimer -= 1
             else:
-                if level % 5 == 0:
+                if currLevel % 5 == 0:
                     startRevengeIntroPhase()
                 else:
-                    level += 1
+                    currLevel += 1
                     startLevelPhase()
 
         case _: # other phases where game map is displayed (Phase.LEVEL, Phase.RESULT, Phase.REVENGE_INTRO, etc)
