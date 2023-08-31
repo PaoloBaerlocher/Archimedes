@@ -16,41 +16,44 @@ from cropsprite import CropSprite
 
 # Global variables
 
-gamePhase           = Phase.NONE
-absTime             = 0
-gameTimer           = 0.0           # 0 - 300 ( 5 minutes ) - in seconds
-currLevel           = 1             # From 1 to 50
-currLand            = 0             # 0..4 (Land.)
-electrifyBorder     = False
+gamePhase = Phase.NONE
+absTime = 0
+gameTimer = 0.0  # 0 - 300 ( 5 minutes ) - in seconds
+currLevel = 1  # From 1 to LEVELS_NB
+currLand = 0  # 0..4 (Land.)
+electrifyBorder = False
 electrifyBorderAnim = 0
-blocsCount          = []
-toxicBlocsLeft      = 0
+blocsCount = []
+toxicBlocsLeft = 0
 
-cyclonesPace        = 0             # For cyclones
-cyclonesList        = []
+cyclonesPace = 0  # For cyclones
+cyclonesList = []
 
-isRevenge           = False         # Revenge mode ?
-windowFade          = 0             # 0..255
-menuCounter         = 0
+isRevenge = False  # Revenge mode ?
+windowFade = 0  # 0..255
+menuCounter = 0
 
-tutoCounter         = 0
-currTutoPage        = 0
+tutoCounter = 0
+currTutoPage = 0
 
-maxLevelReached     = 1     # For CONTINUE option
+maxLevelReached = 1  # For CONTINUE option
 
-lastKeyDown         = NONE
+lastKeyDown = NONE
 
-running             = True
-pauseGame           = False
+running = True
+pauseGame = False
+
 
 # Utility functions
 
 def blitGameSprite(sprite, cropSprite):
     screen.blit(sprite, (ORIGIN_X + cropSprite.posX, ORIGIN_Y + cropSprite.posY), cropSprite.getCroppedRegion())
 
+
 def debugPrint(text):
     if DEBUG_FEATURES == True:
         print(text)
+
 
 # Classes
 
@@ -58,10 +61,10 @@ class Penguin():
     def __init__(self):
         self.reset()
         self.score = 0
-        self.points = 0             # Will be gradually added to score
+        self.points = 0  # Will be gradually added to score
 
     def reset(self):
-        self.posX = 24 * BLOC_SIZE   # Center of map
+        self.posX = 24 * BLOC_SIZE  # Center of map
         self.posY = 24 * BLOC_SIZE
         self.dirX = 0
         self.dirY = 0
@@ -70,24 +73,24 @@ class Penguin():
         self.status = PenguinStatus.IDLE
         self.pushCounter = 0
         self.invert = False
-        self.ghost = 0              # Invincible if > 0
+        self.ghost = 0  # Invincible if > 0
         self.canTeleport = True
         self.diamondsAssembled = False
 
-        self.movBlocWhat = NONE   # Which bloc (NONE : no bloc)
+        self.movBlocWhat = NONE  # Which bloc (NONE : no bloc)
         self.movBlocPosX = 0
         self.movBlocPosY = 0
         self.movBlocDirX = 0
         self.movBlocDirY = 0
-        self.movMonsters = 0    # Number of monsters killed by moving bloc
+        self.movMonsters = 0  # Number of monsters killed by moving bloc
         self.movBonusTimer = 0  # Timer for displaying the bonus
 
-        self.crushBlocWhat = NONE   # Which bloc (NONE : no bloc)
+        self.crushBlocWhat = NONE  # Which bloc (NONE : no bloc)
         self.crushBlocPosX = 0
         self.crushBlocPosY = 0
         self.crushBlocTimer = 0
 
-        self.bombTimer = 0              # Exploding Bomb animation
+        self.bombTimer = 0  # Exploding Bomb animation
         self.bombPosX = 0
         self.bombPosY = 0
 
@@ -119,11 +122,11 @@ class Penguin():
             elif bloc < 24:
                 nextBloc = self.getBlocOnDir(self.dirX * 2, self.dirY * 2)
                 if (nextBloc >= 24):
-                    if self.movBlocWhat == NONE:        # Avoid overriding ongoing launch bloc
+                    if self.movBlocWhat == NONE:  # Avoid overriding ongoing launch bloc
                         self.launchBloc(bloc, self.posX, self.posY, self.dirX, self.dirY)
                         blocX = self.posX // BLOC_SIZE + self.dirX
                         blocY = self.posY // BLOC_SIZE + self.dirY
-                        writeBloc(blocX, blocY, 26)         # Remove bloc from initial position
+                        writeBloc(blocX, blocY, 26)  # Remove bloc from initial position
                         if bloc == Bloc.CYCLONE:
                             idx = cyclonesList.index(blocX + blocY * SCHEME_WIDTH)
                             debugPrint('Remove cyclone ' + str(cyclonesList[idx]) + ' from list at index ' + str(idx))
@@ -131,7 +134,7 @@ class Penguin():
 
                         playSFX(soundLaunch)
 
-                        if bloc == Bloc.RED:        # Do NOT launch red chemical block!
+                        if bloc == Bloc.RED:  # Do NOT launch red chemical block!
                             self.die(True)
                 else:
                     self.crushBloc(bloc)
@@ -154,9 +157,9 @@ class Penguin():
         if bloc >= Bloc.ROCK:  # Cannot crush that bloc
             return
 
-        blocUp    = self.getBlocOnDir(self.dirX, self.dirY - 1)
-        blocDown  = self.getBlocOnDir(self.dirX, self.dirY + 1)
-        blocLeft  = self.getBlocOnDir(self.dirX - 1, self.dirY)
+        blocUp = self.getBlocOnDir(self.dirX, self.dirY - 1)
+        blocDown = self.getBlocOnDir(self.dirX, self.dirY + 1)
+        blocLeft = self.getBlocOnDir(self.dirX - 1, self.dirY)
         blocRight = self.getBlocOnDir(self.dirX + 1, self.dirY)
 
         match bloc:
@@ -193,7 +196,7 @@ class Penguin():
 
             case Bloc.URANIUM:  # Are other Bloc.URANIUM blocs nearby ?
                 if (blocUp == Bloc.URANIUM or blocDown == Bloc.URANIUM or
-                    blocLeft == Bloc.URANIUM or blocRight == Bloc.URANIUM):
+                        blocLeft == Bloc.URANIUM or blocRight == Bloc.URANIUM):
                     self.die(True)
 
             case Bloc.GREEN_CHEM:
@@ -212,11 +215,11 @@ class Penguin():
 
         playSFX(soundCrash)
 
-    def die(self, playOhNo = False):
+    def die(self, playOhNo=False):
 
         self.animPhase = 0
         self.setStatus(PenguinStatus.DIE)
-        self.invert = False         # Reset malus
+        self.invert = False  # Reset malus
 
         if playOhNo:
             playSFX(soundOhNo)
@@ -226,13 +229,13 @@ class Penguin():
         setElectrifyBorder(False)
 
     def checkSquareDiamond(self, bx, by):
-        if (getBloc(bx, by - 1) == Bloc.DIAMOND):
+        if getBloc(bx, by - 1) == Bloc.DIAMOND:
             if (getBloc(bx - 1, by - 1) == Bloc.DIAMOND) and (getBloc(bx - 1, by) == Bloc.DIAMOND):
                 return True
             if (getBloc(bx + 1, by - 1) == Bloc.DIAMOND) and (getBloc(bx + 1, by) == Bloc.DIAMOND):
                 return True
 
-        if (getBloc(bx, by + 1) == Bloc.DIAMOND):
+        if getBloc(bx, by + 1) == Bloc.DIAMOND:
             if (getBloc(bx - 1, by + 1) == Bloc.DIAMOND) and (getBloc(bx - 1, by) == Bloc.DIAMOND):
                 return True
             if (getBloc(bx + 1, by + 1) == Bloc.DIAMOND) and (getBloc(bx + 1, by) == Bloc.DIAMOND):
@@ -252,12 +255,12 @@ class Penguin():
 
         return self.getBlocOnDir(dirX, dirY) >= 24
 
-    def getNextTeleportIndex(self):     # Or NONE
+    def getNextTeleportIndex(self):  # Or NONE
         penguinIndex = self.posX // BLOC_SIZE + (self.posY // BLOC_SIZE) * SCHEME_WIDTH
         nb = len(teleporters[currLand])
         for i in range(0, nb):
             tele = teleporters[currLand][i]
-            if (tele == penguinIndex):
+            if tele == penguinIndex:
                 # Check if next teleporter is available
                 nextIndex = teleporters[currLand][(i + 1) % nb]
                 if scheme[nextIndex] >= 24:
@@ -271,22 +274,22 @@ class Penguin():
 
     def getPenguinAnimOffset(self):
         dir = 3  # Down
-        if (self.dirX <= -1):
+        if self.dirX <= -1:
             dir = 0  # Left
-        if (self.dirX >= +1):
+        if self.dirX >= +1:
             dir = 1  # Right
-        if (self.dirY <= -1):
+        if self.dirY <= -1:
             dir = 2  # Up
 
-        if (self.status == PenguinStatus.IDLE):
+        if self.status == PenguinStatus.IDLE:
             return 4 * dir
-        if (self.status == PenguinStatus.WALK):
+        if self.status == PenguinStatus.WALK:
             return 4 * dir + (int(self.animPhase / 8) % 4)
-        if (self.status == PenguinStatus.DIE):
+        if self.status == PenguinStatus.DIE:
             if self.animPhase < 32:
                 return 16 + 4 * dir + int(self.animPhase / 16)
             return 16 + 4 * dir + 2 + (int(self.animPhase / 8) % 2)  # End loop
-        if (self.status == PenguinStatus.PUSH):
+        if self.status == PenguinStatus.PUSH:
             return 32 + dir
         return 0
 
@@ -305,7 +308,7 @@ class Penguin():
         if self.crushBlocWhat != NONE:
             c = CropSprite(self.crushBlocPosX - baseX, self.crushBlocPosY - baseY)
             index = getAliasBlocIndex(self.crushBlocWhat)
-            maskIndex = 3-int(self.crushBlocTimer / 4)
+            maskIndex = 3 - int(self.crushBlocTimer / 4)
             blitGameSprite(sprites[maskIndex][index], c)
 
         if self.movBlocWhat != NONE:
@@ -318,7 +321,8 @@ class Penguin():
             self.movBonusTimer -= 1
             if self.movMonsters > 0:  # At least one monster has been killed
                 c = CropSprite(self.movBlocPosX - baseX, self.movBlocPosY - baseY)
-                index = pygame.math.clamp(self.movMonsters - 1, 0, 3) # Display corresponding bonus (20, 50, 100 or 200)
+                # Display corresponding bonus (20, 50, 100 or 200 points)
+                index = pygame.math.clamp(self.movMonsters - 1, 0, 3)
                 blitGameSprite(penguinSprites[72 + index], c)
 
     def update(self, keyDown):
@@ -332,15 +336,15 @@ class Penguin():
         if self.pushCounter > 0:
             self.pushCounter -= 1
 
-        penguinMove = keyDown[Key.GAME_LEFT] or keyDown[Key.GAME_RIGHT] or keyDown[Key.GAME_UP] or keyDown[Key.GAME_DOWN]
+        askMove = keyDown[Key.GAME_LEFT] or keyDown[Key.GAME_RIGHT] or keyDown[Key.GAME_UP] or keyDown[Key.GAME_DOWN]
 
-        if penguinMove:
+        if askMove:
             self.canTeleport = True
 
         if self.status != PenguinStatus.DIE:
             onBlock = self.isOnBlock()
 
-            if (self.posY % BLOC_SIZE) == 0:    # Cannot change X direction if not aligned on bloc vertically
+            if (self.posY % BLOC_SIZE) == 0:  # Cannot change X direction if not aligned on bloc vertically
                 if keyDown[Key.GAME_LEFT]:
                     self.dirX = -1 if self.invert == False else +1
                     self.dirY = 0
@@ -353,7 +357,7 @@ class Penguin():
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
-            if (self.posX % BLOC_SIZE) == 0:    # Cannot change Y direction if not aligned on bloc horizontally
+            if (self.posX % BLOC_SIZE) == 0:  # Cannot change Y direction if not aligned on bloc horizontally
                 if keyDown[Key.GAME_UP]:
                     self.dirX = 0
                     self.dirY = -1 if self.invert == False else +1
@@ -369,31 +373,30 @@ class Penguin():
             if not keyDown[Key.GAME_PUSH]:
                 setElectrifyBorder(False)
                 self.pushCounter = 0
-            elif penguinMove and onBlock:
+            elif askMove and onBlock:
                 # Check if there is a bloc to push
                 if (self.dirX != 0 or self.dirY != 0) and (self.getBlocOnDir(self.dirX, self.dirY) < 24):
                     self.pushBloc()
-                elif self.pushCounter == 0:               # Stop pushing
+                elif self.pushCounter == 0:  # Stop pushing
                     self.setStatus(PenguinStatus.IDLE)
                     setElectrifyBorder(False)
 
-        if (self.status == PenguinStatus.PUSH) and ((penguinMove == False) or not keyDown[Key.GAME_PUSH]):
+        if (self.status == PenguinStatus.PUSH) and (not askMove or not keyDown[Key.GAME_PUSH]):
             self.setStatus(PenguinStatus.IDLE)
             setElectrifyBorder(False)
             self.pushCounter = 0
 
-        if (self.status == PenguinStatus.IDLE) and (self.dirX != 0 or self.dirY != 0) and (
-                penguinMove == True):
+        if (self.status == PenguinStatus.IDLE) and (self.dirX != 0 or self.dirY != 0) and askMove:
             if self.blocIsWalkable(self.dirX, self.dirY):
                 self.setStatus(PenguinStatus.WALK)
 
-        if (self.status == PenguinStatus.WALK):
+        if self.status == PenguinStatus.WALK:
             self.posX += self.dirX * PENG_WALK_STEP
             self.posY += self.dirY * PENG_WALK_STEP
             if self.isOnBlock():  # Stop walking at next block
-                if penguinMove == False:
+                if not askMove:
                     self.setStatus(PenguinStatus.IDLE)
-                elif self.blocIsWalkable(self.dirX, self.dirY) == False:
+                elif not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
         if (self.status == PenguinStatus.DIE) and (self.animPhase > 128):  # Re-birth
@@ -412,9 +415,9 @@ class Penguin():
         if not isRevenge:
             offsetX = penguin1.posX + 8 - baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
             if offsetX < -PENG_WALK_STEP:
-                baseX -= PENG_WALK_STEP * 2     # Fast move speed
+                baseX -= PENG_WALK_STEP * 2  # Fast move speed
             elif offsetX < 0:
-                baseX -= PENG_WALK_STEP         # Normal move speed
+                baseX -= PENG_WALK_STEP  # Normal move speed
             elif offsetX > PENG_WALK_STEP:
                 baseX += PENG_WALK_STEP * 2
             elif offsetX > 0:
@@ -478,9 +481,9 @@ class Penguin():
 
                     killBloc = (self.movBlocWhat == Bloc.GREEN_CHEM)
                     if self.movBlocWhat == Bloc.ALU:
-                        if (getBloc(bx+1, by) == Bloc.ELECTRO) or (getBloc(bx-1, by) == Bloc.ELECTRO) or \
-                           (getBloc(bx, by-1) == Bloc.ELECTRO) or (getBloc(bx, by+1) == Bloc.ELECTRO):
-                            killBloc = True     # Kill ALU when launched against electro border
+                        if (getBloc(bx + 1, by) == Bloc.ELECTRO) or (getBloc(bx - 1, by) == Bloc.ELECTRO) or \
+                                (getBloc(bx, by - 1) == Bloc.ELECTRO) or (getBloc(bx, by + 1) == Bloc.ELECTRO):
+                            killBloc = True  # Kill ALU when launched against electro border
 
                     if not killBloc:
                         writeBloc(bx, by, self.movBlocWhat)
@@ -497,7 +500,7 @@ class Penguin():
                                 debugPrint('Square Diamond assembled')
                                 playSFX(soundDiam)
                                 self.addScore(500)
-                                self.diamondsAssembled = True    # This bonus can be obtained only once per level
+                                self.diamondsAssembled = True  # This bonus can be obtained only once per level
                     else:
                         destroyBloc(self.movBlocWhat)
                         playSFX(soundSplatch)
@@ -510,7 +513,7 @@ class Penguin():
                     self.movBlocDirY = 0
                     self.movBonusTimer = 60 if self.movMonsters > 0 else 0
 
-                    self.addScore(BONUS_KILL [pygame.math.clamp(self.movMonsters, 0, len(BONUS_KILL)-1)])
+                    self.addScore(BONUS_KILL[pygame.math.clamp(self.movMonsters, 0, len(BONUS_KILL) - 1)])
 
             self.movBlocPosX += self.movBlocDirX * MOVBLOC_STEP
             self.movBlocPosY += self.movBlocDirY * MOVBLOC_STEP
@@ -518,7 +521,7 @@ class Penguin():
         if self.ghost > 0:
             self.ghost -= 1
 
-        if self.status != PenguinStatus.DIE and self.ghost == 0:     # If penguin can die, check collision with alive monsters
+        if self.status != PenguinStatus.DIE and self.ghost == 0:  # If penguin can die, check collision with alive monsters
             for m in monsters:
                 if m.isAlive() and (abs(m.posX - self.posX) <= 8) and (abs(m.posY - self.posY) <= 8):
                     self.die()
@@ -527,20 +530,21 @@ class Penguin():
     def addScore(self, points):
         self.points += points
 
+
 class Monster():
     def __init__(self, kind, isBaddie):
         self.posX = 0
         self.posY = 0
         self.dirX = 0
         self.dirY = 0
-        self.kind = kind                # 0 or 1 (graphic monster type (skin))
-        self.isBaddie = isBaddie        # Baddies are monsters targeting the Penguin, the others move randomly
+        self.kind = kind  # 0 or 1 (graphic monster type (skin))
+        self.isBaddie = isBaddie  # Baddies are monsters targeting the Penguin, the others move randomly
 
         # COUNTER = -32767.. - 1    : not yet born ( -32 .. -1 : birth )
         #         = 0..9              alive (animation phases)
 
         self.counter = -32 - random.randrange(self.getBirthRange())
-        self.dizzyCounter = 0       # If > 0: dizzy
+        self.dizzyCounter = 0  # If > 0: dizzy
 
     def killAndRebirth(self):
 
@@ -588,10 +592,11 @@ class Monster():
             onBlock = (self.posX % BLOC_SIZE == 0) and (self.posY % BLOC_SIZE == 0)
 
             if electrifyBorder and self.isAlive() and not self.isDizzy() and onBlock:
-                if (self.posX == BORDER_SIZE) or (self.posY == BORDER_SIZE) or (self.posX == BLOC_SIZE*44) or (self.posY == BLOC_SIZE*44):
-                    self.dizzyCounter = 4*60
+                if (self.posX == BORDER_SIZE) or (self.posY == BORDER_SIZE) or (
+                        self.posX == BLOC_SIZE * 44) or (self.posY == BLOC_SIZE * 44):
+                    self.dizzyCounter = 4 * 60
                     debugPrint('Electrify monster')
-                    
+
             if self.isAlive() and (penguin1.movBlocWhat != NONE):
                 deltaX = abs(penguin1.movBlocPosX - self.posX)
                 deltaY = abs(penguin1.movBlocPosY - self.posY)
@@ -602,11 +607,11 @@ class Monster():
                     penguin1.movMonsters += 1
                 elif (deltaX <= 12) and (deltaY <= 12):
                     debugPrint('Dizzy monster by bloc collision')
-                    self.dizzyCounter = 4*60
+                    self.dizzyCounter = 4 * 60
 
-            if (self.isAlive() and not self.isDizzy() and onBlock):
+            if self.isAlive() and not self.isDizzy() and onBlock:
                 found = False
-                for t in range(0, 10):      # Try 10 times
+                for t in range(0, 10):  # Try 10 times
                     # Choose new direction
 
                     if self.isBaddie and random.randrange(2) == 0:
@@ -620,7 +625,7 @@ class Monster():
                             dirX = 0
                             dirY = 1 if dirY > 0 else -1
 
-                    elif (random.randrange(2) == 0):
+                    elif random.randrange(2) == 0:
                         dirX = -1 if (random.randrange(2) == 0) else +1
                         dirY = 0
                     else:
@@ -629,10 +634,10 @@ class Monster():
 
                     blocIndex = self.posX // BLOC_SIZE + dirX + (self.posY // BLOC_SIZE + dirY) * SCHEME_WIDTH
 
-                    if occupyTable[blocIndex] != 0:      # Forbidden destination bloc
+                    if occupyTable[blocIndex] != 0:  # Forbidden destination bloc
                         continue
 
-                    if scheme[blocIndex] >= 24: # Monster can move to empty block
+                    if scheme[blocIndex] >= 24:  # Monster can move to empty block
                         found = True
                         break
 
@@ -650,27 +655,27 @@ class Monster():
 
     def getSpriteIndex(self):
         if self.isBirth():
-            return 48 + 4 * self.kind + int((32+self.counter) / 8)
+            return 48 + 4 * self.kind + int((32 + self.counter) / 8)
 
         index = self.kind * 24
 
         if self.dizzyCounter > 0:
             index += 8
 
-            if (self.dirX > 0):  # Right
+            if self.dirX > 0:  # Right
                 index += 2
-            if (self.dirY > 0):  # Down
+            if self.dirY > 0:  # Down
                 index += 12
-            if (self.dirY < 0):  # Up
+            if self.dirY < 0:  # Up
                 index += 14
 
             return index + (int(self.dizzyCounter / 8) % 2)
 
-        if (self.dirX > 0):       # Right
+        if self.dirX > 0:  # Right
             index += 4
-        if (self.dirY > 0):       # Down
+        if self.dirY > 0:  # Down
             index += 12
-        if (self.dirY < 0):       # Up
+        if self.dirY < 0:  # Up
             index += 16
 
         return index + (int(self.counter / 8) % 4)
@@ -680,24 +685,25 @@ class Monster():
 
         while True:
 
-            if isRevenge == False:
-                x = 3 + random.randrange(0, 48-2*3)
-                y = 3 + random.randrange(0, 48-2*3)
+            if not isRevenge:
+                x = 3 + random.randrange(0, 48 - 2 * 3)
+                y = 3 + random.randrange(0, 48 - 2 * 3)
             else:
                 x = baseX // BLOC_SIZE + 1 + random.randrange(0, 10)
                 y = baseY // BLOC_SIZE + 1 + random.randrange(0, 10)
             # debugPrint(f"New monster at {x},{y}")
 
-            if (occupyTable[x + y * SCHEME_WIDTH] != 0):      # Already occupied
+            if occupyTable[x + y * SCHEME_WIDTH] != 0:  # Already occupied
                 continue
 
             if (abs(x - int(penguin1.posX / BLOC_SIZE)) < 3) or (abs(y - int(penguin1.posY / BLOC_SIZE)) < 3):
-                continue                    # Penguin too close ?
-            if (scheme[x + y * SCHEME_WIDTH] < 24):   # Cell already occupied ?
+                continue  # Penguin too close ?
+            if scheme[x + y * SCHEME_WIDTH] < 24:  # Cell already occupied ?
                 continue
             self.posX = x * BLOC_SIZE
             self.posY = y * BLOC_SIZE
             return
+
 
 # Global Functions
 
@@ -706,6 +712,7 @@ def resetGame():
 
     currLevel = 1
     penguin1.score = 0
+
 
 def resetLevel():
     global baseX, baseY, penguin1, isRevenge, gameTimer
@@ -717,18 +724,19 @@ def resetLevel():
 
     # Time available for finishing this level
     if currLevel == 1 or currLevel == 2:
-        gameTimer = 90      # 1m30
+        gameTimer = 90  # 1m30
     elif currLevel == 3 or currLevel == 4:
-        gameTimer = 150     # 2m30
+        gameTimer = 150  # 2m30
     else:
-        gameTimer = 180     # 3m00
+        gameTimer = 180  # 3m00
 
-    gameTimer += 0.99       # To see the first full second, initially
+    gameTimer += 0.99  # To see the first full second, initially
 
     isRevenge = False
-    
+
     playMusic(musicPlay[currLand], -1)
     playSFX(soundReady)
+
 
 def resetRevenge(revenge):
     global baseX, baseY, penguin1, isRevenge, gameTimer
@@ -745,12 +753,13 @@ def resetRevenge(revenge):
     # Overrides for Revenge mode
     penguin1.posX = baseX + 6 * BLOC_SIZE  # Center of revenge map
     penguin1.posY = baseY + 6 * BLOC_SIZE
-    
+
     penguin1.ghost = 10000  # Permanent ghost in Revenge mode
-    
+
     gameTimer = 30.99
 
     setElectrifyBorder(False)
+
 
 def loadSprites():
     global sprites, monstersSprites, endScreenSprite
@@ -763,7 +772,7 @@ def loadSprites():
 
         # (0..23)
         for index in range(0, 24):
-            s.append(ss_shared [maskIndex].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+            s.append(ss_shared[maskIndex].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
         # (24..59)
         for index in range(0, 36):
@@ -771,7 +780,7 @@ def loadSprites():
 
         # Teleport blocs (60, 61)
         for index in range(24, 26):
-            s.append(ss_shared [0].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
+            s.append(ss_shared[0].get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
         # 62: specific bloc for Revenge
         s.append(ss_revenge.get_indexed_image(0, BLOC_SIZE, BLOC_SIZE))
@@ -784,10 +793,11 @@ def loadSprites():
     # End Screen
     endScreenSprite = ss_endScreens[currLand].get_indexed_image(0, WINDOW_WIDTH, WINDOW_HEIGHT)
 
+
 def loadLevel():
     global currLevel, currLand, scheme, blocsCount, toxicBlocsLeft, totalToxicBlocs, monsters, cyclonesList
     debugPrint("Load level " + str(currLevel))
-    currLand = (currLevel-1) % LANDS_NB
+    currLand = (currLevel - 1) % LANDS_NB
     loadSprites()
 
     schemeName = "Data/Schemes/S" + str(currLevel)
@@ -805,13 +815,13 @@ def loadLevel():
             blocsCount[blocIndex] += 1
 
         if blocIndex == Bloc.CYCLONE:
-            cyclonesList [cyclonesNb] = i
+            cyclonesList[cyclonesNb] = i
             debugPrint('Cyclone #' + str(cyclonesNb) + ' at index ' + str(i))
             cyclonesNb += 1
-            
-    toxicBlocsLeft  = blocsCount[Bloc.POISON]  + blocsCount[Bloc.RED]
-    toxicBlocsLeft += blocsCount[Bloc.ALU]     + blocsCount[Bloc.BATTERY]
-    toxicBlocsLeft += blocsCount[Bloc.DDT]     + blocsCount[Bloc.CFC]
+
+    toxicBlocsLeft = blocsCount[Bloc.POISON] + blocsCount[Bloc.RED]
+    toxicBlocsLeft += blocsCount[Bloc.ALU] + blocsCount[Bloc.BATTERY]
+    toxicBlocsLeft += blocsCount[Bloc.DDT] + blocsCount[Bloc.CFC]
     toxicBlocsLeft += blocsCount[Bloc.URANIUM] + blocsCount[Bloc.GREEN_CHEM]
 
     debugPrint('toxicBlocsLeft: ' + str(toxicBlocsLeft))
@@ -828,6 +838,7 @@ def loadLevel():
         m.setRandomPosition()
         monsters.append(m)
 
+
 def loadRevenge():
     global currLevel, currLand, scheme, blocsCount, monsters, cyclonesList
     debugPrint("Load revenge for level " + str(currLevel))
@@ -840,7 +851,7 @@ def loadRevenge():
 
     cyclonesList = [0] * 8
 
-    resetRevenge((currLevel-1) // 5)
+    resetRevenge((currLevel - 1) // 5)
 
     initOccupyTable()
 
@@ -851,6 +862,7 @@ def loadRevenge():
         m.setRandomPosition()
         monsters.append(m)
 
+
 # Setup table for monsters
 def initOccupyTable():
     global occupyTable
@@ -858,19 +870,21 @@ def initOccupyTable():
     # Bit 0: for monsters only
     # Bit 1: for penguin and monsters
     occupyTable = []
-    for index in range (0, SCHEME_SIZE):
+    for index in range(0, SCHEME_SIZE):
         occ = 0
-        if lands[currLand][4*index] == Bloc.TELEPORT_0:    # Monsters cannot go over teleporters
+        if lands[currLand][4 * index] == Bloc.TELEPORT_0:  # Monsters cannot go over teleporters
             occ = 1
 
         occupyTable.append(occ)
+
 
 def displayScore(score, posX, posY):
     base = 10000
     for i in range(0, 5):
         index = (score // base) % 10
-        screen.blit(charsSprites_gr[index + 26], (posX+12*i, posY))
+        screen.blit(charsSprites_gr[index + 26], (posX + 12 * i, posY))
         base //= 10
+
 
 def displayPanel():
     panelIdx = NONE
@@ -879,35 +893,38 @@ def displayPanel():
         panelIdx = PANEL_PAUSE
 
     if panelIdx != NONE:
-        screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH//2 - 60/2, 30))
+        screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH // 2 - 60 / 2, 30))
+
 
 def getBloc(indexX, indexY):
     blocOffset = indexX + indexY * SCHEME_WIDTH
     if blocOffset >= 0 and blocOffset < SCHEME_SIZE:
-        blocOfScheme = scheme[blocOffset]
+        return scheme[blocOffset]
     else:
-        blocOfScheme = Bloc.BASIC
+        return Bloc.BASIC
 
-    return blocOfScheme
 
 def isOnBlock(posX, posY):
     return ((posX % BLOC_SIZE) == 0) and ((posY % BLOC_SIZE) == 0)
 
+
 def destroyBloc(bloc):
     global blocsCount, toxicBlocsLeft
     debugPrint('Destroy bloc of type ' + str(bloc))
-    if (bloc <= Bloc.GREEN_CHEM):
+    if bloc <= Bloc.GREEN_CHEM:
         blocsCount[bloc] -= 1
-        if (bloc >= Bloc.POISON):
+        if bloc >= Bloc.POISON:
             toxicBlocsLeft -= 1
             debugPrint('toxicBlocsLeft: ' + str(toxicBlocsLeft))
             penguin1.addScore(5)
 
+
 def writeBloc(indexX, indexY, blocIndex):
     global scheme
     index = indexX + indexY * SCHEME_WIDTH
-    newBloc = [ blocIndex ]
-    scheme = scheme[:index] + bytes(newBloc) + scheme[(index+1):]
+    newBloc = [blocIndex]
+    scheme = scheme[:index] + bytes(newBloc) + scheme[(index + 1):]
+
 
 def getAliasBlocIndex(index):
     if index == Bloc.ELECTRO:  # Electric border (animation)
@@ -928,16 +945,18 @@ def getAliasBlocIndex(index):
 
     return index
 
+
 def setElectrifyBorder(newStatus):
     global electrifyBorder
 
-    if  newStatus == True and electrifyBorder == False:
+    if newStatus and not electrifyBorder:
         playSFX(soundElec, 100)
 
-    if newStatus == False and electrifyBorder == True:
+    if not newStatus and electrifyBorder:
         soundElec.stop()
 
     electrifyBorder = newStatus
+
 
 # Starting Game phases
 
@@ -950,6 +969,7 @@ def startIntroPhase():
     windowFade = 0
     introTimer = 0
     pauseGame = False
+
 
 def startMenuPhase():
     global gamePhase, menuCounter, windowFade, pauseGame, menuCursor, subMenu, currLand
@@ -965,6 +985,7 @@ def startMenuPhase():
     currLand = 0
     loadSprites()
 
+
 def startLevelPhase():
     global gamePhase, windowFade
 
@@ -972,6 +993,7 @@ def startLevelPhase():
     gamePhase = Phase.LEVEL
     loadLevel()
     windowFade = 128
+
 
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus, toxicBlocsLeft, totalToxicBlocs
@@ -985,8 +1007,9 @@ def startResultPhase():
     percent = ((totalToxicBlocs - toxicBlocsLeft) * 100) // totalToxicBlocs
     bonus = 25 * pygame.math.clamp(percent - SUCCESS_GOAL, 0, 100)
 
-    if percent == 100:                              # Perfect
-        bonus += 500 + 5 * int(gameTimer)           # 1 second = 5 points
+    if percent == 100:  # Perfect
+        bonus += 500 + 5 * int(gameTimer)  # 1 second = 5 points
+
 
 def startEndLevelPhase():
     global gamePhase, endOfLevelTimer, windowFade, part, rocketOriginX, rocketOriginY
@@ -1003,6 +1026,7 @@ def startEndLevelPhase():
         rocketOriginY = 60 if currLand == Land.ESA else 35
         part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
 
+
 def startRevengeIntroPhase():
     global gamePhase, windowFade, introTimer
 
@@ -1012,6 +1036,7 @@ def startRevengeIntroPhase():
     loadRevenge()
     introTimer = 0
 
+
 def startRevengeLevelPhase():
     global gamePhase, windowFade
 
@@ -1019,6 +1044,7 @@ def startRevengeLevelPhase():
     playMusic(musicRevenge)
     debugPrint('Phase.LEVEL')
     gamePhase = Phase.LEVEL
+
 
 def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
@@ -1029,6 +1055,7 @@ def startGameWonPhase():
     windowFade = 128
     playMusic(musicWinGame)
 
+
 def startEnterNamePhase():
     global gamePhase, yourName, cursorTx, cursorTy, cursorPx, cursorPy, resultTimer
 
@@ -1037,16 +1064,18 @@ def startEnterNamePhase():
     yourName = ""
     cursorTx = 0
     cursorTy = 0
-    cursorPx = 0    # In pixels
+    cursorPx = 0  # In pixels
     cursorPy = 0
     resultTimer = 0
     playMusic(musicWin, -1)
 
+
 # Sound/Music
 
 def playSFX(sfx, loop=0):
-    if opt.getValue(OPTIONS_ID[0]) == True:
+    if opt.getValue(OPTIONS_ID[0]):
         sfx.play(loop)
+
 
 def playMusic(m, loop=0):
     debugPrint('playMusic loop=' + str(loop))
@@ -1054,20 +1083,22 @@ def playMusic(m, loop=0):
     pygame.mixer.stop()
     musicChannel.play(m, loop)
 
+
 def applyChannelVolumes():
     musicChannel = pygame.mixer.Channel(1)
-    musicChannel.set_volume(1 if opt.getValue(OPTIONS_ID [1]) == True else 0)
+    musicChannel.set_volume(1 if opt.getValue(OPTIONS_ID[1]) else 0)
+
 
 # HUD
 
-def displayText(font, str, col, text_x, text_y, fx = False):            # Centered
+def displayText(font, str, col, text_x, text_y, fx=False):  # Centered
     # Shadow
     text = font.render(str, True, (0, 0, 0))
     textRect = text.get_rect()
     textRect.center = (text_x + 1, text_y + 1)
     screen.blit(text, textRect)
 
-    if fx == False:
+    if not fx:
         text = font.render(str, True, col)
         textRect = text.get_rect()
         textRect.center = (text_x, text_y)
@@ -1087,12 +1118,13 @@ def displayText(font, str, col, text_x, text_y, fx = False):            # Center
             textRect = text.get_rect()
 
             # Select source line
-            area = [ 0, line, textRect.width, 1]
+            area = [0, line, textRect.width, 1]
 
             textRect.center = (text_x, text_y + line)
             screen.blit(text, textRect, area)
 
-def displayTextLeft(font, str, col, text_x, text_y):        # Left-Aligned
+
+def displayTextLeft(font, str, col, text_x, text_y):  # Left-Aligned
     # Shadow
     text = font.render(str, True, (0, 0, 0))
     textRect = text.get_rect()
@@ -1106,7 +1138,8 @@ def displayTextLeft(font, str, col, text_x, text_y):        # Left-Aligned
     textRect.centery = text_y
     screen.blit(text, textRect)
 
-def displayTextRight(font, str, col, text_x, text_y):        # Right-Aligned
+
+def displayTextRight(font, str, col, text_x, text_y):  # Right-Aligned
     # Shadow
     text = font.render(str, True, (0, 0, 0))
     textRect = text.get_rect()
@@ -1120,9 +1153,11 @@ def displayTextRight(font, str, col, text_x, text_y):        # Right-Aligned
     textRect.centery = text_y
     screen.blit(text, textRect)
 
+
 def displayLegend(legendIdx):
-    x = 2 if legendIdx == LEGEND_LEFT else WINDOW_WIDTH-2-20
+    x = 2 if legendIdx == LEGEND_LEFT else WINDOW_WIDTH - 2 - 20
     screen.blit(legendSprites[legendIdx], (ORIGIN_X + x, ORIGIN_Y + 220))
+
 
 def displayTuto():
     global tutoCounter, currTutoPage, electrifyBorderAnim
@@ -1131,10 +1166,10 @@ def displayTuto():
     TEXT_COLOR = (225, 225, 255)
     BORDER_COLOR = (0, 0, 0)
 
-    CENTER_X = ORIGIN_X + WINDOW_WIDTH//2
+    CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [Menu.TUTORIAL], TITLE_COLOR, CENTER_X, 80, True)
+    displayText(font_big, texts.MAIN_MENU[Menu.TUTORIAL], TITLE_COLOR, CENTER_X, 80, True)
 
     if currTutoPage == 0:
         y = 105
@@ -1147,13 +1182,13 @@ def displayTuto():
         electrifyBorderAnim += 1
 
     if currTutoPage >= 1:
-        blocIndex = currTutoPage-1
+        blocIndex = currTutoPage - 1
 
         # Bloc Icon
         blocIconIndex = tuto.bloc[blocIndex]
         if blocIconIndex != -1:
             screen.fill(BORDER_COLOR, (CENTER_X - BLOC_SIZE // 2 - 2, 105 - 2, BLOC_SIZE + 4, BLOC_SIZE + 4))
-            screen.blit(sprites[0][blocIconIndex], (CENTER_X-BLOC_SIZE//2, 105))
+            screen.blit(sprites[0][blocIconIndex], (CENTER_X - BLOC_SIZE // 2, 105))
             y = 135
         else:
             y = 115
@@ -1168,6 +1203,7 @@ def displayTuto():
 
     tutoCounter += 1
 
+
 def displayTutoMap(tutoIndex, offsetX, offsetY):
     global tutoCounter, currLand
 
@@ -1176,14 +1212,14 @@ def displayTutoMap(tutoIndex, offsetX, offsetY):
 
     # Mini-map
     currLand = tutoIndex // 2
-    if len(tuto.maps [tutoIndex]) == 16:
+    if len(tuto.maps[tutoIndex]) == 16:
         FRAME_SIZE = 1
         sz = 4 * BLOC_SIZE + 2 * FRAME_SIZE
         screen.fill((220, 220, 220), (offsetX - FRAME_SIZE, offsetY - FRAME_SIZE, sz, sz))
         screen.fill((20, 20, 20), (offsetX, offsetY, 4 * BLOC_SIZE, 4 * BLOC_SIZE))
         for y in range(0, 4):
             for x in range(0, 4):
-                b = tuto.maps [tutoIndex][x + y * 4]
+                b = tuto.maps[tutoIndex][x + y * 4]
                 if b != -1:
                     b = getAliasBlocIndex(b)
                     screen.blit(sprites[0][b], (offsetX + x * BLOC_SIZE, offsetY + y * BLOC_SIZE))
@@ -1191,15 +1227,16 @@ def displayTutoMap(tutoIndex, offsetX, offsetY):
     # Animated arrows (red or green)
     if (tutoCounter % 32) >= 4:
         arrowType = (tutoCounter // 64) % 2
-        d = 4 + ((tutoCounter % 32) / 8)        # Animate arrow
+        d = 4 + ((tutoCounter % 32) / 8)  # Animate arrow
         for arrow in tuto.arrows[tutoIndex][arrowType]:
-            dir = arrow [2]
+            dir = arrow[2]
             deltaX = offsetX + d * (1 if dir == tuto.DIR_RIGHT else -1 if dir == tuto.DIR_LEFT else 0)
-            deltaY = offsetY + d * (1 if dir == tuto.DIR_DOWN  else -1 if dir == tuto.DIR_UP   else 0)
-            screen.blit(arrowsSprites[dir+4*arrowType], (deltaX + arrow [0] * BLOC_SIZE, deltaY + arrow [1] * BLOC_SIZE))
+            deltaY = offsetY + d * (1 if dir == tuto.DIR_DOWN else -1 if dir == tuto.DIR_UP else 0)
+            screen.blit(arrowsSprites[dir + 4 * arrowType],
+                        (deltaX + arrow[0] * BLOC_SIZE, deltaY + arrow[1] * BLOC_SIZE))
+
 
 def displayControls():
-
     TITLE_COLOR = (255, 255, 155)
     OPT_COLOR = (180, 255, 255)
     VALUE_COLOR = (195, 195, 195)
@@ -1207,7 +1244,7 @@ def displayControls():
     DONE_COLOR = (50, 250, 130)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [Menu.CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU[Menu.CONTROLS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     i = 0
     for i in range(0, len(CTRL_ID)):
@@ -1216,7 +1253,7 @@ def displayControls():
         col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
 
         displayTextRight(font, texts.CTRL[i] + " :", col, ORIGIN_X + 100, y)
-        if ((absTime // 200) % 4 == 0):
+        if (absTime // 200) % 4 == 0:
             highlight = False
         col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
         displayTextLeft(font, pygame.key.name(tmpKeys[i]), col, ORIGIN_X + 140, y)
@@ -1229,6 +1266,7 @@ def displayControls():
     elif ctrlCursor == len(CTRL_ID):
         displayText(font, texts.CTRL_DONE, DONE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 220)
 
+
 def displayOptions():
     global optCursor
 
@@ -1238,45 +1276,48 @@ def displayOptions():
     HIGHLIGHT_COLOR = (230, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [Menu.OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU[Menu.OPTIONS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     for i in range(0, len(OPTIONS_ID)):
         y = 120 + 15 * i
         highlight = (optCursor == i)
         col = HIGHLIGHT_COLOR if highlight else OPT_COLOR
-        displayTextRight(font, texts.OPTIONS [i], col, ORIGIN_X + WINDOW_WIDTH // 2, y)
+        displayTextRight(font, texts.OPTIONS[i], col, ORIGIN_X + WINDOW_WIDTH // 2, y)
 
-        value = opt.getValue(OPTIONS_ID [i])
-        textValue = texts.VALUES [0 if value == True else 1]
+        value = opt.getValue(OPTIONS_ID[i])
+        textValue = texts.VALUES[0 if value else 1]
         col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
         displayTextLeft(font, textValue, col, ORIGIN_X + WINDOW_WIDTH // 2 + 30, y)
 
     displayLegend(LEGEND_LEFT)
     displayLegend(LEGEND_RIGHT)
 
+
 def displayCredits():
     TITLE_COLOR = (255, 255, 155)
     TEXT_COLOR = (180, 255, 255)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [Menu.CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU[Menu.CREDITS], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     y = 110
     for line in texts.CREDITS:
         displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
         y += 12
 
+
 def displayMainMenu():
-    TEXT_COLOR = (155, 155,  55)
+    TEXT_COLOR = (155, 155, 55)
     HIGH_COLOR = (255, 255, 155)
-    DEACT_COLOR= (40,   40,  30)
-    
+    DEACT_COLOR = (40, 40, 30)
+
     CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
 
     for i in range(0, len(texts.MAIN_MENU)):
         deactivated = isMenuDeactivated(i)
         col = DEACT_COLOR if deactivated else (HIGH_COLOR if (menuCursor == i) else TEXT_COLOR)
-        displayText(font, texts.MAIN_MENU[i], col, CENTER_X, 120 + 15*i)
+        displayText(font, texts.MAIN_MENU[i], col, CENTER_X, 120 + 15 * i)
+
 
 def displayMenu():
     match subMenu:
@@ -1292,6 +1333,7 @@ def displayMenu():
             displayOptions()
         case Menu.CREDITS:
             displayCredits()
+
 
 def displayGameHud():
     WHITE = (255, 255, 255)
@@ -1329,27 +1371,27 @@ def displayGameHud():
     timeStr = str(int(gameTimer / 60)) + ":" + f"{seconds:02d}"
     displayText(font, timeStr, WHITE, HUD_CENTER, y)
 
-def displayLeaderboard():
 
+def displayLeaderboard():
     TITLE_COLOR = (255, 255, 155)
     SCORE_COLOR = (225, 250, 200)
-    NAME_COLOR  = (255, 255, 255)
+    NAME_COLOR = (255, 255, 255)
     LEVEL_COLOR = (55, 155, 155)
     LEGEND_COLOR = (50, 240, 200)
 
     # Title
-    displayText(font_big, texts.MAIN_MENU [Menu.LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
+    displayText(font_big, texts.MAIN_MENU[Menu.LEADERBOARD], TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 80, True)
 
     # Legend
     displayTextLeft(font, "SCORE       NAME               ZONE", LEGEND_COLOR, 50, 114)
 
-    for index in range (0, leaderboard.LB_MAX_ENTRIES):
-        entry = lb.entries [index]
+    for index in range(0, leaderboard.LB_MAX_ENTRIES):
+        entry = lb.entries[index]
 
         y = 130 + 9 * index
-        score = entry [0]
-        name = entry [1]
-        level = entry [2]
+        score = entry[0]
+        name = entry[1]
+        level = entry[2]
 
         # Score
         displayTextRight(font, str(score), SCORE_COLOR, 85, y)
@@ -1359,6 +1401,7 @@ def displayLeaderboard():
 
         # Level
         displayTextRight(font, str(level), LEVEL_COLOR, 208, y)
+
 
 def displayResult():
     TITLE_COLOR = (50, 240, 200)
@@ -1370,10 +1413,10 @@ def displayResult():
     BAD_COLOR = (255, 0, 0)
 
     # Title
-    displayText(font_big, f"END OF ZONE {currLevel}",  TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
+    displayText(font_big, f"END OF ZONE {currLevel}", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
 
     if toxicBlocsLeft == 0:
-        if ((resultTimer // 8) % 4 != 0):      # Flash FX
+        if (resultTimer // 8) % 4 != 0:  # Flash FX
             displayText(font_big, "TOTAL", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 90, True)
             displayText(font_big, "DECONTAMINATION!", DECONTAMINATED_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
     else:
@@ -1398,6 +1441,7 @@ def displayResult():
     if toxicBlocsLeft == 0:
         displayDancingPenguins(resultTimer - 50)
 
+
 def displayDancingPenguins(d):
     # According to d value:
     # 0..100: move right
@@ -1406,11 +1450,11 @@ def displayDancingPenguins(d):
     # 140..160: still, upfront
     # 160..   : move right
 
-    px = d if d < 100 else (100 if d < 160 else d-60)
+    px = d if d < 100 else (100 if d < 160 else d - 60)
     py = 95
     dir = 0 if (d > 100 and d < 120) or (d > 140 and d < 160) else (-1 if (d > 120 and d < 140) else +1)
     for i in range(0, len(dancingPenguins)):
-        p = dancingPenguins [i]
+        p = dancingPenguins[i]
         p.status = PenguinStatus.WALK
         p.dirX = dir
         p.dirY = 1 if dir == 0 else 0
@@ -1420,17 +1464,19 @@ def displayDancingPenguins(d):
         p.posY = py
         p.display(screen, 0, 0)
 
+
 def displayRevengeIntroMode():
     TITLE_COLOR = (105, 255, 255)
     TEXT_COLOR = (50, 255, 140)
 
     displayText(font_big, texts.REVENGE_TITLE, TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60, True)
 
-    if (int(absTime) // 4) % 4 != 0:        # Flash
+    if (int(absTime) // 4) % 4 != 0:  # Flash
         y = 110
         for line in texts.REVENGE_TEXTS:
             displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
             y += 15
+
 
 def displayEnterYourName():
     global cursorPx, cursorPy
@@ -1443,16 +1489,17 @@ def displayEnterYourName():
     displayText(font_big, "CONGRATULATIONS!", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 40, True)
     displayText(font_big, "ENTER YOUR NAME:", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 60, True)
 
-    for ty in range (0, ALPHABET_ROWS):
+    for ty in range(0, ALPHABET_ROWS):
         for tx in range(0, ALPHABET_COLUMNS):
             charIndex = tx + ty * ALPHABET_COLUMNS
-            ch = chr(ord('A')+charIndex)
+            ch = chr(ord('A') + charIndex)
 
             if ch == '\\':
-                ch = '>'        # Exit
+                ch = '>'  # Exit
 
             if ch <= 'Z':
-                displayText(font_big, ch, LETTER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2 + (tx-3) * 25, 150 + (ty-2) * 24)
+                displayText(font_big, ch, LETTER_COLOR, ORIGIN_X + WINDOW_WIDTH // 2 + (tx - 3) * 25,
+                            150 + (ty - 2) * 24)
 
     # Display cursor
     targetPx = ORIGIN_X + WINDOW_WIDTH // 2 + (cursorTx - 3) * 25
@@ -1478,6 +1525,7 @@ def displayEnterYourName():
 
     displayTextLeft(font_big, displayName, NAME_COLOR, ORIGIN_X + 40, 220)
 
+
 def displayGameWon():
     TEXT_COLOR = (80, 250, 230)
 
@@ -1486,15 +1534,15 @@ def displayGameWon():
         displayText(font_big, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y, True)
         y += 20
 
-def displayBGMap(baseX, baseY):
 
-    anim = (absTime // 4) % 4       # The land map has 4 animation frames
+def displayBGMap(baseX, baseY):
+    anim = (absTime // 4) % 4  # The land map has 4 animation frames
     for y in range(0, BLOCS_RANGE + 1):
         for x in range(0, BLOCS_RANGE + 2):
 
             blocOffset = (baseX // BLOC_SIZE + x) + (baseY // BLOC_SIZE + y) * SCHEME_WIDTH
 
-            if isRevenge == True:
+            if isRevenge:
                 index = 24  # Empty land in Revenge mode
             else:
                 index = int(lands[currLand][4 * blocOffset + anim])
@@ -1511,8 +1559,8 @@ def displayBGMap(baseX, baseY):
             index = getAliasBlocIndex(index)
             blitGameSprite(sprites[0][index], c)
 
-def displayEndLevel():
 
+def displayEndLevel():
     screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y))
 
     # Penguin and 3 Monsters animation
@@ -1546,7 +1594,7 @@ def displayEndLevel():
             py = y
 
         if currLand == Land.ICE:
-            if px >= 120 and px <= 150:  # Jump parabola
+            if (px >= 120) and (px <= 150):  # Jump parabola
                 py -= (15 * 15 - math.pow(px - 135, 2)) / 15
 
         penguin1.status = PenguinStatus.WALK
@@ -1581,13 +1629,16 @@ def displayEndLevel():
     if currLand == Land.COMPUTER:
         screen.blit(endScreenSprite, (ORIGIN_X, ORIGIN_Y + 138), (0, 138, 17 * 4, 20))
 
+
 def applyFade():
     if windowFade > 0:
         blackSurface.fill((0, 0, 0, windowFade))
         screen.blit(blackSurface, (ORIGIN_X, ORIGIN_Y))
 
+
 def isMenuDeactivated(index):
     return index == Menu.CONTINUE and maxLevelReached == 1
+
 
 # pygame setup
 pygame.init()
@@ -1611,36 +1662,36 @@ font = pygame.font.Font('Data/font/small/8-bit-hud.ttf', 5)
 font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
 # Load musics recorded from SoundTracker
-musicIntro  = pygame.mixer.Sound('Data/musics/intro.wav')        # Patterns 0-15
-musicRevenge= pygame.mixer.Sound('Data/musics/revenge.wav')      # Patterns 16-20
-musicWin    = pygame.mixer.Sound('Data/musics/win.wav')          # Patterns 21-26
-musicWinGame= pygame.mixer.Sound('Data/musics/winGame.wav')      # Patterns 27-29
-musicEnd    = pygame.mixer.Sound('Data/musics/endLand.wav')      # Pattern 29
+musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')  # Patterns 0-15
+musicRevenge = pygame.mixer.Sound('Data/musics/revenge.wav')  # Patterns 16-20
+musicWin = pygame.mixer.Sound('Data/musics/win.wav')  # Patterns 21-26
+musicWinGame = pygame.mixer.Sound('Data/musics/winGame.wav')  # Patterns 27-29
+musicEnd = pygame.mixer.Sound('Data/musics/endLand.wav')  # Pattern 29
 
 musicPlay = []
-musicPlay.append(pygame.mixer.Sound('Data/musics/play1.wav'))   # Patterns 30-35
-musicPlay.append(pygame.mixer.Sound('Data/musics/play2.wav'))   # Patterns 36-44
-musicPlay.append(pygame.mixer.Sound('Data/musics/play3.wav'))   # Patterns 45-50
-musicPlay.append(pygame.mixer.Sound('Data/musics/play4.wav'))   # Patterns 51-56
-musicPlay.append(pygame.mixer.Sound('Data/musics/play5.wav'))   # Patterns 57-62
+musicPlay.append(pygame.mixer.Sound('Data/musics/play1.wav'))  # Patterns 30-35
+musicPlay.append(pygame.mixer.Sound('Data/musics/play2.wav'))  # Patterns 36-44
+musicPlay.append(pygame.mixer.Sound('Data/musics/play3.wav'))  # Patterns 45-50
+musicPlay.append(pygame.mixer.Sound('Data/musics/play4.wav'))  # Patterns 51-56
+musicPlay.append(pygame.mixer.Sound('Data/musics/play5.wav'))  # Patterns 57-62
 
 # Load sounds recorded from SoundTracker: samples indexes from 23 to 35
-soundReady  = pygame.mixer.Sound('Data/bruitages/READY.wav')             # 23 (sample N) - START OF LEVEL
-soundLaunch = pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')        # 24 (sample O)
-soundCrash  = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')        # 25 (sample P)
-soundBoom   = pygame.mixer.Sound('Data/bruitages/BOOM.wav')              # 26 (sample Q) - bomb
-soundElec   = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')          # 27 (sample R) - border
-soundMagic  = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')             # 28 (sample S)
-soundDiam   = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')           # 29 (sample T) - when 4 diamonds assembled
-#soundFun   = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - (not used in 1-player mode)
-soundOhNo   = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')             # 31 (sample V) - wrong move / death
-soundAlcool = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')        # 32 (sample W)
-soundColl   = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')         # 33 (sample X) - penguin or monster death
-soundSplatch= pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')           # 34 (sample Y) - green glass breaking
-soundWow    = pygame.mixer.Sound('Data/bruitages/WOW.wav')               # 35 (sample Z) - END OF LEVEL
-soundTick   = pygame.mixer.Sound('Data/bruitages/TICK.wav')              # New sample (same as R but with higher pitch)
-soundValid  = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')          # New sample for menus
-soundTele   = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')          # New sample (same as S but with lower pitch)
+soundReady      = pygame.mixer.Sound('Data/bruitages/READY.wav')  # 23 (sample N) - START OF LEVEL
+soundLaunch     = pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')  # 24 (sample O)
+soundCrash      = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')  # 25 (sample P)
+soundBoom       = pygame.mixer.Sound('Data/bruitages/BOOM.wav')  # 26 (sample Q) - bomb
+soundElec       = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')  # 27 (sample R) - border
+soundMagic      = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')  # 28 (sample S)
+soundDiam       = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')  # 29 (sample T) - when 4 diamonds assembled
+# soundFun    = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - (not used in 1-player mode)
+soundOhNo       = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')  # 31 (sample V) - wrong move / death
+soundAlcool     = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')  # 32 (sample W)
+soundColl       = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')  # 33 (sample X) - penguin or monster death
+soundSplatch    = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')  # 34 (sample Y) - green glass breaking
+soundWow        = pygame.mixer.Sound('Data/bruitages/WOW.wav')  # 35 (sample Z) - END OF LEVEL
+soundTick       = pygame.mixer.Sound('Data/bruitages/TICK.wav')  # New sample (same as R but with higher pitch)
+soundValid      = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')  # New sample for menus
+soundTele       = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')  # New sample (same as S but with lower pitch)
 
 # Set volumes
 
@@ -1665,12 +1716,12 @@ for index in range(0, LANDS_NB):
         land = f.read()
     lands.append(land)
     teleporters.append([])
-    #debugPrint('Teleporters in land #' + str(index) + ':')
+    # debugPrint('Teleporters in land #' + str(index) + ':')
     for i in range(0, len(land), 4):
         if land[i] >= Bloc.TELEPORT_0:
             j = i // 4
             teleporters[index].append(j)
-            #debugPrint('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
+            # debugPrint('  ' + str(j%64) + ',' + str(j // SCHEME_WIDTH))
 
 # SpriteSheets
 
@@ -1680,19 +1731,19 @@ ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs1.png'))
 ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs2.png'))
 ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs3.png'))
 
-ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
-ss_border   = spritesheet.SpriteSheet('Data/border.png')
-ss_rocket   = spritesheet.SpriteSheet('Data/rocket.png')
+ss_start = spritesheet.SpriteSheet('Data/startScreen.png')
+ss_border = spritesheet.SpriteSheet('Data/border.png')
+ss_rocket = spritesheet.SpriteSheet('Data/rocket.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
-ss_revenge  = spritesheet.SpriteSheet('Data/revengeTile.png')
-ss_panels   = spritesheet.SpriteSheet('Data/panels.png')    # DEMO and PAUSE
-ss_arrows   = spritesheet.SpriteSheet('Data/arrows.png')    # 4 red and 4 green arrows
-ss_legend   = spritesheet.SpriteSheet('Data/legend.png')    # 2 blue arrows
+ss_revenge = spritesheet.SpriteSheet('Data/revengeTile.png')
+ss_panels = spritesheet.SpriteSheet('Data/panels.png')  # DEMO and PAUSE
+ss_arrows = spritesheet.SpriteSheet('Data/arrows.png')  # 4 red and 4 green arrows
+ss_legend = spritesheet.SpriteSheet('Data/legend.png')  # 2 blue arrows
 
 ss_levels = []
 ss_endScreens = []
-for index in range(1, 1+LANDS_NB):
+for index in range(1, 1 + LANDS_NB):
     ss_levels.append(spritesheet.SpriteSheet('Data/level' + str(index) + '.png'))
     ss_endScreens.append(spritesheet.SpriteSheet('Data/Screens/scr' + str(index) + '.png'))
 
@@ -1711,7 +1762,7 @@ dancingPenguins.append(Penguin())
 dancingPenguins[1].animPhase += 8
 
 penguinSprites = []
-for index in range(0, 2*36+12):
+for index in range(0, 2 * 36 + 12):
     penguinSprites.append(ss_penguins.get_indexed_image(index, BLOC_SIZE, BLOC_SIZE))
 
 charsSprites_gr = []
@@ -1731,7 +1782,7 @@ for index in range(0, 2):
     legendSprites.append(ss_legend.get_indexed_image(index, 20, 20))
 
 # Init input
-keyDown    = [False] * Key.NB
+keyDown = [False] * Key.NB
 keyPressed = [False] * Key.NB
 
 old_x_axis = 0.0
@@ -1759,8 +1810,9 @@ while running:
         if gameTimer < 0.0:
             gameTimer = 0.0
 
+        # Warning sound for last seconds before time runs out
         for tick in range(1, 6):
-            if (prevGameTimer >= tick and gameTimer <= tick):
+            if (prevGameTimer >= tick) and (gameTimer <= tick):
                 playSFX(soundTick)
 
     # INPUT
@@ -1775,9 +1827,9 @@ while running:
 
         # D-pad
         hat = joy.get_hat(0)
-        x_axis += hat [0]
-        y_axis -= hat [1]
-        
+        x_axis += hat[0]
+        y_axis -= hat[1]
+
         # X
 
         if x_axis > JOY_LIMIT:
@@ -1786,11 +1838,11 @@ while running:
         if x_axis < -JOY_LIMIT:
             keyDown[Key.LEFT] = keyDown[Key.GAME_LEFT] = True
 
-        if x_axis < JOY_LIMIT and old_x_axis >= JOY_LIMIT:
+        if (x_axis < JOY_LIMIT) and (old_x_axis >= JOY_LIMIT):
             keyDown[Key.RIGHT] = keyDown[Key.GAME_RIGHT] = False
 
-        if x_axis > -JOY_LIMIT and old_x_axis <= -JOY_LIMIT:
-            keyDown[Key.LEFT] =  keyDown[Key.GAME_LEFT] = False
+        if (x_axis > -JOY_LIMIT) and (old_x_axis <= -JOY_LIMIT):
+            keyDown[Key.LEFT] = keyDown[Key.GAME_LEFT] = False
 
         # Y
 
@@ -1798,12 +1850,12 @@ while running:
             keyDown[Key.DOWN] = keyDown[Key.GAME_DOWN] = True
 
         if y_axis < -JOY_LIMIT:
-            keyDown[Key.UP] = keyDown [Key.GAME_UP] = True
+            keyDown[Key.UP] = keyDown[Key.GAME_UP] = True
 
-        if y_axis < JOY_LIMIT and old_y_axis >= JOY_LIMIT:
+        if (y_axis < JOY_LIMIT) and (old_y_axis >= JOY_LIMIT):
             keyDown[Key.DOWN] = keyDown[Key.GAME_DOWN] = False
 
-        if y_axis > -JOY_LIMIT and old_y_axis <= -JOY_LIMIT:
+        if (y_axis > -JOY_LIMIT) and (old_y_axis <= -JOY_LIMIT):
             keyDown[Key.UP] = keyDown[Key.GAME_UP] = False
 
         old_x_axis = x_axis
@@ -1821,7 +1873,7 @@ while running:
             if event.button == 0:
                 keyDown[Key.SPACE] = buttonIsDown
                 keyDown[Key.GAME_PUSH] = buttonIsDown
-            if event.button == 1 and gamePhase != Phase.LEVEL:      # B button only used in menus
+            if event.button == 1 and gamePhase != Phase.LEVEL:  # B button only used in menus
                 keyDown[Key.ESCAPE] = buttonIsDown
             elif event.button == 6:
                 keyDown[Key.ESCAPE] = buttonIsDown
@@ -1839,47 +1891,47 @@ while running:
 
             # MENU KEYS processing
             for keyPair in MENU_KEYS:
-                if event.key == keyPair [1]:
-                    keyDown[keyPair [0]] = down
+                if event.key == keyPair[1]:
+                    keyDown[keyPair[0]] = down
 
             # GAME KEYS processing
             for keyPair in GAME_KEYS:
-                if event.key == opt.getValue(keyPair [1]):
-                    keyDown[keyPair [0]] = down
+                if event.key == opt.getValue(keyPair[1]):
+                    keyDown[keyPair[0]] = down
 
             if not down:
 
                 # Cheat
                 if event.key == pygame.K_F5:  # Prev level
-                    if (currLevel > 1):
+                    if currLevel > 1:
                         currLevel -= 1
                         loadLevel()
 
                 if event.key == pygame.K_F6:  # Next level
-                    if (currLevel < 50):
+                    if currLevel < LEVELS_NB:
                         currLevel += 1
                         loadLevel()
 
-                if DEBUG_FEATURES == True:
+                if DEBUG_FEATURES:
 
                     if event.key == pygame.K_F7:  # Prev revenge map
-                        if (currLevel > 5):
+                        if currLevel > 5:
                             currLevel -= 5
                             startRevengeIntroPhase()
 
                     if event.key == pygame.K_F8:  # Next revenge map
-                        if (currLevel < 45):
+                        if currLevel < LEVELS_NB-5:
                             currLevel += 5
                             startRevengeIntroPhase()
 
     for i in range(0, len(keyDown)):
-        keyPressed [i] = (keyDown[i] == True and oldKeyDown[i] == False)
+        keyPressed[i] = (keyDown[i] == True and oldKeyDown[i] == False)
 
     if keyPressed[Key.PAUSE]:  # Pause game
         if gamePhase == Phase.LEVEL:
             pauseGame = not pauseGame
 
-    if keyPressed[Key.ESCAPE] == True:
+    if keyPressed[Key.ESCAPE]:
         if gamePhase == Phase.LEVEL:
             startIntroPhase()
         elif gamePhase == Phase.INTRO:
@@ -1888,7 +1940,7 @@ while running:
             if subMenu == Menu.MAIN:
                 startIntroPhase()
             else:
-                subMenu = Menu.MAIN        # Return to Main Menu
+                subMenu = Menu.MAIN  # Return to Main Menu
             playSFX(soundValid)
 
     if gamePhase == Phase.INTRO:
@@ -1931,7 +1983,7 @@ while running:
                     if subMenu == Menu.CONTROLS:
                         controlsCounter = 0
                         ctrlCursor = 0
-                        lastKeyDown = NONE      # To avoid using unwanted SPACE key event
+                        lastKeyDown = NONE  # To avoid using unwanted SPACE key event
                         tmpKeys = []
                         for i in range(0, len(CTRL_ID)):
                             tmpKeys.append(opt.getValue((CTRL_ID[i])))
@@ -1962,7 +2014,7 @@ while running:
                 playSFX(soundValid)
 
             if keyPressed[Key.SPACE] or keyPressed[Key.RETURN] or keyPressed[Key.LEFT] or keyPressed[Key.RIGHT]:
-                opt.setValue(OPTIONS_ID[optCursor], not opt.getValue(OPTIONS_ID[optCursor]))     # Invert value
+                opt.setValue(OPTIONS_ID[optCursor], not opt.getValue(OPTIONS_ID[optCursor]))  # Invert value
                 opt.save()
                 applyChannelVolumes()
                 playSFX(soundValid)
@@ -1981,7 +2033,7 @@ while running:
                         break
 
                 if not inUse:
-                    tmpKeys [ctrlCursor] = lastKeyDown
+                    tmpKeys[ctrlCursor] = lastKeyDown
                     ctrlCursor += 1
                     playSFX(soundValid)
                     if ctrlCursor == len(CTRL_ID):
@@ -1989,7 +2041,7 @@ while running:
                         for i in range(0, ctrlCursor):
                             opt.setValue(CTRL_ID[i], tmpKeys[i])
                         opt.save()
-                        controlsCounter = 90        # Wait a bit before quitting page
+                        controlsCounter = 90  # Wait a bit before quitting page
                 else:
                     debugPrint('Invalid choice - key already used.')
 
@@ -2003,14 +2055,14 @@ while running:
             windowFade = pygame.math.clamp(windowFade, 0, 255)
 
         # Animate electric border
-        if electrifyBorder == True:
+        if electrifyBorder:
             electrifyBorderAnim += 1
 
         # Animate cyclones
         cyclonesPace = (cyclonesPace + 1) % 16
 
-        if cyclonesPace % 2 == 0:      # To slow down process, process once every two passes
-            cycloneIndex = cyclonesList [cyclonesPace >> 1]
+        if cyclonesPace % 2 == 0:  # To slow down process, process once every two passes
+            cycloneIndex = cyclonesList[cyclonesPace >> 1]
             if cycloneIndex != 0:
                 debugPrint('Process cyclone #' + str(cycloneIndex))
                 # Collect blocs around cyclone
@@ -2024,8 +2076,8 @@ while running:
                         turningBlocs.append(turningBloc)
 
                 # Rotate turning blocs (clockwise)
-                if (len(turningBlocs) > 1):
-                    turningBlocs = turningBlocs[len(turningBlocs)-1:] + turningBlocs[:len(turningBlocs)-1]
+                if len(turningBlocs) > 1:
+                    turningBlocs = turningBlocs[len(turningBlocs) - 1:] + turningBlocs[:len(turningBlocs) - 1]
 
                 i = 0
                 for offset in CYCLONE_OFFSETS:
@@ -2034,8 +2086,8 @@ while running:
 
                     if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
                         blocX = finalOffset % SCHEME_WIDTH
-                        blocY = int (finalOffset / SCHEME_WIDTH)
-                        writeBloc(blocX, blocY, turningBlocs [i])
+                        blocY = int(finalOffset / SCHEME_WIDTH)
+                        writeBloc(blocX, blocY, turningBlocs[i])
                         i += 1
 
         # Update Penguin
@@ -2047,32 +2099,32 @@ while running:
 
         # Check end of game
         if (gameTimer <= 0.0) or ((toxicBlocsLeft == 0) and not isRevenge):
-            
-            if isRevenge == True:
-                if currLevel >= 50:             # End of game reached!
+
+            if isRevenge:
+                if currLevel >= LEVELS_NB:  # End of game reached!
                     startGameWonPhase()
                 else:
                     gamePhase = Phase.LEVEL  # Move to next level
                     currLevel += 1  # End of level - display results
                     loadLevel()
             else:
-                if (toxicBlocsLeft == 0):
+                if toxicBlocsLeft == 0:
                     playSFX(soundWow)
 
                 startResultPhase()
 
     elif gamePhase == Phase.RESULT:
         resultTimer += 1
-        if resultTimer > 60*8:
+        if resultTimer > 60 * 8:
             percent = (100 * toxicBlocsLeft / totalToxicBlocs)
-            gameOver = (percent >= (100-SUCCESS_GOAL))
-            penguin1.score += bonus             # Take bonus into account
-            penguin1.score += penguin1.points   # Apply unaccounted points (if any)
+            gameOver = (percent >= (100 - SUCCESS_GOAL))
+            penguin1.score += bonus  # Take bonus into account
+            penguin1.score += penguin1.points  # Apply unaccounted points (if any)
             penguin1.points = 0
 
             debugPrint(f"percent: {percent} gameOver : {gameOver}")
-            
-            if gameOver == True:
+
+            if gameOver:
                 if lb.canEnter(penguin1.score):
                     startEnterNamePhase()
                 else:
@@ -2092,12 +2144,12 @@ while running:
 
         introTimer += 1
 
-        if keyPressed[Key.GAME_PUSH] or (introTimer > 60*4):
+        if keyPressed[Key.GAME_PUSH] or (introTimer > 60 * 4):
             startRevengeLevelPhase()
 
     elif gamePhase == Phase.GAME_WON:
         resultTimer += 1
-        if resultTimer > 60*21:     # Match music duration
+        if resultTimer > 60 * 21:  # Match music duration
             startMenuPhase()
             playMusic(musicIntro, -1)
 
@@ -2117,8 +2169,8 @@ while running:
             ch = chr(ord('A') + cursorTx + cursorTy * ALPHABET_COLUMNS)
             if ch == '\\' and len(yourName) > 0:
                 quitEnterName = True
-            elif (len(yourName) < leaderboard.LB_MAX_NAME_LENGTH):
-                if (ch <= 'Z'):
+            elif len(yourName) < leaderboard.LB_MAX_NAME_LENGTH:
+                if ch <= 'Z':
                     yourName += ch
                 else:
                     yourName += ' '
@@ -2146,7 +2198,7 @@ while running:
         case Phase.INTRO:
             screen.blit(startScreen, (ORIGIN_X, ORIGIN_Y))
 
-            if ((introTimer // 16) % 4 != 0):
+            if (introTimer // 16) % 4 != 0:
                 displayText(font, "Press START", (215, 235, 125), ORIGIN_X + WINDOW_WIDTH // 2, 230)
 
         case Phase.MENU:
@@ -2168,7 +2220,7 @@ while running:
                     currLevel += 1
                     startLevelPhase()
 
-        case _: # other phases where game map is displayed (Phase.LEVEL, Phase.RESULT, Phase.REVENGE_INTRO, etc)
+        case _:  # other phases where game map is displayed (Phase.LEVEL, Phase.RESULT, Phase.REVENGE_INTRO, etc)
 
             # Draw Background Map
             displayBGMap(baseX, baseY)

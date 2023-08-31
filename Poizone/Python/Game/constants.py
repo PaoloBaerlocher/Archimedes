@@ -10,6 +10,7 @@ WINDOW_WIDTH = 12*20+4
 WINDOW_HEIGHT = 12*20
 NONE = -1
 LANDS_NB = 5
+LEVELS_NB = 50
 ORIGIN_X = 8            # In pixels
 ORIGIN_Y = 8
 BLOC_SIZE = 20          # In pixels
