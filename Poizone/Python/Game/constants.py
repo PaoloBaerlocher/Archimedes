@@ -115,16 +115,18 @@ class Bloc:
     BASIC_1     = 18       # For Land No 1 (Space station)
     BASIC_3     = 19       # For Land No 3 (Jungle)
     BASIC_4     = 20       # For Land No 4 (Computer)
-    ELECTRO_0   = 21       # Electric border Anim
+    ELECTRO_0   = 21       # Electric border Anim (2 frames)
     ELECTRO_1   = 22
     ELECTRO     = 23
-    TELEPORT_0  = 60       # Teleporter Anim
+    TELEPORT_0  = 60       # Teleporter Anim (2 frames)
     TELEPORT_1  = 61
     REVENGE     = 62
 
-# PANEL_
-PANEL_DEMO  = 0
-PANEL_PAUSE = 1
+BASIC_BLOC = [Bloc.BASIC_0, Bloc.BASIC_1, Bloc.BASIC_2, Bloc.BASIC_3, Bloc.BASIC_4]
+
+class Panel:
+    DEMO  = 0
+    PAUSE = 1
 
 # Enums
 

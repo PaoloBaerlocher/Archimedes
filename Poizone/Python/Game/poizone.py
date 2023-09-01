@@ -923,9 +923,9 @@ def displayScore(score, posX, posY):
 def displayPanel():
     panelIdx = NONE
 
-    if pauseGame == True:
-        panelIdx = PANEL_PAUSE
-
+    if pauseGame:
+        panelIdx = Panel.PAUSE
+        
     if panelIdx != NONE:
         screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH // 2 - 60 / 2, 30))
 
@@ -961,15 +961,11 @@ def writeBloc(indexX, indexY, blocIndex):
 
 
 def getAliasBlocIndex(index):
-    if index == Bloc.ELECTRO:  # Electric border (animation)
+    if index == Bloc.ELECTRO:  # Electric border (2-frames animation)
         return Bloc.ELECTRO_0 + (int(electrifyBorderAnim / 8) % 2)
 
-    if index == Bloc.BASIC:
-        if currLand == 0: return Bloc.BASIC_0
-        if currLand == 1: return Bloc.BASIC_1
-        if currLand == 2: return Bloc.BASIC_2
-        if currLand == 3: return Bloc.BASIC_3
-        if currLand == 4: return Bloc.BASIC_4
+    if index == Bloc.BASIC:     # Basic bloc is different for each land
+        return BASIC_BLOC[currLand]
 
     if index == Bloc.TELEPORT_0 or index == Bloc.TELEPORT_1:
         return Bloc.TELEPORT_0 + (int(absTime / 256) % 2)
