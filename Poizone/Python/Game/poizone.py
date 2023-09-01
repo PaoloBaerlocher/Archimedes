@@ -121,7 +121,7 @@ class Penguin():
                 setElectrifyBorder(True)
             elif bloc < 24:
                 nextBloc = self.getBlocOnDir(self.dirX * 2, self.dirY * 2)
-                if (nextBloc >= 24):
+                if nextBloc >= 24:
                     if self.movBlocWhat == NONE:  # Avoid overriding ongoing launch bloc
                         self.launchBloc(bloc, self.posX, self.posY, self.dirX, self.dirY)
                         blocX = self.posX // BLOC_SIZE + self.dirX
@@ -495,8 +495,8 @@ class Penguin():
                                     cyclonesList[index] = bx + by * SCHEME_WIDTH
                                     break
 
-                        if (self.movBlocWhat == Bloc.DIAMOND):
-                            if not self.diamondsAssembled and self.checkSquareDiamond(bx, by) == True:
+                        if self.movBlocWhat == Bloc.DIAMOND:
+                            if not self.diamondsAssembled and self.checkSquareDiamond(bx, by):
                                 debugPrint('Square Diamond assembled')
                                 playSFX(soundDiam)
                                 self.addScore(500)
@@ -560,7 +560,7 @@ class Monster():
 
     def getBirthRange(self):
         global isRevenge
-        return 300 if isRevenge == True else 2200
+        return 300 if isRevenge else 2200
 
     def isAlive(self):
         return self.counter >= 0
@@ -586,7 +586,7 @@ class Monster():
                 self.posX += self.dirX
                 self.posY += self.dirY
 
-            if (self.dizzyCounter > 0):
+            if self.dizzyCounter > 0:
                 self.dizzyCounter -= 1
 
             onBlock = (self.posX % BLOC_SIZE == 0) and (self.posY % BLOC_SIZE == 0)
@@ -970,7 +970,7 @@ def getAliasBlocIndex(index):
     if index == Bloc.TELEPORT_0 or index == Bloc.TELEPORT_1:
         return Bloc.TELEPORT_0 + (int(absTime / 256) % 2)
 
-    if index == 24 and isRevenge == True:
+    if index == 24 and isRevenge:
         return Bloc.REVENGE
 
     return index
@@ -1620,7 +1620,7 @@ def displayEndLevel():
     mx = pygame.math.clamp(x, limitMinX, limitMaxX)
 
     # Show Penguin
-    if (currLand == Land.ICE or currLand == Land.JUNGLE or currLand == Land.COMPUTER):
+    if currLand in [Land.ICE, Land.JUNGLE, Land.COMPUTER]:
 
         if currLand == Land.COMPUTER:
             px = x + 60  # Penguin on the right side of monsters
@@ -1657,7 +1657,7 @@ def displayEndLevel():
         m.display(screen, 0, 0)
 
     # Show Rocket
-    if currLand == Land.ESA or currLand == Land.MOON:
+    if currLand in [Land.ESA, Land.MOON]:
         propelY = pow(250 - endOfLevelTimer, 2) / 250
         c = CropSprite(rocketOriginX, rocketOriginY - propelY, rocket.get_width(), rocket.get_height())
         blitGameSprite(rocket, c)
