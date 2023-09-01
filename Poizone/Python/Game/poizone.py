@@ -925,7 +925,7 @@ def displayPanel():
 
     if pauseGame:
         panelIdx = Panel.PAUSE
-        
+
     if panelIdx != NONE:
         screen.blit(panelSprites[panelIdx], (ORIGIN_X + WINDOW_WIDTH // 2 - 60 / 2, 30))
 
@@ -1694,40 +1694,41 @@ font = pygame.font.Font('Data/font/small/8-bit-hud.ttf', 5)
 font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
 # Load musics recorded from SoundTracker
-musicIntro = pygame.mixer.Sound('Data/musics/intro.wav')  # Patterns 0-15
-musicRevenge = pygame.mixer.Sound('Data/musics/revenge.wav')  # Patterns 16-20
-musicWin = pygame.mixer.Sound('Data/musics/win.wav')  # Patterns 21-26
-musicWinGame = pygame.mixer.Sound('Data/musics/winGame.wav')  # Patterns 27-29
-musicEnd = pygame.mixer.Sound('Data/musics/endLand.wav')  # Pattern 29
-
-musicPlay = []
-musicPlay.append(pygame.mixer.Sound('Data/musics/play1.wav'))  # Patterns 30-35
-musicPlay.append(pygame.mixer.Sound('Data/musics/play2.wav'))  # Patterns 36-44
-musicPlay.append(pygame.mixer.Sound('Data/musics/play3.wav'))  # Patterns 45-50
-musicPlay.append(pygame.mixer.Sound('Data/musics/play4.wav'))  # Patterns 51-56
-musicPlay.append(pygame.mixer.Sound('Data/musics/play5.wav'))  # Patterns 57-62
+musicIntro      = pygame.mixer.Sound('Data/musics/intro.wav')       # Patterns 0-15
+musicRevenge    = pygame.mixer.Sound('Data/musics/revenge.wav')     # Patterns 16-20
+musicWin        = pygame.mixer.Sound('Data/musics/win.wav')         # Patterns 21-26
+musicWinGame    = pygame.mixer.Sound('Data/musics/winGame.wav')     # Patterns 27-29
+musicEnd        = pygame.mixer.Sound('Data/musics/endLand.wav')     # Pattern 29
+musicPlay = [
+        pygame.mixer.Sound('Data/musics/play1.wav'),                # Patterns 30-35
+        pygame.mixer.Sound('Data/musics/play2.wav'),                # Patterns 36-44
+        pygame.mixer.Sound('Data/musics/play3.wav'),                # Patterns 45-50
+        pygame.mixer.Sound('Data/musics/play4.wav'),                # Patterns 51-56
+        pygame.mixer.Sound('Data/musics/play5.wav')                 # Patterns 57-62
+]
 
 # Load sounds recorded from SoundTracker: samples indexes from 23 to 35
-soundReady      = pygame.mixer.Sound('Data/bruitages/READY.wav')  # 23 (sample N) - START OF LEVEL
-soundLaunch     = pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')  # 24 (sample O)
-soundCrash      = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')  # 25 (sample P)
-soundBoom       = pygame.mixer.Sound('Data/bruitages/BOOM.wav')  # 26 (sample Q) - bomb
-soundElec       = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')  # 27 (sample R) - border
-soundMagic      = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')  # 28 (sample S)
-soundDiam       = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')  # 29 (sample T) - when 4 diamonds assembled
-# soundFun    = pygame.mixer.Sound('Data/bruitages/Fun.wav')               # 30 (sample U) - (not used in 1-player mode)
-soundOhNo       = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')  # 31 (sample V) - wrong move / death
-soundAlcool     = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')  # 32 (sample W)
-soundColl       = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')  # 33 (sample X) - penguin or monster death
-soundSplatch    = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')  # 34 (sample Y) - green glass breaking
-soundWow        = pygame.mixer.Sound('Data/bruitages/WOW.wav')  # 35 (sample Z) - END OF LEVEL
-soundTick       = pygame.mixer.Sound('Data/bruitages/TICK.wav')  # New sample (same as R but with higher pitch)
-soundValid      = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')  # New sample for menus
-soundTele       = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')  # New sample (same as S but with lower pitch)
+soundReady      = pygame.mixer.Sound('Data/bruitages/READY.wav')        # 23 (sample N) - START OF LEVEL
+soundLaunch     = pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')   # 24 (sample O)
+soundCrash      = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')   # 25 (sample P)
+soundBoom       = pygame.mixer.Sound('Data/bruitages/BOOM.wav')         # 26 (sample Q) - bomb
+soundElec       = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')     # 27 (sample R) - border
+soundMagic      = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')        # 28 (sample S)
+soundDiam       = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')      # 29 (sample T) - when 4 diamonds assembled
+# soundFun    = pygame.mixer.Sound('Data/bruitages/Fun.wav')            # 30 (sample U) - (not used in 1-player mode)
+soundOhNo       = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')        # 31 (sample V) - wrong move / death
+soundAlcool     = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')   # 32 (sample W)
+soundColl       = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')    # 33 (sample X) - penguin or monster death
+soundSplatch    = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')      # 34 (sample Y) - green glass breaking
+soundWow        = pygame.mixer.Sound('Data/bruitages/WOW.wav')          # 35 (sample Z) - END OF LEVEL
+soundTick       = pygame.mixer.Sound('Data/bruitages/TICK.wav')         # New sample (same as R but with higher pitch)
+soundValid      = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')     # New sample for menus
+soundTele       = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')     # New sample (same as S but with lower pitch)
 
 # Set volumes
 
 soundCrash.set_volume(0.5)
+soundElec.set_volume(0.8)
 soundLaunch.set_volume(0.3)
 soundMagic.set_volume(0.2)
 soundSplatch.set_volume(0.5)
@@ -1757,27 +1758,28 @@ for index in range(0, LANDS_NB):
 
 # Load SpriteSheets
 
-ss_shared = []
-ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs0.png'))
-ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs1.png'))
-ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs2.png'))
-ss_shared.append(spritesheet.SpriteSheet('Data/sharedBlocs3.png'))
+ss_shared = [                                           # 4 versions with 'destroy mask' animation
+    spritesheet.SpriteSheet('Data/sharedBlocs0.png'),
+    spritesheet.SpriteSheet('Data/sharedBlocs1.png'),
+    spritesheet.SpriteSheet('Data/sharedBlocs2.png'),
+    spritesheet.SpriteSheet('Data/sharedBlocs3.png')
+]
 
-ss_start = spritesheet.SpriteSheet('Data/startScreen.png')
-ss_border = spritesheet.SpriteSheet('Data/border.png')
-ss_rocket = spritesheet.SpriteSheet('Data/rocket.png')
+ss_start    = spritesheet.SpriteSheet('Data/startScreen.png')
+ss_border   = spritesheet.SpriteSheet('Data/border.png')
+ss_rocket   = spritesheet.SpriteSheet('Data/rocket.png')
 ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
 ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
-ss_revenge = spritesheet.SpriteSheet('Data/revengeTile.png')
-ss_panels = spritesheet.SpriteSheet('Data/panels.png')  # DEMO and PAUSE
-ss_arrows = spritesheet.SpriteSheet('Data/arrows.png')  # 4 red and 4 green arrows
-ss_legend = spritesheet.SpriteSheet('Data/legend.png')  # 2 blue arrows
+ss_revenge  = spritesheet.SpriteSheet('Data/revengeTile.png')
+ss_panels   = spritesheet.SpriteSheet('Data/panels.png')  # DEMO and PAUSE
+ss_arrows   = spritesheet.SpriteSheet('Data/arrows.png')  # 4 red and 4 green arrows
+ss_legend   = spritesheet.SpriteSheet('Data/legend.png')  # 2 blue arrows
 
 ss_levels = []
 ss_endScreens = []
-for index in range(1, 1 + LANDS_NB):
-    ss_levels.append(spritesheet.SpriteSheet('Data/level' + str(index) + '.png'))
-    ss_endScreens.append(spritesheet.SpriteSheet('Data/Screens/scr' + str(index) + '.png'))
+for index in range(0, LANDS_NB):
+    ss_levels.append(spritesheet.SpriteSheet('Data/level' + str(index+1) + '.png'))
+    ss_endScreens.append(spritesheet.SpriteSheet('Data/Screens/scr' + str(index+1) + '.png'))
 
 # Other assets
 startScreen = ss_start.get_indexed_image(0, 244, 240)
@@ -1788,10 +1790,7 @@ rocket = ss_rocket.get_indexed_image(0, 40, 174)
 penguin1 = Penguin()
 
 # Three dancing penguins, for result screen
-dancingPenguins = []
-dancingPenguins.append(Penguin())
-dancingPenguins.append(Penguin())
-dancingPenguins.append(Penguin())
+dancingPenguins = [Penguin(), Penguin(), Penguin()]
 dancingPenguins[1].animPhase += 8
 
 penguinSprites = []
