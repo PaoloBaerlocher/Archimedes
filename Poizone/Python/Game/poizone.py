@@ -51,7 +51,7 @@ def blitGameSprite(sprite, cropSprite):
 
 
 def debugPrint(text):
-    if DEBUG_FEATURES == True:
+    if DEBUG_FEATURES:
         print(text)
 
 
@@ -346,13 +346,13 @@ class Penguin():
 
             if (self.posY % BLOC_SIZE) == 0:  # Cannot change X direction if not aligned on bloc vertically
                 if keyDown[Key.GAME_LEFT]:
-                    self.dirX = -1 if self.invert == False else +1
+                    self.dirX = -1 if not self.invert else +1
                     self.dirY = 0
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
                 if keyDown[Key.GAME_RIGHT]:
-                    self.dirX = 1 if self.invert == False else -1
+                    self.dirX = 1 if not self.invert else -1
                     self.dirY = 0
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
@@ -360,13 +360,13 @@ class Penguin():
             if (self.posX % BLOC_SIZE) == 0:  # Cannot change Y direction if not aligned on bloc horizontally
                 if keyDown[Key.GAME_UP]:
                     self.dirX = 0
-                    self.dirY = -1 if self.invert == False else +1
+                    self.dirY = -1 if not self.invert else +1
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
                 if keyDown[Key.GAME_DOWN]:
                     self.dirX = 0
-                    self.dirY = 1 if self.invert == False else -1
+                    self.dirY = 1 if not self.invert else -1
                     if onBlock and not self.blocIsWalkable(self.dirX, self.dirY):
                         self.setStatus(PenguinStatus.IDLE)
 
@@ -1364,6 +1364,16 @@ def displayMenu():
         case Menu.CREDITS:
             displayCredits()
 
+def displayInGameMenu():
+    match gamePhase:
+        case Phase.RESULT:
+            displayResult()
+        case Phase.REVENGE_INTRO:
+            displayRevengeIntroMode()
+        case Phase.GAME_WON:
+            displayGameWon()
+        case Phase.ENTER_NAME:
+            displayEnterYourName()
 
 def displayGameHud():
     WHITE = (255, 255, 255)
@@ -1847,6 +1857,7 @@ while running:
             if (prevGameTimer >= tick) and (gameTimer <= tick):
                 playSFX(soundTick)
 
+    #######
     # INPUT
     #######
 
@@ -1957,7 +1968,7 @@ while running:
                             startRevengeIntroPhase()
 
     for i in range(0, len(keyDown)):
-        keyPressed[i] = (keyDown[i] == True and oldKeyDown[i] == False)
+        keyPressed[i] = (keyDown[i] and not oldKeyDown[i])
 
     if keyPressed[Key.PAUSE]:  # Pause game
         if gamePhase == Phase.LEVEL:
@@ -2184,14 +2195,14 @@ while running:
                 yourName = yourName[:-1]
                 playSFX(soundValid)
 
-        if keyPressed[Key.RETURN] or quitEnterName == True:
+        if keyPressed[Key.RETURN] or quitEnterName:
             lb.add(penguin1.score, yourName, currLevel)
             lb.save()  # Add new entry and save leaderboard
             startMenuPhase()
 
-    ######
-    # DRAW
-    ######
+    #########
+    # DISPLAY
+    #########
 
     # Fill the screen with a color to wipe away anything from last frame
     screen.fill("black")
@@ -2240,16 +2251,8 @@ while running:
 
             applyFade()
 
-            # Display menus over game
-            match gamePhase:
-                case Phase.RESULT:
-                    displayResult()
-                case Phase.REVENGE_INTRO:
-                    displayRevengeIntroMode()
-                case Phase.GAME_WON:
-                    displayGameWon()
-                case Phase.ENTER_NAME:
-                    displayEnterYourName()
+            # Display in-game menu over game
+            displayInGameMenu()
 
             # Display HUD (in the panel on the right side)
             displayGameHud()
