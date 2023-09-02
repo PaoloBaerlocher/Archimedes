@@ -14,15 +14,15 @@ class CropSprite():
         overX = self.posX - (BLOCS_RANGE - 1) * BLOC_SIZE - 4
         overY = self.posY - (BLOCS_RANGE - 1) * BLOC_SIZE
 
-        if (self.posX < 0):
+        if self.posX < 0:
             self.xRegion -= self.posX
             self.widthRegion += self.posX
             self.posX = 0
 
-        if (overX > 0):
+        if overX > 0:
             self.widthRegion -= overX
 
-        if (self.posY < 0):
+        if self.posY < 0:
             self.yRegion -= self.posY
             self.heightRegion += self.posY
             self.posY = 0

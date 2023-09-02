@@ -39,11 +39,9 @@ isRevenge = False  # Is Revenge mode ?
 
 maxLevelReached = 1  # For CONTINUE option
 
-occupyTable = []
+occupyTable = []    # Where monsters are allowed to go or not
 lands = []
 teleporters = []
-
-lastKeyDown = NONE
 
 penguin1 = None
 
@@ -416,8 +414,8 @@ def initAudio():
 
     global music, sfx
 
-    music = [0] * Music.NB
-    sfx = [0] * Sfx.NB
+    music = [None] * Music.NB
+    sfx = [None] * Sfx.NB
 
     # Load musics recorded from SoundTracker
     music[Music.INTRO]      = pygame.mixer.Sound('Data/musics/intro.wav')   # Patterns 0-15

@@ -30,6 +30,8 @@ menuCounter = 0
 tutoCounter = 0
 currTutoPage = 0
 
+lastKeyDown = NONE
+
 # Global Functions
 
 def resetGame():
