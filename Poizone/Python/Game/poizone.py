@@ -232,7 +232,7 @@ def displayTextRight(font, str, col, text_x, text_y):  # Right-Aligned
 
 
 def displayLegend(legendIdx):
-    x = 2 if legendIdx == LEGEND_LEFT else WINDOW_WIDTH - 2 - 20
+    x = 2 if legendIdx == Legend.LEFT else WINDOW_WIDTH - 2 - 20
     screen.blit(globals.legendSprites[legendIdx], (ORIGIN_X + x, ORIGIN_Y + 220))
 
 
@@ -275,8 +275,8 @@ def displayTuto():
             y += 10
         displayTutoMap(blocIndex, 82, 150)
 
-    displayLegend(LEGEND_LEFT)
-    displayLegend(LEGEND_RIGHT)
+    displayLegend(Legend.LEFT)
+    displayLegend(Legend.RIGHT)
 
     tutoCounter += 1
 
@@ -366,8 +366,8 @@ def displayOptions():
         col = HIGHLIGHT_COLOR if highlight else VALUE_COLOR
         displayTextLeft(font, textValue, col, ORIGIN_X + WINDOW_WIDTH // 2 + 30, y)
 
-    displayLegend(LEGEND_LEFT)
-    displayLegend(LEGEND_RIGHT)
+    displayLegend(Legend.LEFT)
+    displayLegend(Legend.RIGHT)
 
 
 def displayCredits():

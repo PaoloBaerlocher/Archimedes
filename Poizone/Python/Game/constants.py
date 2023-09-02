@@ -54,9 +54,9 @@ class Menu:
     OPTIONS    = 5
     CREDITS    = 6
 
-# LEGEND_
-LEGEND_RIGHT    = 0
-LEGEND_LEFT     = 1
+class Legend:
+    RIGHT    = 0
+    LEFT     = 1
 
 class Key:
     UP          = 0
