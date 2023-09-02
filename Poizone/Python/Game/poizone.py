@@ -34,11 +34,6 @@ lastKeyDown = NONE
 
 # Global Functions
 
-def resetGame():
-    globals.currLevel = 1
-    globals.penguin1.score = 0
-
-
 def displayScore(score, posX, posY):
     base = 10000
     for i in range(0, 5):
@@ -716,7 +711,7 @@ def displayEndLevel():
         part.display(screen, ORIGIN_X, ORIGIN_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
 
     # For COMPUTER level: redraw a part of the disk drive, over monsters
-    if glboals.currLand == Land.COMPUTER:
+    if globals.currLand == Land.COMPUTER:
         screen.blit(globals.endScreenSprite, (ORIGIN_X, ORIGIN_Y + 138), (0, 138, 17 * 4, 20))
 
 
@@ -949,7 +944,7 @@ while running:
 
             if keyPressed[Key.SPACE] or keyPressed[Key.RETURN]:
                 if menuCursor == Menu.PLAY or menuCursor == Menu.CONTINUE:
-                    resetGame()
+                    globals.resetGame()
 
                     if menuCursor == Menu.CONTINUE:
                         globals.currLevel = globals.maxLevelReached

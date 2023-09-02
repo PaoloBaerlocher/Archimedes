@@ -19,9 +19,9 @@ rocket = None
 
 # Global variables
 
-gameTimer = 0.0  # 0 - 300 ( 5 minutes ) - in seconds
-currLevel = 1  # From 1 to LEVELS_NB
-currLand = 0  # 0..4 (Land.)
+gameTimer = 0.0     # 0 - 300 ( 5 minutes ) - in seconds
+currLevel = 1       # From 1 to LEVELS_NB
+currLand = 0        # 0..4 (Land.)
 electrifyBorder = False
 electrifyBorderAnim = 0
 blocsCount = []
@@ -52,6 +52,14 @@ def initPenguin():
 
     # Create player's penguin
     penguin1 = penguin.Penguin()
+
+
+def resetGame():
+    global currLevel, penguin1
+
+    currLevel = 1
+    penguin1.score = 0
+
 
 def loadSettings():
     global lb, opt
@@ -300,8 +308,8 @@ def loadRevenge():
     global currLevel, currLand, scheme, blocsCount, monsters, cyclonesList
 
     debugPrint("Load revenge for level " + str(currLevel))
-    currLand = (currLevel - 1) // 10
-    globals.loadSprites()
+    currLand = Land.COMPUTER
+    loadSprites()
 
     schemeName = "Data/Schemes/CHALLENGES"
     with open(schemeName, 'rb') as f:
@@ -311,7 +319,7 @@ def loadRevenge():
 
     resetRevenge((currLevel - 1) // 5)
 
-    globals.initOccupyTable()
+    initOccupyTable()
 
     monsters = []
     for index in range(0, MONSTERS_NB):
