@@ -128,6 +128,39 @@ class Panel:
     DEMO  = 0
     PAUSE = 1
 
+class Music:
+    INTRO       = 0
+    REVENGE     = 1
+    WIN         = 2
+    WIN_GAME    = 3
+    END         = 4
+    PLAY_0      = 5
+    PLAY_1      = 6
+    PLAY_2      = 7
+    PLAY_3      = 8
+    PLAY_4      = 9
+
+    NB          = 10
+
+class Sfx:
+    READY   = 0
+    LAUNCH  = 1
+    CRASH   = 2
+    BOOM    = 3
+    ELEC    = 4
+    MAGIC   = 5
+    DIAMOND = 6
+    OH_NO   = 7
+    ALCOOL  = 8
+    COLL    = 9
+    SPLATCH = 10
+    WOW     = 11
+    TICK    = 12
+    VALID   = 13
+    TELEPORT= 14
+
+    NB      = 15
+
 # Enums
 
 class PenguinStatus(Enum):
