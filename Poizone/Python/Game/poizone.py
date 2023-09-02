@@ -521,7 +521,8 @@ class Penguin():
         if self.ghost > 0:
             self.ghost -= 1
 
-        if self.status != PenguinStatus.DIE and self.ghost == 0:  # If penguin can die, check collision with alive monsters
+        # If penguin can die, check collision with alive monsters
+        if self.status != PenguinStatus.DIE and self.ghost == 0:
             for m in monsters:
                 if m.isAlive() and (abs(m.posX - self.posX) <= 8) and (abs(m.posY - self.posY) <= 8):
                     self.die()
@@ -1051,7 +1052,7 @@ def startEndLevelPhase():
     windowFade = 0
 
     # Create rocket particles, if needed in this land
-    if currLand == Land.ESA or currLand == Land.MOON:
+    if currLand in [Land.ESA, Land.MOON]:
         rocketOriginX = 70 if currLand == Land.ESA else 105
         rocketOriginY = 60 if currLand == Land.ESA else 35
         part = particles.Particles(rocketOriginX + 28, rocketOriginY + 182, 100)
