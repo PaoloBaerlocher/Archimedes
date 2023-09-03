@@ -33,6 +33,8 @@ currTutoPage = 0
 
 lastKeyDown = NONE
 
+maxLevelReached = 1  # For 'CONTINUE GAME' option
+
 # Global Functions
 
 def displayScore(score, posX, posY):
@@ -723,7 +725,7 @@ def applyFade():
 
 
 def isMenuDeactivated(index):
-    return index == Menu.CONTINUE and globals.maxLevelReached == 1
+    return index == Menu.CONTINUE and maxLevelReached == 1
 
 
 ##########################
@@ -948,7 +950,7 @@ while running:
                     globals.resetGame()
 
                     if menuCursor == Menu.CONTINUE:
-                        globals.currLevel = globals.maxLevelReached
+                        globals.currLevel = maxLevelReached
 
                     startLevelPhase()
                 else:
@@ -1042,8 +1044,7 @@ while running:
         globals.penguin1.update(keyDown, globals.monsters)
 
         # Update Monsters
-        for m in globals.monsters:
-            m.update()
+        globals.updateMonsters()
 
         # Check end of game
         if (globals.gameTimer <= 0.0) or ((globals.toxicBlocsLeft == 0) and not globals.isRevenge):
@@ -1079,7 +1080,7 @@ while running:
                     audio.playMusic(Music.INTRO, -1)
 
                 # Store level for Continue
-                globals.maxLevelReached = max(globals.currLevel, globals.maxLevelReached)
+                maxLevelReached = max(globals.currLevel, maxLevelReached)
 
             else:
                 startEndLevelPhase()

@@ -18,7 +18,7 @@ startScreen = None
 border = None
 rocket = None
 
-# Global variables
+# Global game variables
 
 gameTimer = 0.0     # 0 - 300 ( 5 minutes ) - in seconds
 currLevel = 1       # From 1 to LEVELS_NB
@@ -37,8 +37,6 @@ baseX = 0
 baseY = 0
 
 isRevenge = False  # Is Revenge mode ?
-
-maxLevelReached = 1  # For CONTINUE option
 
 occupyTable = []    # Where monsters are allowed to go or not
 lands = []
@@ -89,6 +87,7 @@ def isOnBlock(posX, posY):
 # Returns number of points earned
 def destroyBloc(bloc):
     global blocsCount, toxicBlocsLeft
+
     debugPrint('Destroy bloc of type ' + str(bloc))
     if bloc <= Bloc.GREEN_CHEM:
         blocsCount[bloc] -= 1
@@ -102,6 +101,7 @@ def destroyBloc(bloc):
 
 def writeBloc(indexX, indexY, blocIndex):
     global scheme
+
     index = indexX + indexY * SCHEME_WIDTH
     newBloc = [blocIndex]
     scheme = scheme[:index] + bytes(newBloc) + scheme[(index + 1):]
@@ -130,7 +130,7 @@ def setElectrifyBorder(newStatus):
         audio.playSFX(Sfx.ELEC, 100)
 
     if not newStatus and electrifyBorder:
-        audio.sfx[Sfx.ELEC].stop()
+        audio.stopSFX(Sfx.ELEC)
 
     electrifyBorder = newStatus
 
@@ -204,10 +204,15 @@ def updateCyclones():
                     writeBloc(blocX, blocY, turningBlocs[i])
                     i += 1
 
+def updateMonsters():
+    for m in monsters:
+        m.update()
 
 
+# 0% - 100%
 def getGoalPercent():
     return ((totalToxicBlocs - toxicBlocsLeft) * 100) // totalToxicBlocs
+
 
 ###
 
@@ -331,8 +336,7 @@ def loadRevenge():
 
 
 def loadSpriteSheets():
-    global border
-    global penguinSprites, charsSprites_gr, panelSprites, arrowsSprites, legendSprites, startScreen, rocket
+    global penguinSprites, charsSprites_gr, panelSprites, arrowsSprites, legendSprites, startScreen, border, rocket
     global ss_shared, ss_levels, ss_revenge, ss_endScreens
 
     ss_shared = [  # 4 versions with 'destroy mask' animation
@@ -342,15 +346,15 @@ def loadSpriteSheets():
         spritesheet.SpriteSheet('Data/sharedBlocs3.png')
     ]
 
-    ss_start = spritesheet.SpriteSheet('Data/startScreen.png')
-    ss_border = spritesheet.SpriteSheet('Data/border.png')
-    ss_rocket = spritesheet.SpriteSheet('Data/rocket.png')
-    ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')
-    ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')
+    ss_start = spritesheet.SpriteSheet('Data/startScreen.png')      # 3D pre-rendered screen
+    ss_border = spritesheet.SpriteSheet('Data/border.png')          # Blue border around game window
+    ss_rocket = spritesheet.SpriteSheet('Data/rocket.png')          # For end-level animation
+    ss_penguins = spritesheet.SpriteSheet('Data/pengos.png')        # Penguin animations (white and yellow ones)
+    ss_chars_gr = spritesheet.SpriteSheet('Data/chars_green.png')   # Font used for score
     ss_revenge = spritesheet.SpriteSheet('Data/revengeTile.png')
-    ss_panels = spritesheet.SpriteSheet('Data/panels.png')  # DEMO and PAUSE
-    ss_arrows = spritesheet.SpriteSheet('Data/arrows.png')  # 4 red and 4 green arrows
-    ss_legend = spritesheet.SpriteSheet('Data/legend.png')  # 2 blue arrows
+    ss_panels = spritesheet.SpriteSheet('Data/panels.png')          # DEMO and PAUSE
+    ss_arrows = spritesheet.SpriteSheet('Data/arrows.png')          # 4 red and 4 green arrows
+    ss_legend = spritesheet.SpriteSheet('Data/legend.png')          # 2 blue arrows
 
     ss_levels = []
     ss_endScreens = []

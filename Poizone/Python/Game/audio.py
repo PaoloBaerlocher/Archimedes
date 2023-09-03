@@ -72,6 +72,10 @@ def playSFX(sfxId, loop=0):
         sfx[sfxId].play(loop)
 
 
+def stopSFX(sfxId):
+    sfx[sfxId].stop()
+
+
 def playMusic(musicId, loop=0):
     debugPrint('playMusic loop=' + str(loop))
     musicChannel = pygame.mixer.Channel(1)

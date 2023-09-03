@@ -33,14 +33,14 @@ class Particles(object):
 
     def update(self, dt):
         for p in self.particles:
-            if (p[4] <= 0):
+            if p[4] <= 0:
                 self.particles.remove(p)
                 self.particles.append(self.createNewParticle())
             else:
                 p[0] += p[2] * dt
                 p[1] += p[3] * dt
                 p[4] -= 1
-                if (p[1] > GROUND):     # Bounce on ground (vy = -vy)
+                if p[1] > GROUND:     # Bounce on ground (vy = -vy)
                     p[3] = -p[3] * 0.8
                 p[3] += 0.05            # Gravity
 
