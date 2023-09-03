@@ -12,34 +12,46 @@ def init():
     sfx = [None] * Sfx.NB
 
     # Load musics recorded from SoundTracker
-    music[Music.INTRO]      = pygame.mixer.Sound('Data/musics/intro.wav')   # Patterns 0-15
-    music[Music.REVENGE]    = pygame.mixer.Sound('Data/musics/revenge.wav') # Patterns 16-20
-    music[Music.WIN]        = pygame.mixer.Sound('Data/musics/win.wav')     # Patterns 21-26
-    music[Music.WIN_GAME]   = pygame.mixer.Sound('Data/musics/winGame.wav') # Patterns 27-29
-    music[Music.END]        = pygame.mixer.Sound('Data/musics/endLand.wav') # Pattern 29
-    music[Music.PLAY_0]     = pygame.mixer.Sound('Data/musics/play1.wav')   # Patterns 30-35
-    music[Music.PLAY_1]     = pygame.mixer.Sound('Data/musics/play2.wav')   # Patterns 36-44
-    music[Music.PLAY_2]     = pygame.mixer.Sound('Data/musics/play3.wav')   # Patterns 45-50
-    music[Music.PLAY_3]     = pygame.mixer.Sound('Data/musics/play4.wav')   # Patterns 51-56
-    music[Music.PLAY_4]     = pygame.mixer.Sound('Data/musics/play5.wav')   # Patterns 57-62
+
+    musicList = [
+        [Music.INTRO,   'intro.wav'],   # Patterns 0-15
+        [Music.REVENGE, 'revenge.wav'], # Patterns 16-20
+        [Music.WIN,     'win.wav'],     # Patterns 21-26
+        [Music.WIN_GAME,'winGame.wav'], # Patterns 27-29
+        [Music.END,     'endLand.wav'], # Pattern 29
+        [Music.PLAY_0,  'play1.wav'],   # Patterns 30-35
+        [Music.PLAY_1,  'play2.wav'],   # Patterns 36-44
+        [Music.PLAY_2,  'play3.wav'],   # Patterns 45-50
+        [Music.PLAY_3,  'play4.wav'],   # Patterns 51-56
+        [Music.PLAY_4,  'play5.wav']    # Patterns 57-62
+    ]
+
+    for m in musicList:
+        music[m[0]] = pygame.mixer.Sound('Data/musics/' + m[1])
 
     # Load sounds recorded from SoundTracker: samples indexes from 23 to 35
-    sfx[Sfx.READY]    = pygame.mixer.Sound('Data/bruitages/READY.wav')          # 23 (sample N) - START OF LEVEL
-    sfx[Sfx.LAUNCH]   = pygame.mixer.Sound('Data/bruitages/LAUNCHBLCK.wav')     # 24 (sample O)
-    sfx[Sfx.CRASH]    = pygame.mixer.Sound('Data/bruitages/CRASHblock.wav')     # 25 (sample P)
-    sfx[Sfx.BOOM]     = pygame.mixer.Sound('Data/bruitages/BOOM.wav')           # 26 (sample Q) - bomb
-    sfx[Sfx.ELEC]     = pygame.mixer.Sound('Data/bruitages/ELECTRIC.wav')       # 27 (sample R) - border
-    sfx[Sfx.MAGIC]    = pygame.mixer.Sound('Data/bruitages/MAGIC.wav')          # 28 (sample S)
-    sfx[Sfx.DIAMOND]  = pygame.mixer.Sound('Data/bruitages/DIAMOND.wav')   # 29 (sample T) - when 4 diamonds assembled
-    # soundFun  = pygame.mixer.Sound('Data/bruitages/Fun.wav')          # 30 (sample U) - (not used in 1-player mode)
-    sfx[Sfx.OH_NO]    = pygame.mixer.Sound('Data/bruitages/OH_NO.wav')  # 31 (sample V) - wrong move / death
-    sfx[Sfx.ALCOOL]   = pygame.mixer.Sound('Data/bruitages/BEER_BLOCK.wav')  # 32 (sample W)
-    sfx[Sfx.COLL]     = pygame.mixer.Sound('Data/bruitages/COLLISION.wav')  # 33 (sample X) - penguin or monster death
-    sfx[Sfx.SPLATCH]  = pygame.mixer.Sound('Data/bruitages/SPLATCH.wav')  # 34 (sample Y) - green glass breaking
-    sfx[Sfx.WOW]      = pygame.mixer.Sound('Data/bruitages/WOW.wav')    # 35 (sample Z) - END OF LEVEL
-    sfx[Sfx.TICK]     = pygame.mixer.Sound('Data/bruitages/TICK.wav')  # New sample (same as R but with higher pitch)
-    sfx[Sfx.VALID]    = pygame.mixer.Sound('Data/bruitages/VALIDATE.wav')  # New sample for menus
-    sfx[Sfx.TELEPORT] = pygame.mixer.Sound('Data/bruitages/TELEPORT.wav')  # New sample (same as S, with lower pitch)
+
+    sfxList = [
+        [ Sfx.READY,    'READY.wav'],           # 23 (sample N) - START OF LEVEL
+        [ Sfx.LAUNCH,   'LAUNCHBLCK.wav'],      # 24 (sample O)
+        [ Sfx.CRASH,    'CRASHblock.wav'],      # 25 (sample P)
+        [ Sfx.BOOM,     'BOOM.wav'],            # 26 (sample Q) - bomb
+        [ Sfx.ELEC,     'ELECTRIC.wav'],        # 27 (sample R) - border
+        [ Sfx.MAGIC,    'MAGIC.wav'],           # 28 (sample S)
+        [ Sfx.DIAMOND,  'DIAMOND.wav'],         # 29 (sample T) - when 4 diamonds assembled
+        # soundFun  = 'Fun.wav')                # 30 (sample U) - (not used in 1-player mode)
+        [ Sfx.OH_NO,    'OH_NO.wav'],           # 31 (sample V) - wrong move / death
+        [ Sfx.ALCOOL,   'BEER_BLOCK.wav'],      # 32 (sample W)
+        [ Sfx.COLL,     'COLLISION.wav'],       # 33 (sample X) - penguin or monster death
+        [ Sfx.SPLATCH,  'SPLATCH.wav'],         # 34 (sample Y) - green glass breaking
+        [ Sfx.WOW,      'WOW.wav'],             # 35 (sample Z) - END OF LEVEL
+        [ Sfx.TICK,     'TICK.wav'],            # New sample (same as R but with higher pitch)
+        [ Sfx.VALID,    'VALIDATE.wav'],        # New sample for menus
+        [ Sfx.TELEPORT, 'TELEPORT.wav']         # New sample (same as S, with lower pitch)
+    ]
+
+    for s in sfxList:
+        sfx[s[0]] = pygame.mixer.Sound('Data/bruitages/' + s[1])
 
     # Set volumes
 
