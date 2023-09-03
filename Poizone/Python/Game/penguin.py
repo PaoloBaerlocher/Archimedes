@@ -2,6 +2,7 @@ from constants import *
 import globals
 from utility import *
 from cropsprite import CropSprite
+import audio
 
 class Penguin():
     def __init__(self):
@@ -78,7 +79,7 @@ class Penguin():
                             debugPrint('Remove cyclone ' + str(globals.cyclonesList[idx]) + ' at index ' + str(idx))
                             globals.cyclonesList[idx] = 0
 
-                        globals.playSFX(Sfx.LAUNCH)
+                        audio.playSFX(Sfx.LAUNCH)
 
                         if bloc == Bloc.RED:  # Do NOT launch red chemical block!
                             self.die(True)
@@ -111,15 +112,15 @@ class Penguin():
         match bloc:
             case Bloc.ALCOOL:
                 self.invert = not self.invert
-                globals.playSFX(Sfx.ALCOOL)
+                audio.playSFX(Sfx.ALCOOL)
 
             case Bloc.BOMB:
                 self.die()
-                globals.playSFX(Sfx.BOOM)
+                audio.playSFX(Sfx.BOOM)
 
             case Bloc.MAGIC:  # Temporary invincibility
                 self.ghost = 60 * 15
-                globals.playSFX(Sfx.MAGIC)
+                audio.playSFX(Sfx.MAGIC)
 
             case Bloc.POISON:  # Must be in contact with at least one ALU bloc
                 if not (blocUp == Bloc.ALU or blocDown == Bloc.ALU or blocLeft == Bloc.ALU or blocRight == Bloc.ALU):
@@ -160,7 +161,7 @@ class Penguin():
         points = globals.destroyBloc(bloc)
         self.addScore(points)
 
-        globals.playSFX(Sfx.CRASH)
+        audio.playSFX(Sfx.CRASH)
 
     def die(self, playOhNo=False):
 
@@ -169,9 +170,9 @@ class Penguin():
         self.invert = False  # Reset malus
 
         if playOhNo:
-            globals.playSFX(Sfx.OH_NO)
+            audio.playSFX(Sfx.OH_NO)
         else:
-            globals.playSFX(Sfx.COLL)
+            audio.playSFX(Sfx.COLL)
 
         globals.setElectrifyBorder(False)
 
@@ -396,7 +397,7 @@ class Penguin():
                 newPosY = found // SCHEME_WIDTH
                 self.posX = newPosX * BLOC_SIZE
                 self.posY = newPosY * BLOC_SIZE
-                globals.playSFX(Sfx.TELEPORT)
+                audio.playSFX(Sfx.TELEPORT)
                 self.canTeleport = False
 
         # Update crushed bloc
@@ -446,13 +447,13 @@ class Penguin():
                         if self.movBlocWhat == Bloc.DIAMOND:
                             if not self.diamondsAssembled and self.checkSquareDiamond(bx, by):
                                 debugPrint('Square Diamond assembled')
-                                globals.playSFX(Sfx.DIAMOND)
+                                audio.playSFX(Sfx.DIAMOND)
                                 self.addScore(500)
                                 self.diamondsAssembled = True  # This bonus can be obtained only once per level
                     else:
                         points = globals.destroyBloc(self.movBlocWhat)
                         self.addScore(points)
-                        globals.playSFX(Sfx.SPLATCH)
+                        audio.playSFX(Sfx.SPLATCH)
                         # Start crush animation
                         self.startCrushAnim(self.movBlocWhat, self.movBlocPosX, self.movBlocPosY)
 

@@ -3,6 +3,7 @@ import globals
 from utility import *
 from cropsprite import CropSprite
 import random
+import audio
 
 class Monster():
     def __init__(self, kind, isBaddie):
@@ -74,7 +75,7 @@ class Monster():
                 if (deltaX <= 10) and (deltaY <= 10):
                     debugPrint('Kill monster')
                     self.killAndRebirth()
-                    globals.playSFX(Sfx.COLL)
+                    audio.playSFX(Sfx.COLL)
                     penguin.movMonsters += 1
                 elif (deltaX <= 12) and (deltaY <= 12):
                     debugPrint('Dizzy monster by bloc collision')

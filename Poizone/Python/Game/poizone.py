@@ -11,6 +11,7 @@ import leaderboard
 import particles
 import tuto
 import texts
+import audio
 from cropsprite import CropSprite
 from penguin import *
 from monster import *
@@ -59,7 +60,7 @@ def startIntroPhase():
 
     debugPrint('Phase.INTRO')
     gamePhase = Phase.INTRO
-    globals.playMusic(Music.INTRO, -1)
+    audio.playMusic(Music.INTRO, -1)
     windowFade = 0
     introTimer = 0
     pauseGame = False
@@ -111,7 +112,7 @@ def startEndLevelPhase():
     debugPrint('Phase.END_LEVEL')
     gamePhase = Phase.END_LEVEL
     endOfLevelTimer = 250
-    globals.playMusic(Music.END)
+    audio.playMusic(Music.END)
     windowFade = 0
 
     # Create rocket particles, if needed in this land
@@ -135,7 +136,7 @@ def startRevengeLevelPhase():
     global gamePhase, windowFade
 
     windowFade = 0
-    globals.playMusic(Music.REVENGE)
+    audio.playMusic(Music.REVENGE)
     debugPrint('Phase.LEVEL')
     gamePhase = Phase.LEVEL
 
@@ -147,7 +148,7 @@ def startGameWonPhase():
     debugPrint('Phase.GAME_WON')
     gamePhase = Phase.GAME_WON
     windowFade = 128
-    globals.playMusic(Music.WIN_GAME)
+    audio.playMusic(Music.WIN_GAME)
 
 
 def startEnterNamePhase():
@@ -161,7 +162,7 @@ def startEnterNamePhase():
     cursorPx = 0  # In pixels
     cursorPy = 0
     resultTimer = 0
-    globals.playMusic(Music.WIN, -1)
+    audio.playMusic(Music.WIN, -1)
 
 # HUD
 
@@ -746,7 +747,7 @@ blackSurface.fill((0, 0, 0, 128))
 font = pygame.font.Font('Data/font/small/8-bit-hud.ttf', 5)
 font_big = pygame.font.Font('Data/font/big/VCR_OSD_MONO_1.001.ttf', 20)
 
-globals.initAudio()
+audio.init()
 globals.initLandsAndTeleporters()
 globals.loadSpriteSheets()
 globals.initPenguin()
@@ -787,7 +788,7 @@ while running:
         # Warning sound for last seconds before time runs out
         for tick in range(1, 6):
             if (prevGameTimer >= tick) and (globals.gameTimer <= tick):
-                globals.playSFX(Sfx.TICK)
+                audio.playSFX(Sfx.TICK)
 
     #######
     # INPUT
@@ -916,13 +917,13 @@ while running:
                 startIntroPhase()
             else:
                 subMenu = Menu.MAIN  # Return to Main Menu
-            globals.playSFX(Sfx.VALID)
+            audio.playSFX(Sfx.VALID)
 
     if gamePhase == Phase.INTRO:
         introTimer += 1
         if keyPressed[Key.SPACE] or keyPressed[Key.RETURN]:
             startMenuPhase()
-            globals.playSFX(Sfx.VALID)
+            audio.playSFX(Sfx.VALID)
     elif gamePhase == Phase.MENU:
         menuCounter += 1
         if windowFade < 160:
@@ -934,13 +935,13 @@ while running:
                 menuCursor += 1
                 while isMenuDeactivated(menuCursor):
                     menuCursor += 1
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
             if keyPressed[Key.UP] and menuCursor > 0:
                 menuCursor -= 1
                 while isMenuDeactivated(menuCursor):
                     menuCursor -= 1
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
             if keyPressed[Key.SPACE] or keyPressed[Key.RETURN]:
                 if menuCursor == Menu.PLAY or menuCursor == Menu.CONTINUE:
@@ -966,34 +967,34 @@ while running:
                         tutoCounter = 0
                         currTutoPage = 0
 
-                    globals.playSFX(Sfx.VALID)
+                    audio.playSFX(Sfx.VALID)
 
         elif subMenu == Menu.TUTORIAL:
             if keyPressed[Key.LEFT]:
                 currTutoPage = (currTutoPage + TUTO_PAGES - 1) % TUTO_PAGES
                 tutoCounter = 0
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
             if keyPressed[Key.RIGHT]:
                 currTutoPage = (currTutoPage + 1) % TUTO_PAGES
                 tutoCounter = 0
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
         elif subMenu == Menu.OPTIONS:
             if keyPressed[Key.DOWN] and optCursor < 1:
                 optCursor += 1
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
             if keyPressed[Key.UP] and optCursor > 0:
                 optCursor -= 1
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
             if keyPressed[Key.SPACE] or keyPressed[Key.RETURN] or keyPressed[Key.LEFT] or keyPressed[Key.RIGHT]:
                 # Invert value
                 globals.opt.setValue(OPTIONS_ID[optCursor], not globals.opt.getValue(OPTIONS_ID[optCursor]))
                 globals.opt.save()
-                globals.applyChannelVolumes()
-                globals.playSFX(Sfx.VALID)
+                audio.applyChannelVolumes()
+                audio.playSFX(Sfx.VALID)
 
         elif subMenu == Menu.CONTROLS:
             if controlsCounter > 0:
@@ -1011,7 +1012,7 @@ while running:
                 if not inUse:
                     tmpKeys[ctrlCursor] = lastKeyDown
                     ctrlCursor += 1
-                    globals.playSFX(Sfx.VALID)
+                    audio.playSFX(Sfx.VALID)
                     if ctrlCursor == len(CTRL_ID):
                         # Setup all keys at once
                         for i in range(0, ctrlCursor):
@@ -1056,7 +1057,7 @@ while running:
                     globals.loadLevel()
             else:
                 if globals.toxicBlocsLeft == 0:
-                    globals.playSFX(Sfx.WOW)
+                    audio.playSFX(Sfx.WOW)
 
                 startResultPhase()
 
@@ -1075,7 +1076,7 @@ while running:
                     startEnterNamePhase()
                 else:
                     startMenuPhase()
-                    globals.playMusic(Music.INTRO, -1)
+                    audio.playMusic(Music.INTRO, -1)
 
                 # Store level for Continue
                 globals.maxLevelReached = max(globals.currLevel, globals.maxLevelReached)
@@ -1097,7 +1098,7 @@ while running:
         resultTimer += 1
         if resultTimer > 60 * 21:  # Match music duration
             startMenuPhase()
-            globals.playMusic(Music.INTRO, -1)
+            audio.playMusic(Music.INTRO, -1)
 
     elif gamePhase == Phase.ENTER_NAME:
         resultTimer += 1
@@ -1120,12 +1121,12 @@ while running:
                     yourName += ch
                 else:
                     yourName += ' '
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
         if keyPressed[Key.BACKSPACE]:
             if len(yourName) > 0:
                 yourName = yourName[:-1]
-                globals.playSFX(Sfx.VALID)
+                audio.playSFX(Sfx.VALID)
 
         if keyPressed[Key.RETURN] or quitEnterName:
             globals.lb.add(globals.penguin1.score, yourName, globals.currLevel)
