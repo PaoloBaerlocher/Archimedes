@@ -4,9 +4,7 @@
 import pygame
 import numpy
 import math
-import random
 from constants import *
-import spritesheet
 import leaderboard
 import particles
 import tuto
@@ -145,7 +143,7 @@ def startRevengeLevelPhase():
 
 def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
-
+    
     resultTimer = 0
     debugPrint('Phase.GAME_WON')
     gamePhase = Phase.GAME_WON
@@ -237,7 +235,7 @@ def displayLegend(legendIdx):
 
 
 def displayTuto():
-    global tutoCounter, currTutoPage, electrifyBorderAnim
+    global tutoCounter, currTutoPage
 
     TITLE_COLOR = (255, 255, 155)
     TEXT_COLOR = (225, 225, 255)

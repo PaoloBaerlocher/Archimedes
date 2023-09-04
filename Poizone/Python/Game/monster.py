@@ -127,7 +127,7 @@ class Monster():
 
     def getSpriteIndex(self):
         if self.isBirth():
-            return 48 + 4 * self.kind + int((32 + self.counter) / 8)
+            return 48 + 4 * self.kind + ((32 + self.counter) // 8)
 
         index = self.kind * 24
 
@@ -141,7 +141,7 @@ class Monster():
             if self.dirY < 0:  # Up
                 index += 14
 
-            return index + (int(self.dizzyCounter / 8) % 2)
+            return index + ((self.dizzyCounter // 8) % 2)
 
         if self.dirX > 0:  # Right
             index += 4
@@ -150,7 +150,7 @@ class Monster():
         if self.dirY < 0:  # Up
             index += 16
 
-        return index + (int(self.counter / 8) % 4)
+        return index + ((self.counter // 8) % 4)
 
     def setRandomPosition(self):
 
