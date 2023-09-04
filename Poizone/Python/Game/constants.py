@@ -1,35 +1,52 @@
 import pygame
-from enum import Enum
 
 DEBUG_FEATURES = False
 
 # Poizone Constants
+
 SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 256
+
 WINDOW_WIDTH = 12*20+4
 WINDOW_HEIGHT = 12*20
+
 NONE = -1
+
 LEVELS_NB = 50
-ORIGIN_X = 8            # In pixels
+
+ORIGIN_X = 8            # Game Window origin (in pixels)
 ORIGIN_Y = 8
+
 BLOC_SIZE = 20          # In pixels
 BLOCS_RANGE = 12
 BORDER_SIZE = 3 * BLOC_SIZE
+
 MONSTERS_NB = 8
+
 SCHEME_WIDTH = 64       # In bloc units
-SCHEME_SIZE = 3072      # SCHEME_WIDTH*48
+SCHEME_HEIGHT = 48
+SCHEME_SIZE = SCHEME_WIDTH*SCHEME_HEIGHT
+
 PENG_WALK_STEP = 2      # In pixels
 MONSTER_WALK_STEP = 1
 MOVBLOC_STEP = 10
+
 CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1, +1], [-1, 0]]  # 8 blocs around cyclone
-BONUS_KILL = [0, 20, 50, 100, 200]  # Bonus for killing monsters crushed with one bloc
+
+BONUS_KILL = [0, 20, 50, 100, 200]  # Bonus for killing N monsters crushed with one bloc
+
 PUSH_DURATION = 16      # Frames
+
 JOY_LIMIT = 0.8
+
 SUCCESS_GOAL = 90       # % of toxic blocs to destroy to win level
-ALPHABET_ROWS = 4       # For 'Enter your name'
+
+ALPHABET_ROWS = 4       # For 'Enter your name' screen
 ALPHABET_COLUMNS = 7
+
 OPTIONS_ID = ["SFX", "MUSIC"]
 CTRL_ID = [ "CTRL_LEFT", "CTRL_RIGHT", "CTRL_UP", "CTRL_DOWN", "CTRL_PUSH" ]
+
 TUTO_PAGES = 15
 
 class Phase:
@@ -165,7 +182,7 @@ class Sfx:
 
 # Enums
 
-class PenguinStatus(Enum):
+class PenguinStatus:
     IDLE = 0
     WALK = 1
     DIE  = 2
