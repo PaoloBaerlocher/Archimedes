@@ -9,7 +9,6 @@ SCREEN_HEIGHT = 256
 WINDOW_WIDTH = 12*20+4
 WINDOW_HEIGHT = 12*20
 NONE = -1
-LANDS_NB = 5
 LEVELS_NB = 50
 ORIGIN_X = 8            # In pixels
 ORIGIN_Y = 8
@@ -73,6 +72,7 @@ class Key:
     GAME_LEFT   = 11
     GAME_RIGHT  = 12
     GAME_PUSH   = 13
+
     NB          = 14
 
 class Land:
@@ -81,6 +81,8 @@ class Land:
     MOON     = 2
     JUNGLE   = 3
     COMPUTER = 4
+
+    NB       = 5
 
 # BLOC
 

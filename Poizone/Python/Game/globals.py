@@ -109,7 +109,7 @@ def writeBloc(indexX, indexY, blocIndex):
 
 def getAliasBlocIndex(index):
     if index == Bloc.ELECTRO:  # Electric border (2-frames animation)
-        return Bloc.ELECTRO_0 + (int(electrifyBorderAnim / 8) % 2)
+        return Bloc.ELECTRO_0 + ((electrifyBorderAnim // 8) % 2)
 
     if index == Bloc.BASIC:     # Basic bloc is different for each land
         return BASIC_BLOC[currLand]
@@ -156,7 +156,7 @@ def initLandsAndTeleporters():
     lands = []
     teleporters = []
 
-    for index in range(0, LANDS_NB):
+    for index in range(0, Land.NB):
         landsName = "Data/Lands/L" + str(index) + "_SET"
         with open(landsName, 'rb') as f:
             land = f.read()
@@ -200,7 +200,7 @@ def updateCyclones():
 
                 if turningBloc < 24 and turningBloc != Bloc.ELECTRO:
                     blocX = finalOffset % SCHEME_WIDTH
-                    blocY = int(finalOffset / SCHEME_WIDTH)
+                    blocY = finalOffset // SCHEME_WIDTH
                     writeBloc(blocX, blocY, turningBlocs[i])
                     i += 1
 
@@ -268,7 +268,7 @@ def loadLevel():
     global currLevel, currLand, scheme, blocsCount, toxicBlocsLeft, totalToxicBlocs, monsters, cyclonesList, cyclonesNb
 
     debugPrint("Load level " + str(currLevel))
-    currLand = (currLevel - 1) % LANDS_NB
+    currLand = (currLevel - 1) % Land.NB
     loadSprites()
 
     schemeName = "Data/Schemes/S" + str(currLevel)
@@ -358,7 +358,7 @@ def loadSpriteSheets():
 
     ss_levels = []
     ss_endScreens = []
-    for index in range(0, LANDS_NB):
+    for index in range(0, Land.NB):
         ss_levels.append(spritesheet.SpriteSheet('Data/level' + str(index + 1) + '.png'))
         ss_endScreens.append(spritesheet.SpriteSheet('Data/Screens/scr' + str(index + 1) + '.png'))
 
