@@ -4,6 +4,7 @@
 import pygame
 import numpy
 import math
+import ast
 from constants import *
 import leaderboard
 import particles
@@ -14,6 +15,7 @@ from cropsprite import CropSprite
 from penguin import *
 from monster import *
 import globals
+import network
 from utility import *
 
 # Global variables
@@ -32,6 +34,8 @@ currTutoPage = 0
 lastKeyDown = NONE
 
 maxLevelReached = 1  # For 'CONTINUE GAME' option
+
+nw = None
 
 # Global Functions
 
@@ -84,11 +88,13 @@ def startMenuPhase():
 def startLevelPhase():
     global gamePhase, windowFade
 
+    if globals.networkMode != NetworkMode.NONE:
+        random.seed(6666)  # Have the same seed on both sides (client & server), to avoid desync
+
     debugPrint('Phase.LEVEL')
     gamePhase = Phase.LEVEL
     globals.loadLevel()
     windowFade = 128
-
 
 def startResultPhase():
     global gamePhase, windowFade, resultTimer, bonus
@@ -143,7 +149,7 @@ def startRevengeLevelPhase():
 
 def startGameWonPhase():
     global gamePhase, resultTimer, windowFade
-    
+
     resultTimer = 0
     debugPrint('Phase.GAME_WON')
     gamePhase = Phase.GAME_WON
@@ -380,6 +386,10 @@ def displayCredits():
         displayText(font, line, TEXT_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, y)
         y += 12
 
+def displayWaitClient():
+    TITLE_COLOR = (255, 255, 155)
+
+    displayText(font, "WAITING FOR CLIENT...", TITLE_COLOR, ORIGIN_X + WINDOW_WIDTH // 2, 130, True)
 
 def displayMainMenu():
     TEXT_COLOR = (155, 155, 55)
@@ -393,11 +403,23 @@ def displayMainMenu():
         col = DEACT_COLOR if deactivated else (HIGH_COLOR if (menuCursor == i) else TEXT_COLOR)
         displayText(font, texts.MAIN_MENU[i], col, CENTER_X, 120 + 15 * i)
 
+def displayMultiMenu():
+    TEXT_COLOR = (155, 155, 55)
+    HIGH_COLOR = (255, 255, 155)
+
+    CENTER_X = ORIGIN_X + WINDOW_WIDTH // 2
+
+    for i in range(0, len(texts.MULTI_MENU)):
+        col = (HIGH_COLOR if (multiCursor == i) else TEXT_COLOR)
+        displayText(font, texts.MULTI_MENU[i], col, CENTER_X, 120 + 15 * i)
+
 
 def displayMenu():
     match subMenu:
         case Menu.MAIN:
             displayMainMenu()
+        case Menu.PLAY_MULTI:
+            displayMultiMenu()
         case Menu.LEADERBOARD:
             displayLeaderboard()
         case Menu.TUTORIAL:
@@ -408,6 +430,8 @@ def displayMenu():
             displayOptions()
         case Menu.CREDITS:
             displayCredits()
+        case Menu.WAIT_CLIENT:
+            displayWaitClient()
 
 def displayInGameMenu():
     match gamePhase:
@@ -429,14 +453,14 @@ def displayGameHud():
     HUD_WIDTH = (320 - 244 - 8)
     HUD_CENTER = 320 - HUD_WIDTH / 2
 
-    y = 110
+    y = 90
 
     # Level
     if not globals.isRevenge:
         displayText(font, "ZONE", LEVEL_COLOR, HUD_CENTER, y)
         y += 12
         displayText(font, f"{globals.currLevel:02d}", LEVEL_COLOR, HUD_CENTER, y)
-        y += 30
+        y += 20
 
     # Completion
     if not globals.isRevenge:
@@ -445,7 +469,7 @@ def displayGameHud():
         displayText(font, "GOAL", col, HUD_CENTER, y)
         y += 12
         displayText(font, f"{percent:02d} %", col, HUD_CENTER, y)
-        y += 30
+        y += 20
 
     # TIME
     displayText(font, 'TIME', WHITE, HUD_CENTER, y)
@@ -682,7 +706,7 @@ def displayEndLevel():
             if (px >= 120) and (px <= 150):  # Jump parabola
                 py -= (15 * 15 - math.pow(px - 135, 2)) / 15
 
-        p = globals.penguin1
+        p = globals.penguins[0]
         p.status = PenguinStatus.WALK
         p.posX = px
         p.posY = py
@@ -753,7 +777,7 @@ globals.loadSpriteSheets()
 globals.initPenguin()
 
 # Three dancing penguins, for result screen
-dancingPenguins = [Penguin(), Penguin(), Penguin()]
+dancingPenguins = [Penguin(Penguin.WHITE), Penguin(Penguin.WHITE), Penguin(Penguin.WHITE)]
 dancingPenguins[1].animPhase += 8
 
 # Init input
@@ -773,6 +797,7 @@ except pygame.error:
 
 startIntroPhase()
 
+# Main loop
 while running:
 
     # Time
@@ -903,10 +928,21 @@ while running:
     for i in range(0, len(keyDown)):
         keyPressed[i] = (keyDown[i] and not oldKeyDown[i])
 
-    if keyPressed[Key.PAUSE]:  # Pause game
+    # Network
+    if nw is not None:
+        if nw.failed():
+            print('Network error detected - return to main menu')
+            nw = None
+            startMenuPhase()
+        elif nw.ready():
+            otherKeyDown = nw.send(str(keyDown))
+
+    # Pause game (not available in Network mode)
+    if keyPressed[Key.PAUSE] and nw is None:
         if gamePhase == Phase.LEVEL:
             pauseGame = not pauseGame
 
+    # Escape
     if keyPressed[Key.ESCAPE]:
         if gamePhase == Phase.LEVEL:
             startIntroPhase()
@@ -931,7 +967,7 @@ while running:
 
         # Main Menu navigation
         if subMenu == Menu.MAIN:
-            if keyPressed[Key.DOWN] and menuCursor < 6:
+            if keyPressed[Key.DOWN] and menuCursor < Menu.NB-1:
                 menuCursor += 1
                 while isMenuDeactivated(menuCursor):
                     menuCursor += 1
@@ -945,6 +981,7 @@ while running:
 
             if keyPressed[Key.SPACE] or keyPressed[Key.RETURN]:
                 if menuCursor == Menu.PLAY or menuCursor == Menu.CONTINUE:
+                    globals.networkMode = NetworkMode.NONE
                     globals.resetGame()
 
                     if menuCursor == Menu.CONTINUE:
@@ -954,20 +991,53 @@ while running:
                 else:
                     subMenu = menuCursor
 
-                    if subMenu == Menu.OPTIONS:
+                    if subMenu == Menu.PLAY_MULTI:
+                        multiCursor = 0
+                    elif subMenu == Menu.OPTIONS:
                         optCursor = 0
-                    if subMenu == Menu.CONTROLS:
+                    elif subMenu == Menu.CONTROLS:
                         controlsCounter = 0
                         ctrlCursor = 0
                         lastKeyDown = NONE  # To avoid using unwanted SPACE key event
                         tmpKeys = []
                         for i in range(0, len(CTRL_ID)):
                             tmpKeys.append(globals.opt.getValue((CTRL_ID[i])))
-                    if subMenu == Menu.TUTORIAL:
+                    elif subMenu == Menu.TUTORIAL:
                         tutoCounter = 0
                         currTutoPage = 0
 
                     audio.playSFX(Sfx.VALID)
+
+        elif subMenu == Menu.PLAY_MULTI:
+            if keyPressed[Key.DOWN] and multiCursor < 1:
+                multiCursor += 1
+                audio.playSFX(Sfx.VALID)
+
+            if keyPressed[Key.UP] and multiCursor > 0:
+                multiCursor -= 1
+                audio.playSFX(Sfx.VALID)
+
+            if keyPressed[Key.SPACE]:
+                audio.playSFX(Sfx.VALID)
+                globals.networkMode = NetworkMode.CLIENT if multiCursor == 0 else NetworkMode.SERVER
+                nw = network.Network()
+                if nw.failed():
+                    nw = None
+                    print("Network client failed. Try again.")
+                    audio.playSFX(Sfx.OH_NO)
+                else:
+                    if globals.networkMode == NetworkMode.CLIENT:
+                        startLevelPhase()
+                    else:
+                        subMenu = Menu.WAIT_CLIENT
+
+        elif subMenu == Menu.WAIT_CLIENT:
+                if nw.failed():
+                    nw = None
+                    print("Network server failed. Try again.")
+                    audio.playSFX(Sfx.OH_NO)
+                if nw.server.accepted():
+                    startLevelPhase()
 
         elif subMenu == Menu.TUTORIAL:
             if keyPressed[Key.LEFT]:
@@ -1038,11 +1108,21 @@ while running:
         # Update blocs around cyclones
         globals.updateCyclones()
 
-        # Update Penguin
-        globals.penguin1.update(keyDown, globals.monsters)
+        # Update Penguin(s)
+        myPenguin = Penguin.YELLOW if globals.networkMode == NetworkMode.SERVER else Penguin.WHITE
+        globals.penguins[myPenguin].update(keyDown, globals.monsters, True)
+
+        if globals.networkMode != NetworkMode.NONE:
+            if len(otherKeyDown) > 0:
+                globals.penguins[1-myPenguin].update(otherKeyDown, globals.monsters, False)
+            else:
+                print('otherKeyDown is empty')
 
         # Update Monsters
         globals.updateMonsters()
+
+        ## Update electric border status
+        globals.updateElectricBorder()
 
         # Check end of game
         if (globals.gameTimer <= 0.0) or ((globals.toxicBlocsLeft == 0) and not globals.isRevenge):
@@ -1065,13 +1145,13 @@ while running:
         if resultTimer > 60 * 8:
             percent = globals.getGoalPercent()
             gameOver = (percent < SUCCESS_GOAL)
-            globals.penguin1.score += bonus  # Take bonus into account
-            globals.penguin1.addPointsToScore()
+            globals.penguins[0].score += bonus  # Take bonus into account
+            globals.penguins[0].addPointsToScore()
 
             debugPrint(f"percent: {percent} gameOver : {gameOver}")
 
             if gameOver:
-                if globals.lb.canEnter(globals.penguin1.score):
+                if globals.lb.canEnter(globals.penguins[0].score):
                     startEnterNamePhase()
                 else:
                     startMenuPhase()
@@ -1128,7 +1208,7 @@ while running:
                 audio.playSFX(Sfx.VALID)
 
         if keyPressed[Key.RETURN] or quitEnterName:
-            globals.lb.add(globals.penguin1.score, yourName, globals.currLevel)
+            globals.lb.add(globals.penguins[myPenguin].score, yourName, globals.currLevel)
             globals.lb.save()  # Add new entry and save leaderboard
             startMenuPhase()
 
@@ -1172,14 +1252,18 @@ while running:
             displayBGMap(globals.baseX, globals.baseY)
 
             # Display Penguin
-            globals.penguin1.display(screen, globals.baseX, globals.baseY)
+            globals.penguins[0].display(screen, globals.baseX, globals.baseY)
+            if globals.networkMode != NetworkMode.NONE:
+                globals.penguins[1].display(screen, globals.baseX, globals.baseY)
 
             # Display Monsters
             for m in globals.monsters:
                 m.display(screen, globals.baseX, globals.baseY)
 
             # Display moving bloc and bonus, if any
-            globals.penguin1.displayBloc(screen, globals.baseX, globals.baseY)
+            globals.penguins[0].displayBloc(screen, globals.baseX, globals.baseY)
+            if globals.networkMode != NetworkMode.NONE:
+                globals.penguins[1].displayBloc(screen, globals.baseX, globals.baseY)
 
             applyFade()
 
@@ -1190,7 +1274,9 @@ while running:
             displayGameHud()
 
     # Display Player Score
-    displayScore(globals.penguin1.score, 256, 45)
+    displayScore(globals.penguins[0].score, 256, 45)
+    if globals.networkMode != NetworkMode.NONE:
+        displayScore(globals.penguins[1].score, 256, 188)
 
     # Display panel (PAUSE)
     displayPanel()

@@ -27,6 +27,7 @@ electrifyBorder = False
 electrifyBorderAnim = 0
 blocsCount = []
 toxicBlocsLeft = 0
+diamondsAssembled = False
 
 # For cyclones
 cyclonesPace = 0
@@ -42,22 +43,27 @@ occupyTable = []    # Where monsters are allowed to go or not
 lands = []
 teleporters = []
 
-penguin1 = None
+penguins = None
+
+networkMode = NetworkMode.NONE
 
 # Init
 
 def initPenguin():
-    global penguin1
+    global penguins
 
-    # Create player's penguin
-    penguin1 = penguin.Penguin()
+    penguins = []
+    # Create player's penguin and network penguin
+    penguins.append(penguin.Penguin(penguin.Penguin.WHITE))
+    penguins.append(penguin.Penguin(penguin.Penguin.YELLOW))
 
 
 def resetGame():
-    global currLevel, penguin1
+    global currLevel, penguins
 
     currLevel = 1
-    penguin1.score = 0
+    penguins[0].score = 0
+    penguins[1].score = 0
 
 
 def loadSettings():
@@ -133,6 +139,14 @@ def setElectrifyBorder(newStatus):
         audio.stopSFX(Sfx.ELEC)
 
     electrifyBorder = newStatus
+
+
+def updateElectricBorder():
+    borderStatus = False
+    for p in penguins:
+        borderStatus = borderStatus or p.pushElectricBorder
+
+    setElectrifyBorder(borderStatus)
 
 # Setup table for monsters
 def initOccupyTable():
@@ -218,11 +232,12 @@ def getGoalPercent():
 
 
 def resetLevel():
-    global baseX, baseY, penguin1, isRevenge, gameTimer
+    global baseX, baseY, penguins, isRevenge, diamondsAssembled, gameTimer
 
     baseX = 18 * BLOC_SIZE + 8
     baseY = 18 * BLOC_SIZE + 8
-    penguin1.reset()
+    for p in penguins:
+        p.reset()
     setElectrifyBorder(False)
 
     # Time available for finishing this level
@@ -236,13 +251,14 @@ def resetLevel():
     gameTimer += 0.99  # To see the first full second, initially
 
     isRevenge = False
+    diamondsAssembled = False
 
     audio.playMusic(Music.PLAY_0 + currLand, -1)
     audio.playSFX(Sfx.READY)
 
 
 def resetRevenge(revenge):
-    global baseX, baseY, penguin1, isRevenge, gameTimer
+    global baseX, baseY, penguins, isRevenge, gameTimer
 
     isRevenge = True
 
@@ -251,13 +267,14 @@ def resetRevenge(revenge):
 
     baseX = (12 * mapX) * BLOC_SIZE
     baseY = (1 + 12 * mapY) * BLOC_SIZE
-    penguin1.reset()
 
-    # Overrides for Revenge mode
-    penguin1.posX = baseX + 6 * BLOC_SIZE  # Center of revenge map
-    penguin1.posY = baseY + 6 * BLOC_SIZE
+    for p in penguins:
+        p.reset()
 
-    penguin1.ghost = 10000  # Permanent ghost in Revenge mode
+        #Overrides for Revenge mode
+        p.posX = baseX + 6 * BLOC_SIZE  # Center of revenge map
+        p.posY = baseY + 6 * BLOC_SIZE
+        p.ghost = 10000  # Permanent ghost in Revenge mode
 
     gameTimer = 30.99
 

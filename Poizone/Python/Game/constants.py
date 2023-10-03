@@ -36,6 +36,7 @@ CYCLONE_OFFSETS = [[-1, -1], [0, -1], [+1, -1], [+1, 0], [+1, +1], [0, +1], [-1,
 BONUS_KILL = [0, 20, 50, 100, 200]  # Bonus for killing N monsters crushed with one bloc
 
 PUSH_DURATION = 16      # Frames
+DIE_DURATION = 128      # Frames
 
 JOY_LIMIT = 0.8
 
@@ -63,12 +64,16 @@ class Phase:
 class Menu:
     MAIN       = -1
     PLAY       = 0
-    CONTINUE   = 1
-    LEADERBOARD= 2     # Submenus
-    CONTROLS   = 3
-    TUTORIAL   = 4
-    OPTIONS    = 5
-    CREDITS    = 6
+    PLAY_MULTI = 1
+    CONTINUE   = 2
+    LEADERBOARD= 3     # Submenus
+    CONTROLS   = 4
+    TUTORIAL   = 5
+    OPTIONS    = 6
+    CREDITS    = 7
+    WAIT_CLIENT= 8
+
+    NB         = 9
 
 class Legend:
     RIGHT    = 0
@@ -183,10 +188,16 @@ class Sfx:
 # Enums
 
 class PenguinStatus:
-    IDLE = 0
-    WALK = 1
-    DIE  = 2
-    PUSH = 3
+    IDLE     = 0
+    WALK     = 1
+    DIE      = 2
+    PUSH     = 3
+    ZAPPED   = 4
+
+class NetworkMode:
+    NONE   = 0
+    CLIENT = 1
+    SERVER = 2
 
 # Controls
 

@@ -2,12 +2,18 @@
 
 MAIN_MENU = [
     "PLAY (Single Player)",
+    "LOCAL NETWORK PLAY (Two Players)",
     "CONTINUE",
     "HIGH SCORES",
     "KEYBOARD CONTROLS",
     "TUTORIAL",
     "OPTIONS",
     "CREDITS"
+]
+
+MULTI_MENU = [
+    "Client",
+    "Server"
 ]
 
 OPTIONS = [ "SOUND FX", "MUSIC" ]

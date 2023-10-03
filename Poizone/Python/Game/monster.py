@@ -49,8 +49,6 @@ class Monster():
 
     def update(self):
 
-        penguin = globals.penguin1
-
         self.counter += 1
 
         if self.isAlive():
@@ -69,17 +67,18 @@ class Monster():
                     self.dizzyCounter = 4 * 60
                     debugPrint('Electrify monster')
 
-            if self.isAlive() and (penguin.movBlocWhat != NONE):
-                deltaX = abs(penguin.movBlocPosX - self.posX)
-                deltaY = abs(penguin.movBlocPosY - self.posY)
-                if (deltaX <= 10) and (deltaY <= 10):
-                    debugPrint('Kill monster')
-                    self.killAndRebirth()
-                    audio.playSFX(Sfx.COLL)
-                    penguin.movMonsters += 1
-                elif (deltaX <= 12) and (deltaY <= 12):
-                    debugPrint('Dizzy monster by bloc collision')
-                    self.dizzyCounter = 4 * 60
+            for pen in globals.penguins:
+                if self.isAlive() and (pen.movBlocWhat != NONE):
+                    deltaX = abs(pen.movBlocPosX - self.posX)
+                    deltaY = abs(pen.movBlocPosY - self.posY)
+                    if (deltaX <= 10) and (deltaY <= 10):
+                        debugPrint('Kill monster')
+                        self.killAndRebirth()
+                        audio.playSFX(Sfx.COLL)
+                        pen.movMonsters += 1
+                    elif (deltaX <= 12) and (deltaY <= 12):
+                        debugPrint('Dizzy monster by bloc collision')
+                        self.dizzyCounter = 4 * 60
 
             if self.isAlive() and not self.isDizzy() and onBlock:
                 found = False
@@ -87,6 +86,10 @@ class Monster():
                     # Choose new direction
 
                     if self.isBaddie and random.randrange(2) == 0:
+
+                        # Select penguin (TODO)
+                        penguin = globals.penguins[0]
+
                         # Target Penguin
                         dirX = penguin.posX - self.posX
                         dirY = penguin.posY - self.posY
@@ -167,7 +170,7 @@ class Monster():
             if globals.occupyTable[x + y * SCHEME_WIDTH] != 0:  # Already occupied
                 continue
 
-            if (abs(x - globals.penguin1.posX // BLOC_SIZE) < 3) or (abs(y - globals.penguin1.posY // BLOC_SIZE) < 3):
+            if (abs(x - globals.penguins[0].posX // BLOC_SIZE) < 3) or (abs(y - globals.penguins[0].posY // BLOC_SIZE) < 3):
                 continue  # Penguin too close ?
             if globals.scheme[x + y * SCHEME_WIDTH] < 24:  # Cell already occupied ?
                 continue

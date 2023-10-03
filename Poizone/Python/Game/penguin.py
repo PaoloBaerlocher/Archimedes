@@ -5,10 +5,16 @@ from cropsprite import CropSprite
 import audio
 
 class Penguin():
-    def __init__(self):
+
+    # Penguin types
+    WHITE  = 0
+    YELLOW = 1
+
+    def __init__(self, penguinType):
         self.reset()
         self.score = 0
-        self.points = 0  # Will be gradually added to score
+        self.points = 0                     # Will be gradually added to score
+        self.penguinType = penguinType      # White or Yellow penguin ?
 
     def reset(self):
         self.posX = 24 * BLOC_SIZE  # Center of map
@@ -22,7 +28,11 @@ class Penguin():
         self.invert = False
         self.ghost = 0  # Invincible if > 0
         self.canTeleport = True
-        self.diamondsAssembled = False
+        self.pushElectricBorder = False
+
+        # 2-players mode
+        if globals.networkMode != NetworkMode.NONE:
+            self.posX += BLOC_SIZE * (-1 if self.penguinType == Penguin.WHITE else 1)
 
         self.movBlocWhat = NONE  # Which bloc (NONE : no bloc)
         self.movBlocPosX = 0
@@ -65,7 +75,7 @@ class Penguin():
             self.setStatus(PenguinStatus.PUSH)
             self.pushCounter = PUSH_DURATION
             if bloc == Bloc.ELECTRO:
-                globals.setElectrifyBorder(True)
+                self.pushElectricBorder = True
             elif bloc < 24:
                 nextBloc = self.getBlocOnDir(self.dirX * 2, self.dirY * 2)
                 if nextBloc >= 24:
@@ -174,7 +184,16 @@ class Penguin():
         else:
             audio.playSFX(Sfx.COLL)
 
-        globals.setElectrifyBorder(False)
+        self.pushElectricBorder = False
+
+    def zap(self):        # Penguin crushed by moving block
+        self.animPhase = 0
+        self.setStatus(PenguinStatus.ZAPPED)
+        self.invert = False
+
+        audio.playSFX(Sfx.OH_NO)
+
+        self.pushElectricBorder = False
 
     def checkSquareDiamond(self, bx, by):
         if globals.getBloc(bx, by - 1) == Bloc.DIAMOND:
@@ -201,7 +220,22 @@ class Penguin():
         if (globals.occupyTable[blocIndex] & 0b10) != 0:
             return False
 
-        return self.getBlocOnDir(dirX, dirY) >= 24
+        if self.getBlocOnDir(dirX, dirY) < 24:
+            return False
+
+        # Check if other penguin is walking to the same target block
+        for p in globals.penguins:
+            if p != self and p.status in [PenguinStatus.IDLE, PenguinStatus.DIE, PenguinStatus.PUSH]:
+                otherBlocIndex = (p.posX // BLOC_SIZE) + (p.posY // BLOC_SIZE) * SCHEME_WIDTH
+                if blocIndex == otherBlocIndex:
+                    return False
+
+            if p != self and p.status == PenguinStatus.WALK:
+                otherBlocIndex = (p.posX // BLOC_SIZE + p.dirX) + (p.posY // BLOC_SIZE + p.dirY) * SCHEME_WIDTH
+                if blocIndex == otherBlocIndex:
+                    return False
+
+        return True
 
     def getNextTeleportIndex(self):  # Or NONE
         penguinIndex = self.posX // BLOC_SIZE + (self.posY // BLOC_SIZE) * SCHEME_WIDTH
@@ -220,7 +254,10 @@ class Penguin():
                         return nextIndex
         return NONE
 
-    def getPenguinAnimOffset(self):
+    def getPenguinAnimOffset(self):     # Check animations.py for details
+
+        base = 0 if self.penguinType == Penguin.WHITE else 36
+
         dir = 3  # Down
         if self.dirX <= -1:
             dir = 0  # Left
@@ -230,19 +267,19 @@ class Penguin():
             dir = 2  # Up
 
         if self.status == PenguinStatus.IDLE:
-            return 4 * dir
+            return base + 4 * dir
         if self.status == PenguinStatus.WALK:
-            return 4 * dir + (int(self.animPhase / 8) % 4)
+            return base + 4 * dir + (int(self.animPhase / 8) % 4)
         if self.status == PenguinStatus.DIE:
             if self.animPhase < 32:
-                return 16 + 4 * dir + int(self.animPhase / 16)
-            return 16 + 4 * dir + 2 + (int(self.animPhase / 8) % 2)  # End loop
+                return base + 16 + 4 * dir + int(self.animPhase / 16)
+            return base + 16 + 4 * dir + 2 + (int(self.animPhase / 8) % 2)  # End loop
         if self.status == PenguinStatus.PUSH:
-            return 32 + dir
+            return base + 32 + dir
         return 0
 
     def display(self, screen, baseX, baseY):
-        if (self.ghost / 2) % 8 <= 6:
+        if (self.status != PenguinStatus.ZAPPED) and (self.ghost / 2) % 8 <= 6:
             c = CropSprite(self.posX - baseX, self.posY - baseY)
             blitGameSprite(screen, globals.penguinSprites[self.anim], c)
 
@@ -273,7 +310,7 @@ class Penguin():
                 index = pygame.math.clamp(self.movMonsters - 1, 0, 3)
                 blitGameSprite(screen, globals.penguinSprites[72 + index], c)
 
-    def update(self, keyDown, monsters):
+    def update(self, keyDown, monsters, mainPenguin):
         global scheme
 
         # Update score by increments of 10 points
@@ -289,7 +326,7 @@ class Penguin():
         if askMove:
             self.canTeleport = True
 
-        if self.status != PenguinStatus.DIE:
+        if self.status != PenguinStatus.DIE and self.status != PenguinStatus.ZAPPED:
             onBlock = self.isOnBlock()
 
             if (self.posY % BLOC_SIZE) == 0:  # Cannot change X direction if not aligned on bloc vertically
@@ -319,7 +356,7 @@ class Penguin():
                         self.setStatus(PenguinStatus.IDLE)
 
             if not keyDown[Key.GAME_PUSH]:
-                globals.setElectrifyBorder(False)
+                self.pushElectricBorder = False
                 self.pushCounter = 0
             elif askMove and onBlock:
                 # Check if there is a bloc to push
@@ -327,11 +364,11 @@ class Penguin():
                     self.pushBloc()
                 elif self.pushCounter == 0:  # Stop pushing
                     self.setStatus(PenguinStatus.IDLE)
-                    globals.setElectrifyBorder(False)
+                    self.pushElectricBorder = False
 
         if (self.status == PenguinStatus.PUSH) and (not askMove or not keyDown[Key.GAME_PUSH]):
             self.setStatus(PenguinStatus.IDLE)
-            globals.setElectrifyBorder(False)
+            self.pushElectricBorder = False
             self.pushCounter = 0
 
         if (self.status == PenguinStatus.IDLE) and (self.dirX != 0 or self.dirY != 0) and askMove:
@@ -347,20 +384,25 @@ class Penguin():
                 elif not self.blocIsWalkable(self.dirX, self.dirY):
                     self.setStatus(PenguinStatus.IDLE)
 
-        if (self.status == PenguinStatus.DIE) and (self.animPhase > 128):  # Re-birth
+        if (self.status in [PenguinStatus.DIE, PenguinStatus.ZAPPED]) and (self.animPhase >= DIE_DURATION):
+            # Re-birth
             self.setStatus(PenguinStatus.IDLE)
             self.animPhase = 0
             self.ghost = 60
             # Snap to grid
             self.posX = ((self.posX + BLOC_SIZE // 2) // BLOC_SIZE) * BLOC_SIZE
             self.posY = ((self.posY + BLOC_SIZE // 2) // BLOC_SIZE) * BLOC_SIZE
+            # Find a free cell to place the penguin
+            while not self.blocIsWalkable(0, 0):
+                self.posX = (self.posX + BLOC_SIZE) % (SCHEME_WIDTH*BLOC_SIZE)
+                if self.posX == 0:
+                    self.posY = (self.posY + BLOC_SIZE) % (SCHEME_HEIGHT*BLOC_SIZE)
 
         self.anim = self.getPenguinAnimOffset()
         self.animPhase += 1
 
-        # Move camera to follow penguin, and clamp its position
-
-        if not globals.isRevenge:
+        # Move camera to follow main penguin, and clamp its position
+        if mainPenguin and not globals.isRevenge:
             offsetX = self.posX + 8 - globals.baseX - (BLOCS_RANGE * BLOC_SIZE) // 2
             if offsetX < -PENG_WALK_STEP:
                 globals.baseX -= PENG_WALK_STEP * 2  # Fast move speed
@@ -445,11 +487,11 @@ class Penguin():
                                     break
 
                         if self.movBlocWhat == Bloc.DIAMOND:
-                            if not self.diamondsAssembled and self.checkSquareDiamond(bx, by):
+                            if not globals.diamondsAssembled and self.checkSquareDiamond(bx, by):
                                 debugPrint('Square Diamond assembled')
                                 audio.playSFX(Sfx.DIAMOND)
                                 self.addScore(500)
-                                self.diamondsAssembled = True  # This bonus can be obtained only once per level
+                                globals.diamondsAssembled = True  # This bonus can be obtained only once per level
                     else:
                         points = globals.destroyBloc(self.movBlocWhat)
                         self.addScore(points)
@@ -472,11 +514,21 @@ class Penguin():
             self.ghost -= 1
 
         # If penguin can die, check collision with alive monsters
-        if self.status != PenguinStatus.DIE and self.ghost == 0:
+        if (self.status != PenguinStatus.DIE) and (self.status != PenguinStatus.ZAPPED) and (self.ghost == 0):
             for m in monsters:
                 if m.isAlive() and (abs(m.posX - self.posX) <= 8) and (abs(m.posY - self.posY) <= 8):
                     self.die()
                     break
+
+        if self.status != PenguinStatus.ZAPPED:
+            for pen in globals.penguins:
+                if pen != self and pen.movBlocWhat != NONE:
+                    deltaX = abs(pen.movBlocPosX - self.posX)
+                    deltaY = abs(pen.movBlocPosY - self.posY)
+                    if (deltaX <= 10) and (deltaY <= 10):
+                        debugPrint('Zap penguin')
+                        self.zap()
+                        break
 
     def addScore(self, points):
         self.points += points
