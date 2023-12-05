@@ -18,6 +18,9 @@ Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" fl
 ![Story](/assets/poizone/story.jpg)
 ![Manual](/assets/poizone/man.jpg)
 ![Review](/assets/poizone/POIZONE_REVIEW.jpeg)
+![Review](/assets/poizone/PoizoneReview_AcornUser_7_1992.jpg)
+![Advert](/assets/poizone/eternaAdvert_AcornUser_7_1992.jpg)
+
 
 # ALDEBARAN ASSETS
 
