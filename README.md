@@ -10,7 +10,7 @@ Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" fl
 
 ![Disks](/assets/disks.jpg)
 
-# POIZONE ASSETS
+# POIZONE ASSETS & REVIEWS
 
 ![Front](/assets/poizone/Front.jpg)
 ![Back](/assets/poizone/Back.jpg)
@@ -22,7 +22,11 @@ Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" fl
 ![Advert](/assets/poizone/eternaAdvert_AcornUser_7_1992.jpg)
 
 
-# ALDEBARAN ASSETS
+# ALDEBARAN ASSETS & REVIEWS
 
 ![Screen](/assets/aldebaran/Aldebaran.png)
+![Screen](/assets/aldebaran/Advert.jpg)
+![Review](/assets/aldebaran/AcornUser1992.jpg)
 ![Review](/assets/aldebaran/AcornUserReview.png)
+![Review](/assets/aldebaran/AcornComputingReview_03_1993.jpg)
+![Review](/assets/aldebaran/ArchimedesComputerFaszination_02_1993.jpg)
