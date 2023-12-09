@@ -26,7 +26,9 @@ Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" fl
 
 ![Screen](/assets/aldebaran/Aldebaran.png)
 ![Screen](/assets/aldebaran/Advert.jpg)
+![Advert](/assets/aldebaran/AcornUser_Nov93_Advert.jpg)
 ![Review](/assets/aldebaran/AcornUser1992.jpg)
 ![Review](/assets/aldebaran/AcornUserReview.png)
 ![Review](/assets/aldebaran/AcornComputingReview_03_1993.jpg)
+![Review](/assets/aldebaran/AcornUserGamesReview1993_Top100Games.jpg)
 ![Review](/assets/aldebaran/ArchimedesComputerFaszination_02_1993.jpg)
