@@ -14,6 +14,8 @@ Full-page advert
 
 **Source:** Acorn User (12-1992)
 
+**Credits for Cover Photography:** George Snow
+
 ---
 ![Review](AcornUser_GameShow_12_1992.jpg)
 
