@@ -7,7 +7,7 @@ In-game screenshot
 ---
 ![Advert](Advert.jpg)
 
-Advert
+Full-page advert
 
 ---
 ![Advert](AcornUser_Nov93_Advert.jpg)
@@ -22,7 +22,7 @@ Advert
 ---
 ![Review](AcornUserReview.png)
 
-**Source:** Acorn User (12-1992)
+**Source:** Acorn User (1-1993)
 
 ---
 ![Review](AcornComputingReview_03_1993.jpg)
@@ -57,4 +57,4 @@ Advert
 ---
 ![Advert](Aldebaran_flyer_Evolution_Trading.jpg)
 
-**Source:** Provided by Marc Andreoli
+**Source:** Flyer provided by Marc Andreoli
