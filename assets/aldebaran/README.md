@@ -52,6 +52,11 @@ Full-page advert
 **Source:** Acorn Computing (?)
 
 ---
+![News](RiscUser_News.jpg)
+
+**Source:** Risc User (4-1993)
+
+---
 ![Review](ArchimedesComputerFaszination_Inhalt_02_1993.jpg)
 
 **Source:** Archimedes Computer Faszination (2-1993)
