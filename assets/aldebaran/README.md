@@ -10,11 +10,6 @@ In-game screenshot
 Full-page advert
 
 ---
-![Advert](AcornUser_Nov93_Advert.jpg)
-
-**Source:** Acorn User (11-1993)
-
----
 ![Review](AcornUser_GameShow_12_1992.jpg)
 
 **Source:** Acorn User (12-1992)
@@ -28,6 +23,11 @@ Full-page advert
 ![Review](AcornUserReview.png)
 
 **Source:** Acorn User (1-1993)
+
+---
+![Advert](AcornUser_Nov93_Advert.jpg)
+
+**Source:** Acorn User (11-1993)
 
 ---
 ![Review](AcornUserGamesReview1993_Top100Games.jpg)
