@@ -80,3 +80,8 @@ Full-page advert
 ![Advert](Aldebaran_flyer_Evolution_Trading.jpg)
 
 **Source:** Flyer provided by Marc Andreoli
+
+---
+![AcornUserShow](AcornUserShow_EvolutionComputer.jpg)
+
+**Source:** https://chrisacorns.computinghistory.org.uk/docs/Acorn/Shows/AcornUser1992Show.pdf
