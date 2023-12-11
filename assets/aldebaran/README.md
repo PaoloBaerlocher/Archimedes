@@ -10,12 +10,12 @@ In-game screenshot
 Full-page advert
 
 ---
-![Review](AcornUser_GameShow_12_1992.jpg)
+![Review](AcornUser1992.jpg)
 
 **Source:** Acorn User (12-1992)
 
 ---
-![Review](AcornUser1992.jpg)
+![Review](AcornUser_GameShow_12_1992.jpg)
 
 **Source:** Acorn User (12-1992)
 
