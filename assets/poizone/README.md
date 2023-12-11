@@ -29,4 +29,4 @@
 ---
 ![CNJV](CNJV_2_12_2023.jpg)
 
-**Source:** Colloque du CNJV (Conservatoire National du Jeu Vidéo à Parisà, au Forum des Images (2-12-2023)
+**Source:** Colloque du [CNJV](https://www.cnjv.fr/colloque/) (Conservatoire National du Jeu Vidéo à Paris), au Forum des Images (2-12-2023)
