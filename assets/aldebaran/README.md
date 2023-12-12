@@ -1,8 +1,13 @@
 # ALDEBARAN ASSETS (REVIEWS, ADVERTS, ...)
 
-![Screen](Aldebaran.png)
+![Screen](Screenshots/RedPlanet.png)
 
 In-game screenshot
+
+---
+![Box](CDCase_Back.jpg)
+
+CD Case (Back)
 
 ---
 ![Advert](Advert.jpg)
