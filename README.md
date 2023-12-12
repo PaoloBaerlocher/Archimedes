@@ -6,18 +6,16 @@
     - Graphics: _Marc Andreoli_
     - Music: _Fabrice Hautecloque_
     - Publisher: _Eterna_
-
-Poizone [assets](/assets/poizone/README.md).
-
-Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)).
+  - [Assets](/assets/poizone/README.md).
+  - Notes:
+    - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)).
 
 - **ALDEBARAN** (1992)
   - Credits:
     - Code: _Paolo Baerlocher_
     - Graphics: _Marc Andreoli_
     - Publisher: _Evolution Trading AG_
-
-Aldebaran [assets](/assets/aldebaran/README.md).
+  - [Assets](/assets/aldebaran/README.md).
 
 ---
 
