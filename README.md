@@ -8,6 +8,8 @@
 
 Poizone [assets](/assets/poizone/README.md).
 
+The game has been ported to _Windows PC_ in 2023 (freely available on [itch.io](poizone.itch.io/poizone)).
+
 - **ALDEBARAN** (1992)
   - Code: _Paolo Baerlocher_
   - Graphics: _Marc Andreoli_
