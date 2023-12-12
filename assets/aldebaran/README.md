@@ -5,6 +5,12 @@
 In-game screenshot
 
 ---
+![Box](AldebaranFront.jpg)
+
+---
+![Box](AldebaranBack.jpg)
+
+---
 ![Advert](Advert.jpg)
 
 Full-page advert
