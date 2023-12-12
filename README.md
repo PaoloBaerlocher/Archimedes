@@ -6,6 +6,7 @@
     - Graphics: _Marc Andreoli_
     - Music: _Fabrice Hautecloque_
     - Publisher: _Eterna_
+    - Thanks to: _Fabrice Mercier_ for the Tracker module, _John Kortink_ for the Cruncher module
   - [Assets and Reviews](/assets/poizone/README.md)
   - Notes:
     - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)).
