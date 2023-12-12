@@ -1,5 +1,15 @@
 # ALDEBARAN MANUAL
 
+![Box](AldebaranFront.jpg)
+
+Manual (front)
+
+---
+![Box](AldebaranBack.jpg)
+
+Manual (back)
+
+---
 ![P1](P1.jpg)
 
 ---
