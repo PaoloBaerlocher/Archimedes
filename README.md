@@ -15,7 +15,9 @@
     - Code: _Paolo Baerlocher_
     - Graphics: _Marc Andreoli_
     - Publisher: _Evolution Trading AG_
+    - Full credits available in the [manual](/assets/aldebaran/MANUAL/P3.jpg).
   - [Assets and Reviews](/assets/aldebaran/README.md)
+  - [Manual](/assets/aldebaran/MANUAL/README.md).
 
 - **DEMOS**
   - Technical demos related to the development of **Aldebaran**
