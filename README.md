@@ -6,7 +6,7 @@
     - Graphics: _Marc Andreoli_
     - Music: _Fabrice Hautecloque_
     - Publisher: _Eterna_
-  - [Assets](/assets/poizone/README.md).
+  - [Assets and Reviews](/assets/poizone/README.md)
   - Notes:
     - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)).
 
@@ -15,7 +15,7 @@
     - Code: _Paolo Baerlocher_
     - Graphics: _Marc Andreoli_
     - Publisher: _Evolution Trading AG_
-  - [Assets](/assets/aldebaran/README.md).
+  - [Assets and Reviews](/assets/aldebaran/README.md)
 
 ---
 
