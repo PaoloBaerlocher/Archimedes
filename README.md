@@ -17,6 +17,10 @@
     - Publisher: _Evolution Trading AG_
   - [Assets and Reviews](/assets/aldebaran/README.md)
 
+- **DEMOS**
+  - Technical demos related to the development of **Aldebaran**
+  - [Assets](/assets/demos/README.md)
+  
 ---
 
 Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" floppy discs, with the "Pauline" tool.
