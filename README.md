@@ -17,6 +17,7 @@
     - Graphics: _Marc Andreoli_
     - Managing: _Fred Schaerlig_
     - Publisher: _Evolution Trading AG_
+    - Thanks to: _Fabrice Mercier_ for the Tracker module, _John Kortink_ for the Cruncher module
     - Full credits available in the [manual](/assets/aldebaran/MANUAL/P3.jpg).
   - [Assets and Reviews](/assets/aldebaran/README.md)
   - [Manual](/assets/aldebaran/MANUAL/README.md)
