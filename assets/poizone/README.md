@@ -29,4 +29,4 @@
 ---
 ![CNJV](CNJV_2_12_2023.jpg)
 
-**Source:** Colloque du [CNJV](https://www.cnjv.fr/colloque/) (Conservatoire National du Jeu Vidéo), Forum des Images à Paris (2-12-2023)
+**Source:** Vème colloque du [CNJV](https://www.cnjv.fr/colloque/) (Conservatoire National du Jeu Vidéo), Forum des Images, Paris (2-12-2023). The game has been mentioned by Magalie Vetter of [SVGA](www.svga.ch), in the panel called _"Sauvegarder le code… Enjeux et solutions ?"_, as a example of source code preservation.
