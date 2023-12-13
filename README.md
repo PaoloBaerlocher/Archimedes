@@ -1,4 +1,4 @@
-# Sources and related assets of my Acorn Archimedes games: POIZONE and ALDEBARAN.
+# Sources and assets of my Acorn Archimedes games: POIZONE and ALDEBARAN.
 
 - **POIZONE** (1991)
   - Credits:
@@ -8,6 +8,7 @@
     - Publisher: _Eterna_
     - Thanks to: _Fabrice Mercier_ for the Tracker module, _John Kortink_ for the Cruncher module
   - [Assets and Reviews](/assets/poizone/README.md)
+  - [Sources (single file)](/Poizone/POIZONE_10.txt)
   - Notes:
     - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)).
 
@@ -21,6 +22,7 @@
     - Full credits available in the [manual](/assets/aldebaran/MANUAL/P3.jpg).
   - [Assets and Reviews](/assets/aldebaran/README.md)
   - [Manual](/assets/aldebaran/MANUAL/README.md)
+  - [Sources](/Aldebaran/MASTER)
 
 - **DEMOS**
   - Technical demos related to the development of **Aldebaran**
@@ -28,6 +30,6 @@
   
 ---
 
-Thanks to Robin FRANCOIS for retrieving the source files from my age-old 3.5" floppy discs, with the "Pauline" tool.
+Thanks to _Robin François_ ([SVGA](https://svga.com)) for retrieving the source files from my age-old 3.5" floppy discs, with the "Pauline" tool.
 
 ![Disks](/assets/disks.jpg)
