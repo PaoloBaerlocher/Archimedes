@@ -27,6 +27,11 @@ Full-page advert
 **Source:** Acorn User (12-1992)
 
 ---
+![Review](AcornUser1992_GamesSupplement.jpg)
+
+**Source:** Acorn User - Games Supplement (1-1993)
+
+---
 ![Review](AcornUserReview.png)
 
 **Source:** Acorn User (1-1993)
