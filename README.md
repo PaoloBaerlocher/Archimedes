@@ -2,7 +2,7 @@
 
 - **POIZONE** (1991)
   - [Assets and Reviews](/assets/poizone/README.md)
-  - [Sources (single file)](/Poizone/POIZONE_10.txt)
+  - [Source code (single file)](/Poizone/POIZONE_10.txt) - written in ARM assembler
   - Credits:
     - Code: _Paolo Baerlocher_
     - Graphics: _Marc Andreoli_
@@ -17,7 +17,7 @@
 - **ALDEBARAN** (1992)
   - [Assets and Reviews](/assets/aldebaran/README.md)
   - [Manual](/assets/aldebaran/MANUAL/README.md)
-  - [Sources](/Aldebaran/MASTER)
+  - [Source code](/Aldebaran/MASTER) - written in ARM assembler
   - Credits:
     - Code: _Paolo Baerlocher_
     - Graphics: _Marc Andreoli_
