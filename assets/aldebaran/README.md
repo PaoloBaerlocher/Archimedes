@@ -3,7 +3,7 @@
 ![Screen](Screenshots/Title.jpg)
 ![Screen](Screenshots/Max.jpg)
 
-![Screen](Screenshots/Animation.png)
+![Screen](Screenshots/Animation.gif)
 
 In-game screenshots
 
