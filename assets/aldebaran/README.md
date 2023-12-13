@@ -1,8 +1,11 @@
 # ALDEBARAN ASSETS (REVIEWS, ADVERTS, ...)
 
-![Screen](Screenshots/RedPlanet.png)
+![Screen](Screenshots/Title.jpg)
+![Screen](Screenshots/Max.jpg)
 
-In-game screenshot
+![Screen](Screenshots/Animation.png)
+
+In-game screenshots
 
 ---
 ![Box](CDCase_Back.jpg)
