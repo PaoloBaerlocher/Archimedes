@@ -12,7 +12,7 @@
       - _Fabrice Mercier_ for the Tracker module
       - _John Kortink_ for the Cruncher module
   - Notes:
-    - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)). The sources of this version, based on _pygame_ framework, are available [here](/poizone/Python/Game).
+    - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)). The sources of this version, based on _pygame_ framework, are available [here](/Poizone/Python/Game).
 
 - **ALDEBARAN** (1992)
   - [Assets and Reviews](/assets/aldebaran/README.md)
