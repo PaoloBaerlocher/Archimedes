@@ -11,8 +11,9 @@
     - Thanks to:
       - _Fabrice Mercier_ for the Tracker module
       - _John Kortink_ for the Cruncher module
+      - _François-Yves Bertrand (FYB)_
   - Notes:
-    - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)). The sources of this version, based on _pygame_ framework, are available [here](/Poizone/Python/Game).
+    - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)). The sources of this version, based on the _pygame_ framework, are available [here](/Poizone/Python/Game).
 
 - **ALDEBARAN** (1992)
   - [Assets and Reviews](/assets/aldebaran/README.md)
@@ -34,6 +35,6 @@
   
 ---
 
-Thanks to _Robin François_ ([SVGA](https://svga.com)) for retrieving the source files from my age-old 3.5" floppy discs, with the "Pauline" tool.
+Thanks to _Robin François_ ([SVGA](https://svga.ch)) for retrieving the source files from my age-old 3.5" floppy discs, with the "Pauline" tool.
 
 ![Disks](/assets/disks.jpg)
