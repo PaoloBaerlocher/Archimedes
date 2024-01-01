@@ -13,7 +13,6 @@ The article also references **BallsDemo** by Fabrice Mercier of the Arc Angels t
 
 # DEMOS SCREENSHOTS
 
----
 **City** (navigation in a small 3D city)
 
 ![Shots](screenshots/Rotating3D/City.jpg)
