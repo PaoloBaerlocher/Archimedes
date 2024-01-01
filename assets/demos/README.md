@@ -13,44 +13,45 @@ The article also references **BallsDemo** by Fabrice Mercier of the Arc Angels t
 
 # DEMOS SCREENSHOTS
 
+---
+**City** (navigation in a small 3D city)
+
 ![Shots](screenshots/Rotating3D/City.jpg)
 
-**City**
 ---
+**Conca** (test of concave object rendering (no Z-buffer))
+
 ![Shots](screenshots/Rotating3D/Conca.jpg)
-
-**Conca**
 ---
+**Eye** (rendering of huge object with many polygons)
+
 ![Shots](screenshots/Rotating3D/Eye.jpg)
-
-**Eye**
 ---
+**Landscape3** (early terrain renderer)
+
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
-
-**Landscape3**
 ---
+**Solid1**  (rendering of huge concave object with many polygons (~500))
+
 ![Shots](screenshots/Rotating3D/Solid1.jpg)
 
 ![Shots](screenshots/Rotating3D/Solid1b.jpg)
-
-**Solid1**
 ---
+**Solid2** (rendering of huge concave object with many polygons (~500))
+
 ![Shots](screenshots/Rotating3D/Solid2.jpg)
-
-**Solid2**
 ---
-![Shots](screenshots/Rotating3D/SolidObj2.jpg)
-
 **SolidObj2**
----
-![Shots](screenshots/Rotating3D/wow.jpg)
 
+![Shots](screenshots/Rotating3D/SolidObj2.jpg)
+---
 **Wow (early terrain renderer)**
+
+![Shots](screenshots/Rotating3D/wow.jpg)
 ---
+**WaterDemo** (image deformations)
+
 ![Shots](screenshots/WaterDemo.jpg)
-
-**WaterDemo**
-
 ---
 
 These demos can be run from _Arculator_ (an Archimedes Emulator). They have been grouped in the [_PaoloDemos.adf_](/../../Demos/PaoloDemos.zip) file.
