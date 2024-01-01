@@ -16,39 +16,37 @@ The article also references **BallsDemo** by Fabrice Mercier of the Arc Angels t
 ![Shots](screenshots/Rotating3D/City.jpg)
 
 **City**
-
+---
 ![Shots](screenshots/Rotating3D/Conca.jpg)
 
 **Conca**
-
+---
 ![Shots](screenshots/Rotating3D/Eye.jpg)
 
 **Eye**
-
+---
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
 
 **Landscape3**
-
+---
 ![Shots](screenshots/Rotating3D/Solid1.jpg)
-
-**Solid1**
 
 ![Shots](screenshots/Rotating3D/Solid1b.jpg)
 
 **Solid1**
-
+---
 ![Shots](screenshots/Rotating3D/Solid2.jpg)
 
 **Solid2**
-
+---
 ![Shots](screenshots/Rotating3D/SolidObj2.jpg)
 
 **SolidObj2**
-
+---
 ![Shots](screenshots/Rotating3D/wow.jpg)
 
 **Wow (early terrain renderer)**
-
+---
 ![Shots](screenshots/WaterDemo.jpg)
 
 **WaterDemo**
