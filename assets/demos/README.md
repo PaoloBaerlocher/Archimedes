@@ -16,7 +16,6 @@ The article also references **BallsDemo** by Fabrice Mercier of the Arc Angels t
 **City** (navigation in a small 3D city)
 
 ![Shots](screenshots/Rotating3D/City.jpg)
-
 ---
 **Conca** (test of concave object rendering (no Z-buffer))
 
