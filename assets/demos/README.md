@@ -61,7 +61,6 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 # ARC ANGELS MEGADEMO
 
 Some of my demos were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991.
-
 ---
 **MegaDemo hub:** Door for launching a demo
 
@@ -76,6 +75,7 @@ Some of my demos were integrated in the Arc Angels [Megademo](../../Demos/MegaDe
 ![Shots](screenshots/ArcAngelsMegaDemo/ArmyDemo.jpg)
 
 **Note:** called 'Army Demo' because it was developed during my military service period (4 months).
+
 ---
 
 **Note:** _Armaniac_ was my nickname as a coder in the Arc Angels demo-maker team.
