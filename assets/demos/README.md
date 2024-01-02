@@ -22,8 +22,9 @@ The main goals of these demos was to test the following features:
   - directional lighting (per-face)
   - concave objects
 
-**Reminder:** there was no GPU and no FPU (Floating point Unit). All computations are done in 32 bits fidex-point integer or with LUT (Look-Up Tables).
+**Note:** there was no GPU and no FPU (Floating Point Unit). All computations are done in 32 bits fixed-point integer or with LUT (Look-Up Tables).
 
+---
 **City** (navigation in a small 3D city)
 
 ![Shots](screenshots/Rotating3D/City.jpg)
