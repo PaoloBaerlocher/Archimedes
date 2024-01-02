@@ -63,17 +63,18 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 Some of my demos were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991.
 
 _Armaniac_ was my nickname as a coder in the Arc Angels team.
+_Angel Heart_ was the nickname of Fabrice Mercier, the team founder.
 
 ---
 **MegaDemo hub:** Door for launching a demo
 
 ![Shots](screenshots/ArcAngelsMegaDemo/Door.jpg)
 ---
-**Vectoria Demo** (3D starfields)
+**Vectoria Demo** (3D starfields with different shapes)
 
 ![Shots](screenshots/ArcAngelsMegaDemo/VectoriaDemo.jpg)
 ---
-**Army Demo** (2D parallax background + 3D animated object)
+**Army Demo** (2D parallax background with overscan + 3D animated object on top)
 
 ![Shots](screenshots/ArcAngelsMegaDemo/ArmyDemo.jpg)
 
