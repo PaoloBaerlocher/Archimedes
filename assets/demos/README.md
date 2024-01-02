@@ -13,6 +13,17 @@ The article also mentions **BallsDemo** by Fabrice Mercier of the Arc Angels tea
 
 # DEMOS SCREENSHOTS
 
+Many small real-time 3D demos were developed in 1991 to test and optimize 3D rendering routines in ARM assembler. These demos have been used as a foundation for developing the game _Aldebaran_, released at the end of 1992. They were also distributed in PD (Public Domain) disks, under the name **Rotating3D**. Of course, more advanced and quick rendering routines were kept private.
+
+The main goals of these demos was to test the following features:
+
+  - drawing triangles (possibly clipped by the screen edges), as quickly as possible
+  - face culling
+  - directional lighting (per-face)
+  - concave objects
+
+**Reminder:** there was no GPU and no FPU (Floating point Unit). All computations are done in 32 bits fidex-point integer or with LUT (Look-Up Tables).
+
 **City** (navigation in a small 3D city)
 
 ![Shots](screenshots/Rotating3D/City.jpg)
@@ -29,7 +40,7 @@ The article also mentions **BallsDemo** by Fabrice Mercier of the Arc Angels tea
 
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
 ---
-**Solid1**  (rendering of huge concave object with many polygons (~500))
+**Solid1** (rendering of huge concave object with many polygons (~500))
 
 ![Shots](screenshots/Rotating3D/Solid1.jpg)
 
