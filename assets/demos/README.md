@@ -51,6 +51,10 @@ The article also references **BallsDemo** by Fabrice Mercier of the Arc Angels t
 
 ![Shots](screenshots/WaterDemo.jpg)
 ---
+**SpinGuin** (small advert for Aldebaran - graphics by Marc Andreoli)
+
+![Shots](screenshots/SpinGuinDemo.jpg)
+---
 
 These demos can be run from _Arculator_ (an Archimedes Emulator). They have been grouped in the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file.
 
@@ -62,6 +66,7 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 Some of my demos were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991.
 
 _Armaniac_ was my nickname as a coder in the Arc Angels team.
+
 _Angel Heart_ was the nickname of Fabrice Mercier, the team founder.
 
 ---
