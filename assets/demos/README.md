@@ -63,12 +63,12 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 
 # ARC ANGELS MEGADEMO
 
-Some of my demos were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991.
+Two demos of mine were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991.
 
 _Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was the nickname of _Fabrice Mercier_, the team founder.
 
 ---
-**MegaDemo hub:** Door for launching a demo
+**MegaDemo hub:** Entering a door launches a demo
 
 ![Shots](screenshots/ArcAngelsMegaDemo/Door.jpg)
 ---
