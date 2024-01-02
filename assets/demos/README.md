@@ -51,7 +51,7 @@ The article also references **BallsDemo** by Fabrice Mercier of the Arc Angels t
 
 ![Shots](screenshots/WaterDemo.jpg)
 ---
-**SpinGuin** (small advert for Aldebaran - graphics by Marc Andreoli)
+**SpinGuin** (small advert for _Aldebaran_ - graphics by Marc Andreoli)
 
 ![Shots](screenshots/SpinGuinDemo.jpg)
 ---
@@ -67,8 +67,7 @@ Some of my demos were integrated in the Arc Angels [Megademo](../../Demos/MegaDe
 
 _Armaniac_ was my nickname as a coder in the Arc Angels team.
 
-_Angel Heart_ was the nickname of Fabrice Mercier, the team founder.
-
+_Angel Heart_ was the nickname of _Fabrice Mercier_, the team founder.
 ---
 **MegaDemo hub:** Door for launching a demo
 
