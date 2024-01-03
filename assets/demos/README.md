@@ -1,15 +1,15 @@
 # DEMOS
 
-Many small real-time 3D demos were developed in 1991 to test and optimize 3D rendering routines in ARM assembler. These demos have been used as a foundation for developing the game _Aldebaran_, released at the end of 1992. They were also distributed in PD (Public Domain) disks, under the name **Rotating3D**. Of course, more advanced and fast rendering routines were kept private for the game.
+Many small real-time 3D demos were developed in 1991 to test and optimize 3D rendering routines in ARM assembler. These demos have been used as a foundation for developing the game _Aldebaran_, released at the end of 1992. They were also distributed in PD (Public Domain) disks, under the name **Rotating3D**. Of course, more advanced routines were kept private and used in the game only.
 
-The main goals of these demos was to test the following features:
+The main goal of these demos was to test the following features:
 
   - drawing triangles (possibly clipped by the screen edges), as quickly as possible
   - backface culling
   - directional lighting (per-face)
-  - displaying concave objects (with no Z-buffer)
+  - displaying concave objects (without Z-buffer)
 
-**Note:** there was no GPU and no FPU (Floating Point Unit) available. All computations are done in 32 bits fixed-point integer or with LUT (Look-Up Tables).
+**Note:** there was no GPU and no FPU (Floating Point Unit) available. All computations were done in 32 bits fixed-point integer or with LUT (Look-Up Tables).
 
 ---
 **City** (navigation in a small 3D city)
@@ -91,7 +91,7 @@ _Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was 
 ![Demos](Demos1.jpg)
 ![Demos](Demos2.jpg)
 
-This article mentions **Rotating3D**. Displayed on the first page, the **Solid1** demo for testing 3D rendering routines, later used in **Aldebaran**.
+This article mentions **Rotating3D**. The **Solid1** demo for testing 3D rendering routines (later used in **Aldebaran**) is displayed on the first page.
 
 The article also mentions **BallsDemo** by _Fabrice Mercier_ of the Arc Angels team (second page, top right corner).
 
