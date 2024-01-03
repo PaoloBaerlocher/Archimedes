@@ -1,28 +1,15 @@
 # DEMOS
 
-![Demos](Demos1.jpg)
-![Demos](Demos2.jpg)
-
-This article mentions **Rotating3D** (displayed on the first page). This was a demo to test 3D rendering routines, later used in **Aldebaran**.
-
-The article also mentions **BallsDemo** by Fabrice Mercier of the Arc Angels team (second page, top right corner).
-
-**Source:** Acorn User (1-1991)
-
----
-
-# DEMOS SCREENSHOTS
-
-Many small real-time 3D demos were developed in 1991 to test and optimize 3D rendering routines in ARM assembler. These demos have been used as a foundation for developing the game _Aldebaran_, released at the end of 1992. They were also distributed in PD (Public Domain) disks, under the name **Rotating3D**. Of course, more advanced and quick rendering routines were kept private.
+Many small real-time 3D demos were developed in 1991 to test and optimize 3D rendering routines in ARM assembler. These demos have been used as a foundation for developing the game _Aldebaran_, released at the end of 1992. They were also distributed in PD (Public Domain) disks, under the name **Rotating3D**. Of course, more advanced and fast rendering routines were kept private for the game.
 
 The main goals of these demos was to test the following features:
 
   - drawing triangles (possibly clipped by the screen edges), as quickly as possible
-  - face culling
+  - backface culling
   - directional lighting (per-face)
-  - concave objects
+  - displaying concave objects (with no Z-buffer)
 
-**Note:** there was no GPU and no FPU (Floating Point Unit). All computations are done in 32 bits fixed-point integer or with LUT (Look-Up Tables).
+**Note:** there was no GPU and no FPU (Floating Point Unit) available. All computations are done in 32 bits fixed-point integer or with LUT (Look-Up Tables).
 
 ---
 **City** (navigation in a small 3D city)
@@ -70,12 +57,15 @@ The main goals of these demos was to test the following features:
 
 These demos can be run from _Arculator_ (an Archimedes Emulator). They have been grouped in the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file.
 
+Thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos.
 
 ---
 
 # ARC ANGELS MEGADEMO
 
 Two demos of mine were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991.
+
+_Arc Angels_ was a demo-maker team for the _Acorn Archimedes_, with members from France, Switzerland and the Netherlands.
 
 _Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was the nickname of _Fabrice Mercier_, the team founder.
 
@@ -92,4 +82,17 @@ _Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was 
 
 ![Shots](screenshots/ArcAngelsMegaDemo/ArmyDemo.jpg)
 
-**Note:** called 'Army Demo' because it was developed during my military service period (4 months).
+**Note:** called 'Army Demo' because it was developed during my military service period.
+
+---
+
+# PRESS
+
+![Demos](Demos1.jpg)
+![Demos](Demos2.jpg)
+
+This article mentions **Rotating3D**. Displayed on the first page, the **Solid1** demo for testing 3D rendering routines, later used in **Aldebaran**.
+
+The article also mentions **BallsDemo** by _Fabrice Mercier_ of the Arc Angels team (second page, top right corner).
+
+**Source:** Acorn User (1-1991)
