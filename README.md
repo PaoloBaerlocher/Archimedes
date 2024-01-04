@@ -1,7 +1,8 @@
 # Sources and assets of my Acorn Archimedes games: POIZONE and ALDEBARAN.
 
 - **POIZONE** (1991)
-  - [Assets and Reviews](/assets/poizone/README.md)
+  - [Assets](/assets/poizone/README.md)
+  - [Reviews](/assets/poizone/reviews/README.md)
   - [Source code (single file)](/Poizone/POIZONE_10.txt) - written in ARM assembler
   - Credits:
     - Code: _Paolo Baerlocher_
@@ -9,9 +10,9 @@
     - Music: _Fabrice Hautecloque_
     - Publisher: _Eterna_
     - Thanks to:
-      - _Fabrice Mercier_ for the Tracker module
+      - _Fabrice Mercier_ for the Tracker module (audio)
       - _John Kortink_ for the Cruncher module
-      - _François-Yves Bertrand (FYB)_
+      - _François-Yves Bertrand (FYB)_, manager of _Eterna_
   - Notes:
     - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)). The sources of this version, based on the _pygame_ framework, are available [here](/Poizone/Python/Game).
 
@@ -25,7 +26,7 @@
     - Managing: _Fred Schaerlig_
     - Publisher: _Evolution Trading AG_
     - Thanks to:
-      - _Fabrice Mercier_ for the Tracker module
+      - _Fabrice Mercier_ for the Tracker module (audio)
       - _John Kortink_ for the Cruncher module
     - Full credits available in the [manual](/assets/aldebaran/MANUAL/P3.jpg).
  

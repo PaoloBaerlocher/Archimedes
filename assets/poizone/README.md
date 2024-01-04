@@ -1,4 +1,4 @@
-# POIZONE ASSETS & REVIEWS
+# POIZONE ASSETS
 
 ![Box](OriginalBox.jpg)
 ---
@@ -15,16 +15,6 @@
 ![Review](POIZONE_REVIEW.jpeg)
 
 **Source:** The Micro User (3-1992)
-
----
-![Review](PoizoneReview_AcornUser_7_1992.jpg)
-
-**Source:** Acorn User (7-1992)
-
----
-![Advert](eternaAdvert_AcornUser_7_1992.jpg)
-
-**Source:** Acorn User (7-1992)
 
 ---
 ![CNJV](CNJV_2_12_2023.jpg)
