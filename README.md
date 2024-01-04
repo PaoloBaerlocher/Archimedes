@@ -12,7 +12,7 @@
     - Thanks to:
       - _Fabrice Mercier_ for the Tracker module (audio)
       - _John Kortink_ for the Cruncher module
-      - _François-Yves Bertrand (FYB)_, manager of _Eterna_
+      - _François-Yves Bertrand ([FYB](https://www.arcadeattack.co.uk/francois-bertrand))_, manager of _Eterna_
   - Notes:
     - Poizone has been ported to _Windows PC_ in 2023 (freely available on [itch.io](https://poizone.itch.io/poizone)). The sources of this version, based on the _pygame_ framework, are available [here](/Poizone/Python/Game).
 
