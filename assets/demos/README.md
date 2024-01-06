@@ -66,13 +66,13 @@ Thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these de
 
 # ARC ANGELS MEGADEMO
 
-Two demos of mine were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip), in 1991. A MegaDemo is a collection of multiple demos developed by the crew members.
-
 _Arc Angels_ was a demo-maker crew for the _Acorn Archimedes_ in the '90, with members from France, Switzerland and the Netherlands.
 
 _Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was the nickname of _Fabrice Mercier_, the team founder.
 
-The other crew members, to my knowledge: _Marc_ and _Fred_ from Switzerland, _Ace_ from the Netherlands, _Hautecloque_ and _Jean-Eric_ from France.
+To my knowledge, the other crew members were: _Marc_ and _Fred_ from Switzerland, _Ace_ from the Netherlands, _Hautecloque_ and _Jean-Eric_ from France.
+
+A MegaDemo is a collection of multiple demos developed by the crew members. Two demos of mine were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip) in 1991.
 
 ---
 **MegaDemo hub:** Entering a door launches a demo
