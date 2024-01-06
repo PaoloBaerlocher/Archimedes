@@ -12,7 +12,7 @@ The main goal of these demos was to test the following features:
   - Gouraud shading
   - exploiting the fixed 256 colors palette
 
-**Note:** there was no GPU and no FPU (Floating Point Unit) available. All computations were done on CPU in 32 bits fixed-point integer or with LUT (Look-Up Tables), but no division operation was available.
+**Note:** there was no GPU and no FPU (Floating Point Unit) available. All computations were done on CPU in 32 bits fixed-point integer, but no division operation was available. Look-Up Tables (LUT) were used too.
 
 ---
 **City** (navigation in a small 3D city)
@@ -45,7 +45,7 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/SolidObj2.jpg)
 ---
-**Wow (early terrain renderer)**
+**Wow** (early terrain renderer)
 
 ![Shots](screenshots/Rotating3D/wow.jpg)
 ---
