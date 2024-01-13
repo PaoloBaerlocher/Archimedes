@@ -58,18 +58,18 @@ The main goal of these demos was to test the following features:
 ![Shots](screenshots/SpinGuinDemo.jpg)
 ---
 
-These demos can be run from _Arculator_ (an Archimedes Emulator). They have been grouped in the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file. Source code is available in most cases.
+These demos can be run from _Arculator_ (an Archimedes Emulator). They have been grouped in the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file. Source code is available in most demos.
 
 How to run these demos on PC:
   - install _Arculator_
-  - download the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file
-  - run _Arculator_ and load the adf file with the **"Disc.../Change Drive 0:..."** option in the top menu bar.
-  - click on the disc icon ":0" in the RISCOS bar (bottom left corner of the screen).
-  - open the _Rotating3D_ folder
+  - download the [_PaoloDemos.zip_](../../Demos/PaoloDemos.zip) file and unzip it
+  - run _Arculator_ and load the _PaoloDemos.adf_ file with the **"Disc.../Change Drive 0:..."** option in the top menu bar.
+  - click on the disc icon **":0"** in the RISCOS bar (bottom left corner of the screen).
+  - open the **Rotating3D** folder
   - double-click on the green Acorn logo in the bottom right corner, and set **"RAM disc"** to "128 K".
   - Close that window by clicking on the **X** icon.
-  - double-click on the **!INITrotat** application: it will generate shared precomputed files in the "RAM disc".
-  - you can now launch any of the demos in the **Rotating3D** folder by double-clicking on the file.
+  - double-click on the **!INITrotat** application: it will generate shared precomputed files in the **"RAM disc"**.
+  - you can now launch any of the demos in the **Rotating3D** folder by double-clicking on the desired demo.
   - press **Escape** and then **SPACE** to quit a demo
   - you can see the source by pressing **SHIFT** while double-clicking a file.
   
@@ -92,18 +92,13 @@ A MegaDemo is a collection of multiple demos developed by the crew members. Two 
 
 ![Shots](screenshots/ArcAngelsMegaDemo/Door.jpg)
 ---
-**Vectoria Demo** (3D starfields with different shapes)
+**Vectoria Demo** (3D starfields with different shapes) - [video](https://www.youtube.com/watch?v=oqrJ2RkgYAQ).
 
 ![Shots](screenshots/ArcAngelsMegaDemo/VectoriaDemo.jpg)
-
-Video on [YouTube](https://www.youtube.com/watch?v=oqrJ2RkgYAQ).
-
 ---
-**Army Demo** (2D parallax background with overscan + 3D animated object on top)
+**Army Demo** (2D parallax background with overscan + 3D animated object on top) - [video](https://www.youtube.com/watch?v=dO2qttN-eqU).
 
 ![Shots](screenshots/ArcAngelsMegaDemo/ArmyDemo.jpg)
-
-Video on [YouTube](https://www.youtube.com/watch?v=dO2qttN-eqU).
 
 **Note:** called 'Army Demo' because it was developed during my military service period.
 
