@@ -23,19 +23,13 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/Conca.jpg)
 ---
-**Eye** (rendering of huge object with many polygons)
+**Eye** (rendering of huge object with many polygons) - [video](https://youtu.be/wZWXxP8721M).
 
 ![Shots](screenshots/Rotating3D/Eye.jpg)
-
-Video on [YouTube](https://youtu.be/wZWXxP8721M).
-
 ---
-**Landscape3** (early terrain renderer)
+**Landscape3** (early terrain renderer) - [video](https://youtu.be/_cHsvOLis8U).
 
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
-
-Video on [YouTube](https://youtu.be/_cHsvOLis8U).
-
 ---
 **Solid1** (rendering of huge concave object with many polygons (~500))
 
@@ -47,12 +41,9 @@ Video on [YouTube](https://youtu.be/_cHsvOLis8U).
 
 ![Shots](screenshots/Rotating3D/Solid2.jpg)
 ---
-**SolidObj2**
+**SolidObj2** - [video](https://youtu.be/VcK_C9dsmUk).
 
 ![Shots](screenshots/Rotating3D/SolidObj2.jpg)
-
-Video on [YouTube](https://youtu.be/VcK_C9dsmUk).
-
 ---
 **Wow** (early terrain renderer)
 
