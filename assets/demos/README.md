@@ -63,15 +63,15 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 How to run these demos on PC:
   - install _Arculator_
   - download the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file
-  - run _Arculator_ and load the adf file with the "Disc.../Change Drive 0:..." option in the top menu bar.
-  - click on the disc icon ":0" in the botton RISCOS bar.
+  - run _Arculator_ and load the adf file with the **"Disc.../Change Drive 0:..."** option in the top menu bar.
+  - click on the disc icon ":0" in the RISCOS bar (bottom left corner of the screen).
   - open the _Rotating3D_ folder
-  - double-click on the green Acorn logo in the bottom right corner, and set "RAM disc" to "128 K".
-  - Close that window by clicking on the X icon.
-  - double-click on the !INITrotat application: it will generate shared precomputed files in the RAM disc.
-  - you can now launch any of the demos in the Rotating3D folder by double-clicking on the file.
-  - press Escape and then SPACE to quit a demo
-  - you can see the source by pressing SHIFT while double-clicking a file.
+  - double-click on the green Acorn logo in the bottom right corner, and set **"RAM disc"** to "128 K".
+  - Close that window by clicking on the **X** icon.
+  - double-click on the **!INITrotat** application: it will generate shared precomputed files in the "RAM disc".
+  - you can now launch any of the demos in the **Rotating3D** folder by double-clicking on the file.
+  - press **Escape** and then **SPACE** to quit a demo
+  - you can see the source by pressing **SHIFT** while double-clicking a file.
   
 Thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos.
 
