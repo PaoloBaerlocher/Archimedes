@@ -27,13 +27,15 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/Eye.jpg)
 
-Video on [YouTube](https://www.youtube.com/watch?v=dO2qttN-eqU).
+Video on [YouTube](https://youtu.be/wZWXxP8721M).
+
 ---
 **Landscape3** (early terrain renderer)
 
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
 
 Video on [YouTube](https://youtu.be/_cHsvOLis8U).
+
 ---
 **Solid1** (rendering of huge concave object with many polygons (~500))
 
@@ -50,6 +52,7 @@ Video on [YouTube](https://youtu.be/_cHsvOLis8U).
 ![Shots](screenshots/Rotating3D/SolidObj2.jpg)
 
 Video on [YouTube](https://youtu.be/VcK_C9dsmUk).
+
 ---
 **Wow** (early terrain renderer)
 
