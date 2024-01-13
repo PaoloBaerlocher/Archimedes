@@ -82,10 +82,15 @@ A MegaDemo is a collection of multiple demos developed by the crew members. Two 
 **Vectoria Demo** (3D starfields with different shapes)
 
 ![Shots](screenshots/ArcAngelsMegaDemo/VectoriaDemo.jpg)
+
+Video on [YouTube](https://www.youtube.com/watch?v=oqrJ2RkgYAQ).
+
 ---
 **Army Demo** (2D parallax background with overscan + 3D animated object on top)
 
 ![Shots](screenshots/ArcAngelsMegaDemo/ArmyDemo.jpg)
+
+Video on [YouTube](https://www.youtube.com/watch?v=dO2qttN-eqU).
 
 **Note:** called 'Army Demo' because it was developed during my military service period.
 
