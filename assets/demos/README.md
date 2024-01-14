@@ -31,13 +31,13 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
 ---
-**Solid1** (rendering of huge concave object with many polygons (~500))
+**Solid1** (rendering of huge concave object with ~500 polygons) - [video](https://youtu.be/XXX).
 
 ![Shots](screenshots/Rotating3D/Solid1.jpg)
 
 ![Shots](screenshots/Rotating3D/Solid1b.jpg)
 ---
-**Solid2** (rendering of huge concave object with many polygons (~500))
+**Solid2** (rendering of huge concave object with ~500 polygons)
 
 ![Shots](screenshots/Rotating3D/Solid2.jpg)
 ---
@@ -49,7 +49,7 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/wow.jpg)
 ---
-**WaterDemo** (image deformations - graphics by Marc Andreoli)
+**WaterDemo** (image deformations - graphics by Marc Andreoli) - [video](https://youtu.be/XXX).
 
 ![Shots](screenshots/WaterDemo.jpg)
 ---
@@ -60,20 +60,9 @@ The main goal of these demos was to test the following features:
 
 These demos can be run from _Arculator_ (an Archimedes Emulator). They have been grouped in the [_PaoloDemos.adf_](../../Demos/PaoloDemos.zip) file. Source code is available in most demos.
 
-How to run these demos on PC:
-  - install _Arculator_
-  - download the [_PaoloDemos.zip_](../../Demos/PaoloDemos.zip) file and unzip it
-  - run _Arculator_ and load the _PaoloDemos.adf_ file with the **"Disc.../Change Drive 0:..."** option in the top menu bar.
-  - click on the disc icon **":0"** in the RISCOS bar (bottom left corner of the screen).
-  - open the **Rotating3D** folder
-  - double-click on the green Acorn logo in the bottom right corner, and set **"RAM disc"** to "128 K".
-  - Close that window by clicking on the **X** icon.
-  - double-click on the **!INITrotat** application: it will generate shared precomputed files in the **"RAM disc"**.
-  - you can now launch any of the demos in the **Rotating3D** folder by double-clicking on the desired demo.
-  - press **Escape** and then **SPACE** to quit a demo
-  - you can see the source by pressing **SHIFT** while double-clicking a file.
-  
-Thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos.
+[How to run these demos on PC.](./README_HowTo.md)
+
+Many thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos :smiley:.
 
 ---
 
@@ -81,7 +70,7 @@ Thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these de
 
 _Arc Angels_ was a demo-maker crew for the _Acorn Archimedes_ in the '90, with members from France, Switzerland and the Netherlands.
 
-_Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was the nickname of _Fabrice Mercier_, the team founder.
+_Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was the nickname of _Fabrice Mercier_, the team founder :yellow_heart:.
 
 To my knowledge, the other crew members were: _Marc_ and _Fred_ from Switzerland, _Ace_ from the Netherlands, _Hautecloque_ and _Jean-Eric_ from France.
 
