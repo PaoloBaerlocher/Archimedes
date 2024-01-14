@@ -64,11 +64,13 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 
 [Video playlist on YouTube](https://www.youtube.com/playlist?list=PL_A5wPd6o7bN7TXDp6nEtpZL9q25Iq1Ra)
 
-Many thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos :smiley: for so long.
+Many thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos for so long :smiley:.
 
 ---
 
 # ARC ANGELS MEGADEMO
+
+![Logo](./ArcAngelsLogo.png)
 
 _Arc Angels_ was a demo-maker crew for the _Acorn Archimedes_ in the '90, with members from France, Switzerland and the Netherlands.
 
