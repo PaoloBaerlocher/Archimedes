@@ -19,7 +19,7 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/City.jpg)
 ---
-**Conca** (test of concave object rendering (no Z-buffer))
+**Conca** (test of concave object rendering (no Z-buffer)) - [video](https://youtu.be/WynMQ5Mg4ns).
 
 ![Shots](screenshots/Rotating3D/Conca.jpg)
 ---
@@ -31,13 +31,13 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/Landscape3.jpg)
 ---
-**Solid1** (rendering of huge concave object with ~500 polygons) - [video](https://youtu.be/XXX).
+**Solid1** (rendering of huge concave object with ~500 polygons) - [video](https://youtu.be/GfaKjsNJI3c).
 
 ![Shots](screenshots/Rotating3D/Solid1.jpg)
 
 ![Shots](screenshots/Rotating3D/Solid1b.jpg)
 ---
-**Solid2** (rendering of huge concave object with ~500 polygons)
+**Solid2** (rendering of huge concave object with ~500 polygons) - [video](https://youtu.be/9sA5GOOiEIw).
 
 ![Shots](screenshots/Rotating3D/Solid2.jpg)
 ---
@@ -49,7 +49,7 @@ The main goal of these demos was to test the following features:
 
 ![Shots](screenshots/Rotating3D/wow.jpg)
 ---
-**WaterDemo** (image deformations - graphics by Marc Andreoli) - [video](https://youtu.be/XXX).
+**WaterDemo** (image deformations - graphics by Marc Andreoli) - [video](https://youtu.be/PsEBNxQLHvE).
 
 ![Shots](screenshots/WaterDemo.jpg)
 ---
@@ -62,7 +62,7 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 
 [How to run these demos on PC.](./README_HowTo.md)
 
-Many thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos :smiley:.
+Many thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos :smiley: for so long.
 
 ---
 

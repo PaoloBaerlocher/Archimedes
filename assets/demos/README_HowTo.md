@@ -10,4 +10,4 @@
   - double-click on the **!INITrotat** application: it will generate shared precomputed files in the **"RAM disc"**.
   - you can now launch any of the demos in the **Rotating3D** folder by double-clicking on the desired demo.
   - press **Escape** and then **SPACE** to quit a demo
-  - you can see the source by pressing **SHIFT** while double-clicking a file.
+  - you can see the source code by pressing **SHIFT** while double-clicking a file.
