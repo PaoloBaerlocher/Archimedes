@@ -62,6 +62,8 @@ These demos can be run from _Arculator_ (an Archimedes Emulator). They have been
 
 [How to run these demos on PC.](./README_HowTo.md)
 
+[Video playlist on YouTube](https://www.youtube.com/playlist?list=PL_A5wPd6o7bN7TXDp6nEtpZL9q25Iq1Ra)
+
 Many thanks to [Icebird](http://www.icebird.org/classics.html) for archiving these demos :smiley: for so long.
 
 ---
