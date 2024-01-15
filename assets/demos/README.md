@@ -78,7 +78,7 @@ _Armaniac_ was my nickname as a coder in the Arc Angels team. _Angel Heart_ was 
 
 To my knowledge, the other crew members were: _Marc_ and _Fred_ from Switzerland, _Ace_ from the Netherlands, _Hautecloque_ and _Jean-Eric_ from France.
 
-A MegaDemo is a collection of multiple demos developed by the crew members. Two demos of mine were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip) in 1991: _Vectoria Demo_ and _Army Demo_.
+A MegaDemo is a collection of multiple demos developed by the crew members. Two demos of mine were integrated in the Arc Angels [Megademo](../../Demos/MegaDemo.zip) in 1991: **Vectoria Demo** and **Army Demo**.
 
 ---
 **MegaDemo hub:** Entering a door launches a demo
