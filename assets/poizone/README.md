@@ -1,32 +1,36 @@
 # POIZONE ASSETS
 
+**ORIGINAL BOX**
+
 ![Box](OriginalBox.jpg)
 ---
-**Front**
+**FRONT**
 
 ![Front](Front.jpg)
 ---
-**Back**
+**BACK**
 
 ![Back](Back.jpg)
 ---
-**3.5" disk**
+**3.5" DISK**
 
 ![Disc](disc.jpg)
 
 **Note:** Marc ANDREOLI's name is misspelled as ANDREOLLI.
+
 ---
-**Inside**
+**INSIDE**
 
 ![Story](story.jpg)
 
 ![Manual](man.jpg)
 ---
-Full-page advert for **ETERNA** games, including _Poizone_.
+FULL-PAGE ADVERT FOR **ETERNA** GAMES, INCLUDING _POIZONE_.
 
 ![Advert](./Eterna/eternaAdvert_AcornUser_9_1991.jpg)
 
 **Source:** Acorn User (9-1991)
+
 ---
 ![CNJV](CNJV_2_12_2023.jpg)
 
