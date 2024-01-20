@@ -12,9 +12,9 @@
 ---
 ![Manual](man.jpg)
 ---
-**ETERNA** (Full-page advert for several games, including _Poizone_)
+Full-page advert for **ETERNA** games, including _Poizone_.
 
-![Advert](eternaAdvert_AcornUser_7_1992.jpg)
+![Advert](./Eterna/eternaAdvert_AcornUser_9_1991.jpg)
 
 **Source:** Acorn User (7-1992)
 
