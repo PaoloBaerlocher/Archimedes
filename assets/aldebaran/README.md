@@ -50,8 +50,6 @@ Action scene on a red planet.
 **Source:** Acorn User (12-1992)
 
 ---
-**REVIEW**
-
 ![Review](AcornUser1992_GamesSupplement.jpg)
 
 **Source:** Acorn User - Games Supplement (1-1993)
