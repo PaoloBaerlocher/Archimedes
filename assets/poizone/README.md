@@ -25,7 +25,7 @@
 
 ![Manual](man.jpg)
 ---
-FULL-PAGE ADVERT FOR **ETERNA** GAMES, INCLUDING _POIZONE_.
+**FULL-PAGE ADVERT FOR _ETERNA_ GAMES, INCLUDING _POIZONE_.**
 
 ![Advert](./Eterna/eternaAdvert_AcornUser_9_1991.jpg)
 

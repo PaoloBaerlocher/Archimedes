@@ -19,6 +19,13 @@ CD Case (Back)
 Full-page advert
 
 ---
+![Review](AcornUser_GameShow_7_1992.jpg)
+
+**Source:** Acorn User (7-1992)
+
+**Note:** This is a pre-release article. As written here, the game was originally due to be published by _Eterna_, the french publisher of _Poizone_. But due to its closure, _Aldebaran_ has been published by _Evolution Trading AG_.
+
+---
 ![Review](AcornUser1992.jpg)
 
 **Source:** Acorn User (12-1992)
