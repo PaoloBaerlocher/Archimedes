@@ -4,11 +4,15 @@
 
 ![Screen](Screenshots/Title.jpg)
 
-Title screen
+Title screen.
+
+---
 
 ![Screen](Screenshots/Max.jpg)
 
-Max
+Max, the 3D virtual assistant.
+
+---
 
 ![Screen](Screenshots/RedPlanet.gif)
 
