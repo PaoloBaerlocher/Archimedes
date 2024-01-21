@@ -2,18 +2,17 @@
 
 **IN-GAME SCREENSHOTS**
 
-![Screen](Screenshots/Title.jpg)
-
 Title screen.
----
-![Screen](Screenshots/Max.jpg)
 
+![Screen](Screenshots/Title.jpg)
+---
 Max, the 3D virtual assistant.
----
-![Screen](Screenshots/RedPlanet.gif)
 
+![Screen](Screenshots/Max.jpg)
+---
 Action scene on a red planet.
 
+![Screen](Screenshots/RedPlanet.gif)
 ---
 **CD CASE (BACK)**
 
